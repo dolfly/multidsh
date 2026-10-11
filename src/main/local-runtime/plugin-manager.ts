@@ -376,13 +376,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     const installed = plugins.find((plugin) => plugin.name === name)?.version
     if (installed === undefined || installed === '—') return null
     const result = await runPlugin(instance, ['view', name, 'time', '--json'], resolved)
-    let meta: { time?: Record<string, string> }
-    try {
-      meta = JSON.parse(result.stdout || '{}')
-    } catch {
-      return null
-    }
-    const at = meta.time?.[installed]
+    const at = publishedTimeMap(result.stdout)?.[installed]
     return typeof at === 'string' && at !== '' ? { version: installed, at } : null
   }
 
@@ -620,7 +614,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         let meta: {
           version?: string
           peerDependencies?: Record<string, string>
-          time?: Record<string, string>
         }
         try {
           meta = JSON.parse(result.stdout || '{}')
@@ -637,7 +630,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         const incompatiblePeers = evaluateDshPeers(peers, dshVersion)
         const compatible = Object.keys(incompatiblePeers).length === 0
         const hasUpdate = latest !== current.version
-        const published = meta.time?.[current.version]
+        const published = publishedTimeMap(result.stdout)?.[current.version]
         const publishedAt = typeof published === 'string' && published !== '' ? published : null
         // 落盘：有新版留下标记，已是最新清掉该项（标记只在再次检查或升级时变化）；
         // 发布时间按「已装版本」存快照，未收录该版本时保留原快照。
@@ -799,6 +792,26 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       return { hasHostSide, application: defaultApplication(hmr) }
     }
   }
+}
+
+/**
+ * 解析 `dsh plugin view … time --json` 的输出为「版本 → 发布时刻」映射；解析失败或不是对象返回 null。
+ * 输出形状随查询字段而变：多字段查询（check）嵌套在 `time` 键下，仅查 time 时是裸映射
+ * （额外含 created/modified 两项，按键取版本值时天然跳过）。
+ */
+function publishedTimeMap(stdout: string): Record<string, string> | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(stdout || '{}')
+  } catch {
+    return null
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
+  const nested = (parsed as { time?: unknown }).time
+  if (typeof nested === 'object' && nested !== null && !Array.isArray(nested)) {
+    return nested as Record<string, string>
+  }
+  return parsed as Record<string, string>
 }
 
 /** spec 是否指向给定包名（近似：spec 前缀去掉 @version / 协议后与包名相等或以其结尾）。 */

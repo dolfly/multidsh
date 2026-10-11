@@ -588,10 +588,13 @@ describe('createPluginManager.check', () => {
         return { code: 0, stdout: upgraded ? listV2 : LIST_JSON, stderr: '' }
       }
       if (args.includes('view')) {
+        // 仅查 time 字段时 dsh 输出裸的「版本 → 发布时刻」映射（不嵌套在 time 键下）。
         return {
           code: 0,
           stdout: JSON.stringify({
-            time: { '1.1.0': '2026-09-20T02:30:00.000Z', '2.0.0': '2026-10-05T08:00:00.000Z' }
+            '1.1.0': '2026-09-20T02:30:00.000Z',
+            '2.0.0': '2026-10-05T08:00:00.000Z',
+            created: '2026-09-01T00:00:00.000Z'
           }),
           stderr: ''
         }
@@ -618,6 +621,42 @@ describe('createPluginManager.check', () => {
     await manager.upgrade(localInstance(), '@xbzbing/dsh-git-panel', '2.0.0')
     expect((await manager.checkState(localInstance())).updates).toEqual({})
     // 快照换成新版本的发布时间：发布时间同步可见，不需用户再次检查。
+    expect((await stateStore.read('inst-1')).published).toEqual({
+      '@xbzbing/dsh-git-panel': { version: '2.0.0', at: '2026-10-05T08:00:00.000Z' }
+    })
+  })
+
+  it('升级后 view 返回嵌套 time 映射：同样能同步新版本发布时间', async () => {
+    const listV2 = JSON.stringify([
+      {
+        name: 'dsh-profile-web',
+        dependencies: {
+          '@xbzbing/dsh-git-panel': { from: '@xbzbing/dsh-git-panel', version: '2.0.0' }
+        }
+      }
+    ])
+    let upgraded = false
+    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
+      void command
+      if (args.includes('add')) {
+        upgraded = true
+        return { code: 0, stdout: '', stderr: '' }
+      }
+      if (args.includes('list')) return { code: 0, stdout: upgraded ? listV2 : LIST_JSON, stderr: '' }
+      if (args.includes('view')) {
+        return {
+          code: 0,
+          stdout: JSON.stringify({
+            time: { '1.1.0': '2026-09-20T02:30:00.000Z', '2.0.0': '2026-10-05T08:00:00.000Z' }
+          }),
+          stderr: ''
+        }
+      }
+      return { code: 0, stdout: '', stderr: '' }
+    })
+    const stateStore = memoryStore()
+    const manager = createPluginManager({ ...baseOptions(run), stateStore })
+    await manager.upgrade(localInstance(), '@xbzbing/dsh-git-panel', '2.0.0')
     expect((await stateStore.read('inst-1')).published).toEqual({
       '@xbzbing/dsh-git-panel': { version: '2.0.0', at: '2026-10-05T08:00:00.000Z' }
     })
