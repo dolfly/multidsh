@@ -29,7 +29,7 @@ import { compareDshVersions } from './version-compare'
 import { InstanceStoreError } from '../registry/instance-store'
 import { mergeLoginPath, resolveLoginPathOnce } from './login-path'
 import { mergeShellEnv, resolveShellEnvOnce } from './shell-env'
-import { evaluateDshPeers, githubUrlFrom, npmUrlFrom } from './peer-compatibility'
+import { dshPeerRange, evaluateDshPeers, githubUrlFrom, npmUrlFrom } from './peer-compatibility'
 import { createPluginStateStore } from './plugin-state'
 import type {
   AutoDisabledPlugin,
@@ -139,8 +139,6 @@ export interface RuntimeReconcileResult {
   /** 因与新版 dsh 不兼容而被禁用的插件。 */
   disabled: AutoDisabledPlugin[]
 }
-
-const DSH_PEER = '@deepseek-ai/dsh'
 
 /** 含 web-app bundle 的 profile 才有 HMR 服务（headless/SDK/ACP 显式关闭）。 */
 const WEB_APP_BUNDLE = '@deepseek-ai/dsh-web-app'
@@ -533,7 +531,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       githubUrl: githubUrlFrom(manifest.repository ?? manifest.homepage ?? null),
       iconDataUri: svgDataUri(iconBase64),
       dependencies: Object.keys(manifest.dependencies ?? {}),
-      dshPeer: manifest.peerDependencies?.[DSH_PEER] ?? null,
+      dshPeer: dshPeerRange(manifest.peerDependencies),
       nodeEngine: manifest.engines?.node ?? null,
       hasHostSide: typeof dsh.bundle?.patch === 'string' && dsh.bundle.patch !== '',
       hasClientSide: dsh.client !== undefined && dsh.client !== null,
@@ -622,7 +620,9 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         }
         const latest = meta.version ?? current.version
         const peers = meta.peerDependencies ?? {}
-        const dshPeer = peers[DSH_PEER] ?? null
+        // 展示用的 dsh 兼容范围：主包优先，否则取 dsh 子包的（锁步）公共范围——
+        // 只读主包会在只声明子包的插件上显示成空「dsh —」。
+        const dshPeer = dshPeerRange(peers)
         // 按**实际执行命令的** dsh 版本判定，与安装闸同口径：注册表字段可能与真正运行的副本不一致。
         const dshVersion = resolved.version
         // 与 dsh 加载器同口径：主包与全部 @deepseek-ai/dsh-* 子包 peer 都要满足运行时版本，

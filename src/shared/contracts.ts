@@ -731,7 +731,10 @@ export interface PluginInfo {
   iconDataUri: string | null
   /** 第三方运行时依赖名（不含 peer）。 */
   dependencies: string[]
-  /** `peerDependencies["@deepseek-ai/dsh"]` 范围；null = 未声明。 */
+  /**
+   * 展示用的 dsh 兼容范围：主包 `@deepseek-ai/dsh` 已声明则取其范围，否则取各
+   * `@deepseek-ai/dsh-*` 子包的（锁步）公共范围；null = 未声明任何 dsh peer。
+   */
   dshPeer: string | null
   /** `engines.node` 范围；null = 未声明。 */
   nodeEngine: string | null
@@ -761,6 +764,10 @@ export interface PluginUpdateCheck {
   hasUpdate: boolean
   /** latest 的 dsh peer 是否满足实例实际运行的 dsh 版本（与安装闸同口径）。 */
   compatible: boolean
+  /**
+   * 展示用的 dsh 兼容范围：主包优先，否则取各 `@deepseek-ai/dsh-*` 子包的公共范围；
+   * null = latest 未声明任何 dsh peer。兼容性判定仍覆盖全部子包，不止该展示值。
+   */
   dshPeer: string | null
   /** 执行插件命令所用 dsh 的版本；null = 未知（无法判定兼容，一律置 compatible=false）。 */
   dshVersion: string | null

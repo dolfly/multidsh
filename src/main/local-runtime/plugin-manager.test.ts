@@ -196,6 +196,8 @@ describe('createPluginManager.list', () => {
 
     const freeSearch = plugins.find((plugin) => plugin.name === 'dsh-free-search')!
     expect(freeSearch.dependencies).toEqual(['some-dep'])
+    // 只声明 dsh 子包（无主包 peer）：兼容范围取子包范围，不显示成空「dsh —」。
+    expect(freeSearch.dshPeer).toBe('^0.1.7-rc.1')
   })
 
   it('hub 副本与 PATH 都没有运行时：以 invalid-state 报「未找到可用的 dsh」，不落成内部错误', async () => {
@@ -458,9 +460,10 @@ describe('createPluginManager.check', () => {
     })
     const manager = createPluginManager(baseOptions(run))
     const check = await manager.check(localInstance({ dshVersion: '0.1.7-rc.2' }), '@xbzbing/dsh-git-panel')
-    // 主包 peer 未声明（dshPeer=null），但子包锁 0.2 → 整体不兼容，不给升级。
+    // 主包 peer 未声明，但子包锁 0.2 → 整体不兼容，不给升级；
+    // 展示范围回落到（锁步一致的）子包范围，不再显示成空「dsh —」。
     expect(check.compatible).toBe(false)
-    expect(check.dshPeer).toBe(null)
+    expect(check.dshPeer).toBe('^0.2.0-rc.1')
   })
 
   it('检查到有新版：结果落盘，checkState 可读回（切走再回来仍有标记）', async () => {

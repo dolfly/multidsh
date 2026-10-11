@@ -113,9 +113,34 @@ export function satisfiesDshPeer(range: string | null | undefined, dshVersion: s
   }
 }
 
+/** dsh 主包名。 */
+const DSH_MAIN_PEER = '@deepseek-ai/dsh'
+
 /** dsh 主包及其子包 peer 名（`@deepseek-ai/dsh` 或 `@deepseek-ai/dsh-*`）；dsh 加载器按整套版本闸判定。 */
 export function isDshPeerName(name: string): boolean {
-  return name === '@deepseek-ai/dsh' || name.startsWith('@deepseek-ai/dsh-')
+  return name === DSH_MAIN_PEER || name.startsWith('@deepseek-ai/dsh-')
+}
+
+/**
+ * 从 peerDependencies 派生用于展示的 dsh 兼容范围（「兼容版本」字段与不兼容提示共用）。
+ * 插件的 dsh 兼容性由主包 `@deepseek-ai/dsh` 与各 `@deepseek-ai/dsh-*` 子包 peer 共同声明；
+ * 现代插件常只声明若干锁步一致的子包而不声明主包，只读主包会把范围显示成空（「dsh —」）。
+ * 规则：主包已声明则取主包；否则取各 dsh 子包范围——锁步下彼此一致时取该公共范围，
+ * 万一不一致则按 peer 名排序去重后以 ` | ` 连接。无任何非空 dsh peer 时返回 null。
+ */
+export function dshPeerRange(peers: Record<string, string> | null | undefined): string | null {
+  if (!peers) return null
+  const main = peers[DSH_MAIN_PEER]
+  if (typeof main === 'string' && main.trim() !== '') return main.trim()
+  const subRanges = Object.entries(peers)
+    .filter(
+      ([name, range]) => isDshPeerName(name) && typeof range === 'string' && range.trim() !== ''
+    )
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, range]) => range.trim())
+  if (subRanges.length === 0) return null
+  // 锁步下各子包范围一致 → 去重后恰好一项；join 对单项即返回该项本身。
+  return [...new Set(subRanges)].join(' | ')
 }
 
 /** 不满足运行时版本的 dsh peer 明细（名 → 声明范围）。 */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateDshPeers, githubUrlFrom, isDshPeerName, npmUrlFrom, satisfiesDshPeer } from './peer-compatibility'
+import { dshPeerRange, evaluateDshPeers, githubUrlFrom, isDshPeerName, npmUrlFrom, satisfiesDshPeer } from './peer-compatibility'
 
 describe('satisfiesDshPeer', () => {
   it('空/缺省范围视为无约束', () => {
@@ -151,6 +151,38 @@ describe('evaluateDshPeers', () => {
   it('无 peer 或空 → 空对象', () => {
     expect(evaluateDshPeers(null, '0.1.7')).toEqual({})
     expect(evaluateDshPeers({}, '0.1.7')).toEqual({})
+  })
+})
+
+describe('dshPeerRange', () => {
+  it('主包已声明 → 取主包范围（优先于子包）', () => {
+    const peers = { '@deepseek-ai/dsh': '>=0.1.7-rc.2', '@deepseek-ai/dsh-llm': '^0.2.0-rc.1', react: '^18' }
+    expect(dshPeerRange(peers)).toBe('>=0.1.7-rc.2')
+  })
+
+  it('只声明子包且锁步一致 → 取公共范围（修复「dsh —」）', () => {
+    const peers = {
+      react: '^18.2.0',
+      '@deepseek-ai/dsh-skill': '0.2.0-rc.1 || 0.2.0-rc.2',
+      '@deepseek-ai/dsh-session': '0.2.0-rc.1 || 0.2.0-rc.2',
+      '@deepseek-ai/dsh-client-ui-slots': '0.2.0-rc.1 || 0.2.0-rc.2'
+    }
+    expect(dshPeerRange(peers)).toBe('0.2.0-rc.1 || 0.2.0-rc.2')
+  })
+
+  it('子包范围不一致 → 按 peer 名排序去重后以 | 连接', () => {
+    const peers = {
+      '@deepseek-ai/dsh-session': '^0.2.0',
+      '@deepseek-ai/dsh-llm': '^0.1.0'
+    }
+    expect(dshPeerRange(peers)).toBe('^0.1.0 | ^0.2.0')
+  })
+
+  it('无任何 dsh peer / 空 / 空白范围 → null', () => {
+    expect(dshPeerRange(null)).toBe(null)
+    expect(dshPeerRange({})).toBe(null)
+    expect(dshPeerRange({ react: '^18', '@deepseek-ai/cordis': '^4' })).toBe(null)
+    expect(dshPeerRange({ '@deepseek-ai/dsh': '  ', '@deepseek-ai/dsh-llm': '' })).toBe(null)
   })
 })
 
