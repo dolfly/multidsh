@@ -38,6 +38,8 @@ function fmtLogTime(iso: string): string {
 
 let app: ElectronApplication
 let win: Page
+/** 播种的实例 id：直接写 plugin-state 文件定位状态文件时需要它。 */
+let instanceId = ''
 
 /**
  * 假 dsh 入口：只认 `plugin --profile <p> <sub> ...`。
@@ -125,6 +127,7 @@ test.beforeAll(async () => {
   )
   expect(created.ok).toBe(true)
   if (!created.ok) throw new Error('创建实例失败')
+  instanceId = created.value.id
   // 播种 profile package.json：dsh 的加载清单决定「启用/禁用」，hub 改的就是它。
   const profileDir = join(DATA_DIR, 'homes', created.value.id, 'profiles', 'web')
   await mkdir(profileDir, { recursive: true })
@@ -293,4 +296,69 @@ test('禁用/启用：禁用后仍在列表可见并标注已禁用，可再次�
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-checked', 'true', { timeout: 15_000 })
   await expect(win.getByTestId('plugin-disabled-demo-plugin')).toHaveCount(0)
+})
+
+test('陈旧的检查记录（旧版本写入 / 已装版本更高）→ 不再显示过期提示', async () => {
+  test.setTimeout(90_000)
+  const stateDir = join(DATA_DIR, 'plugin-state')
+  await mkdir(stateDir, { recursive: true })
+  const stateFile = join(stateDir, `${instanceId}.json`)
+
+  /** 覆盖状态文件后重载并打开详情，等插件行出现。 */
+  const seed = async (updates: Record<string, unknown>): Promise<void> => {
+    await writeFile(
+      stateFile,
+      JSON.stringify({
+        lastCheckedAt: '2026-09-29T10:00:00.000Z',
+        updates,
+        published: {},
+        bundleIndex: {},
+        runtimeVersion: null,
+        autoDisabled: []
+      }),
+      'utf8'
+    )
+    await win.reload()
+    await expect(win.getByTestId('view-home').or(win.getByTestId('view-detail'))).toBeVisible({
+      timeout: 15_000
+    })
+    await openDetail()
+    await expect(win.getByTestId('plugin-row-demo-plugin')).toBeVisible({ timeout: 15_000 })
+  }
+
+  // 记录与已装版本（1.0.0）一致 → 正常恢复为「不兼容」警告。
+  await seed({
+    'demo-plugin': {
+      current: '1.0.0',
+      latest: '1.1.0',
+      compatible: false,
+      dshPeer: '>=0.2.0',
+      dshVersion: VERSION
+    }
+  })
+  await expect(win.getByTestId('plugin-incompatible-demo-plugin')).toBeVisible({ timeout: 15_000 })
+
+  // 旧版本写入的记录（无 current）：无法校验是否仍适用 → 丢弃，不再显示过期提示。
+  await seed({
+    'demo-plugin': {
+      latest: '0.9.5',
+      compatible: false,
+      dshPeer: '>=0.2.0',
+      dshVersion: VERSION
+    }
+  })
+  await expect(win.getByTestId('plugin-incompatible-demo-plugin')).toHaveCount(0)
+  await expect(win.getByTestId('plugin-upgrade-demo-plugin')).toHaveCount(0)
+
+  // 记录来自更早的已装版本（手动装了更新版）：同样失效。
+  await seed({
+    'demo-plugin': {
+      current: '0.9.0',
+      latest: '0.9.5',
+      compatible: false,
+      dshPeer: '>=0.2.0',
+      dshVersion: VERSION
+    }
+  })
+  await expect(win.getByTestId('plugin-incompatible-demo-plugin')).toHaveCount(0)
 })

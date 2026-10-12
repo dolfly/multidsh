@@ -629,7 +629,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         // 任一不满足即不兼容（0.24.1 的子包锁 ^0.2.0-rc.1，实例 0.1.7-rc.2 会被拦）。
         const incompatiblePeers = evaluateDshPeers(peers, dshVersion)
         const compatible = Object.keys(incompatiblePeers).length === 0
-        const hasUpdate = latest !== current.version
+        // 按版本序判定：已装版本高于候选（如手动装了更新版）不算「有更新」。
+        const hasUpdate = compareDshVersions(current.version, latest) < 0
         const published = publishedTimeMap(result.stdout)?.[current.version]
         const publishedAt = typeof published === 'string' && published !== '' ? published : null
         // 落盘：有新版留下标记，已是最新清掉该项（标记只在再次检查或升级时变化）；
@@ -637,7 +638,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         await persistCheck(
           instance.id,
           name,
-          hasUpdate ? { latest, compatible, dshPeer, dshVersion } : null,
+          hasUpdate ? { current: current.version, latest, compatible, dshPeer, dshVersion } : null,
           publishedAt !== null ? { version: current.version, at: publishedAt } : null
         )
         return { name, current: current.version, latest, hasUpdate, compatible, dshPeer, dshVersion, publishedAt }

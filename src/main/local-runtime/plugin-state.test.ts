@@ -40,6 +40,7 @@ describe('createPluginStateStore', () => {
       autoDisabled: [],
       updates: {
         'dsh-better-sidebar': {
+          current: '0.23.0',
           latest: '0.24.1',
           compatible: true,
           dshPeer: '^0.2.0-rc.1',
@@ -50,6 +51,7 @@ describe('createPluginStateStore', () => {
     })
     const state = await store.read('inst-1')
     expect(state.lastCheckedAt).toBe('2026-09-29T10:00:00.000Z')
+    expect(state.updates['dsh-better-sidebar']?.current).toBe('0.23.0')
     expect(state.updates['dsh-better-sidebar']?.latest).toBe('0.24.1')
     expect(state.updates['dsh-better-sidebar']?.compatible).toBe(true)
     expect(state.bundleIndex['dsh-better-sidebar']).toBe(7)
@@ -87,12 +89,16 @@ describe('createPluginStateStore', () => {
     await writeFile(join(root, 'plugin-state', 'broken.json'), '{not json', 'utf8')
     expect(await store.read('broken')).toEqual(EMPTY)
 
-    // 脏字段：缺 latest 的更新项、缺 version/at 的发布时间快照被丢弃，其余保留
+    // 脏字段：缺 latest / 缺「检查时的已装版本」的更新项、缺 version/at 的发布时间快照被丢弃，其余保留
     await writeFile(
       join(root, 'plugin-state', 'dirty.json'),
       JSON.stringify({
         lastCheckedAt: 42,
-        updates: { ok: { latest: '1.0.0' }, bad: { compatible: true } },
+        updates: {
+          ok: { current: '0.9.0', latest: '1.0.0' },
+          bad: { compatible: true },
+          noCurrent: { latest: '1.0.0' }
+        },
         published: {
           ok: { version: '1.0.0', at: '2026-09-28T15:37:38.360Z' },
           noVersion: { at: '2026-09-28T15:37:38.360Z' },

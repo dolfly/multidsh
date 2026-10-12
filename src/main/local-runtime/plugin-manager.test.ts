@@ -486,6 +486,7 @@ describe('createPluginManager.check', () => {
 
     const snapshot = await manager.checkState(localInstance())
     expect(snapshot.updates['@xbzbing/dsh-git-panel']).toEqual({
+      current: '1.1.0',
       latest: '2.0.0',
       compatible: true,
       dshPeer: '>=0.1.7-rc.2',
@@ -498,6 +499,27 @@ describe('createPluginManager.check', () => {
     expect(plugins.find((plugin) => plugin.name === '@xbzbing/dsh-git-panel')?.publishedAt).toBe(
       '2026-09-20T02:30:00.000Z'
     )
+  })
+
+  it('已装版本高于 registry latest（手动装了更新版）→ 不算有更新，也不落盘标记', async () => {
+    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
+      void command
+      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
+      // 已装 1.1.0，registry latest 1.0.9（更旧）→ 不应报「有更新」。
+      return {
+        code: 0,
+        stdout: JSON.stringify({
+          version: '1.0.9',
+          peerDependencies: { '@deepseek-ai/dsh': '>=0.1.7-rc.2' }
+        }),
+        stderr: ''
+      }
+    })
+    const stateStore = memoryStore()
+    const manager = createPluginManager({ ...baseOptions(run), stateStore })
+    const check = await manager.check(localInstance(), '@xbzbing/dsh-git-panel')
+    expect(check.hasUpdate).toBe(false)
+    expect((await stateStore.read('inst-1')).updates).toEqual({})
   })
 
   it('已是最新：清掉可升级标记，但发布时间快照留下（同一版本发布时间恒定）', async () => {
@@ -521,6 +543,7 @@ describe('createPluginManager.check', () => {
       stateWith({
         updates: {
           '@xbzbing/dsh-git-panel': {
+            current: '1.0.0',
             latest: '1.0.9',
             compatible: true,
             dshPeer: null,
@@ -611,6 +634,7 @@ describe('createPluginManager.check', () => {
         lastCheckedAt: '2026-09-29T00:00:00.000Z',
         updates: {
           '@xbzbing/dsh-git-panel': {
+            current: '1.1.0',
             latest: '2.0.0',
             compatible: true,
             dshPeer: null,
@@ -679,6 +703,7 @@ describe('createPluginManager.check', () => {
         lastCheckedAt: '2026-09-29T00:00:00.000Z',
         updates: {
           '@xbzbing/dsh-git-panel': {
+            current: '1.1.0',
             latest: '2.0.0',
             compatible: true,
             dshPeer: null,

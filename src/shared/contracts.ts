@@ -805,8 +805,16 @@ export interface PluginEnableResult {
   exemptionGranted: { pluginVersion: string; dshVersion: string } | null
 }
 
-/** 单个插件持久化的检查结果（不含「当前版本」，由渲染层按已装版本现算是否有更新）。 */
+/**
+ * 单个插件持久化的检查结果。
+ *
+ * `current` 记录本次检查时的已装版本：结果只对该版本有效，版本一旦变化
+ * （hub 升级、手动安装/降级）即失效，渲染层据此丢弃陈旧记录，避免拿旧版本的
+ * 候选信息当成本次结果（如已装 1.1.17 仍提示升级 1.1.15）。
+ */
 export interface PluginCheckRecord {
+  /** 本次检查时的已装版本。 */
+  current: string
   latest: string
   compatible: boolean
   dshPeer: string | null

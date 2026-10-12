@@ -80,7 +80,11 @@ function parseState(raw: unknown): PluginCheckState {
   for (const [name, value] of Object.entries(source)) {
     if (!isRecord(value)) continue
     if (typeof value.latest !== 'string' || value.latest === '') continue
+    // 缺「检查时的已装版本」的记录无法校验是否仍适用（更早版本写入的），一律丢弃：
+    // 宁可回到「未检查」，也不拿可能过期的候选信息当结果。
+    if (typeof value.current !== 'string' || value.current === '') continue
     updates[name] = {
+      current: value.current,
       latest: value.latest,
       compatible: value.compatible !== false,
       dshPeer: typeof value.dshPeer === 'string' ? value.dshPeer : null,

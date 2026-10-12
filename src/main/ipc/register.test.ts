@@ -763,7 +763,7 @@ describe('registerIpc', () => {
     if (!created.ok) throw new Error('创建失败')
     pluginManagerFake.checkState.mockResolvedValueOnce({
       lastCheckedAt: '2026-09-29T10:00:00.000Z',
-      updates: { p: { latest: '2.0.0', compatible: true, dshPeer: null, dshVersion: null } },
+      updates: { p: { current: '1.0.0', latest: '2.0.0', compatible: true, dshPeer: null, dshVersion: null } },
       checking: []
     })
     const result = (await invoke('plugin:checkState', created.value.id)) as {

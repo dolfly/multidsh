@@ -154,11 +154,17 @@ describe('restoreChecks（由持久化快照恢复标记）', () => {
     expect(restoreChecks([plugin('a', '1.0.0')], null)).toEqual({})
   })
 
-  it('快照 latest 高于已装版本 → 恢复为「可升级」', () => {
+  it('记录与已装版本一致且候选更高 → 恢复为「可升级」', () => {
     const restored = restoreChecks([plugin('a', '1.0.0')], {
       lastCheckedAt: '2026-09-29T10:00:00.000Z',
       updates: {
-        a: { latest: '1.2.0', compatible: true, dshPeer: null, dshVersion: '0.2.0-rc.1' }
+        a: {
+          current: '1.0.0',
+          latest: '1.2.0',
+          compatible: true,
+          dshPeer: null,
+          dshVersion: '0.2.0-rc.1'
+        }
       },
       checking: [],
       autoDisabled: []
@@ -167,11 +173,29 @@ describe('restoreChecks（由持久化快照恢复标记）', () => {
     expect(restored.a?.result).toMatchObject({ current: '1.0.0', latest: '1.2.0', hasUpdate: true })
   })
 
-  it('latest 等于已装版本（已升级过）→ 不显示标记', () => {
+  it('记录来自更早的已装版本（已升级过）→ 不显示标记', () => {
     const restored = restoreChecks([plugin('a', '1.2.0')], {
       lastCheckedAt: null,
       updates: {
-        a: { latest: '1.2.0', compatible: true, dshPeer: null, dshVersion: null }
+        a: { current: '1.0.0', latest: '1.2.0', compatible: true, dshPeer: null, dshVersion: null }
+      },
+      checking: [],
+      autoDisabled: []
+    })
+    expect(restored.a).toBeUndefined()
+  })
+
+  it('已装版本高于记录中的候选（手动装了更新版）→ 丢弃陈旧标记', () => {
+    const restored = restoreChecks([plugin('a', '1.1.17')], {
+      lastCheckedAt: null,
+      updates: {
+        a: {
+          current: '1.1.13',
+          latest: '1.1.15',
+          compatible: false,
+          dshPeer: null,
+          dshVersion: '0.2.1-alpha.2'
+        }
       },
       checking: [],
       autoDisabled: []
@@ -183,7 +207,7 @@ describe('restoreChecks（由持久化快照恢复标记）', () => {
     const restored = restoreChecks([plugin('a', '1.0.0')], {
       lastCheckedAt: null,
       updates: {
-        a: { latest: '1.2.0', compatible: true, dshPeer: null, dshVersion: null }
+        a: { current: '1.0.0', latest: '1.2.0', compatible: true, dshPeer: null, dshVersion: null }
       },
       checking: ['a'],
       autoDisabled: []
@@ -195,7 +219,7 @@ describe('restoreChecks（由持久化快照恢复标记）', () => {
     const restored = restoreChecks([plugin('b', '1.0.0')], {
       lastCheckedAt: null,
       updates: {
-        a: { latest: '9.9.9', compatible: true, dshPeer: null, dshVersion: null }
+        a: { current: '1.0.0', latest: '9.9.9', compatible: true, dshPeer: null, dshVersion: null }
       },
       checking: [],
       autoDisabled: []

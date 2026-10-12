@@ -50,7 +50,9 @@ export function restoreChecks(
       continue
     }
     const record = snapshot.updates[plugin.name]
-    if (record === undefined || record.latest === plugin.version) continue
+    // 记录只对「检查时的已装版本」有效：版本变了（hub 升级、手动安装/降级）旧结果即失效，
+    // 否则会拿旧版本的候选信息当成本次结果（如已装 1.1.17 仍提示升级 1.1.15）。
+    if (record === undefined || record.current !== plugin.version) continue
     next[plugin.name] = {
       status: 'done',
       result: {
