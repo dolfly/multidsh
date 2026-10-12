@@ -261,6 +261,11 @@ export function createWindowController(deps: WindowControllerDeps): WindowContro
     })
     // 切换应用时隐藏提示窗，防止残留；切回时恢复工作区键盘焦点。
     win.on('blur', () => {
+      // 排查「DSH 丢焦点给其它应用」方向：记录失焦时刻与是否已无 DSH 窗口在前台。
+      // 与 openExternal 日志对齐——紧邻 openExternal 则为 DSH 主动让出，否则为对方抢占。
+      focusDebug(
+        `[create-window] win.blur appFocused=${String(BrowserWindow.getFocusedWindow() !== null)}`
+      )
       deps.getWorkspaceTooltipHost().hide()
     })
     win.on('focus', () => {

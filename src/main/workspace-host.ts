@@ -100,6 +100,9 @@ export function createWorkspaceHost(
       if (isAllowedInstanceNavigation(url, entry.originUrl)) {
         return { action: 'deny' }
       }
+      // 排查「DSH 丢焦点给浏览器」方向：工作区内 target="_blank" 外链会经系统浏览器
+      // 打开并激活它，把前台让给浏览器。记录来源与脱敏 URL，供与 win.blur 对齐。
+      focusDebug(`[workspace-host] openExternal source=workspace-target-blank url=${redactUrl(url)}`)
       openExternalSafely(url, shell.openExternal.bind(shell))
       return { action: 'deny' }
     })

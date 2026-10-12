@@ -39,6 +39,8 @@ import { openInstanceDir, openInstanceLogDir } from './shell/open-instance-dir'
 import { consolidatePluginLogsForInstances } from './shell/prune-plugin-logs'
 import { createGracefulQuit } from './shell/graceful-quit'
 import { openExternalSafely } from './window-host-policy'
+import { focusDebug } from './shell/focus-debug'
+import { redactUrl } from '@shared/redact'
 import type { Vault } from './vault/vault'
 import type { Settings } from '@shared/settings'
 import { createWorkspaceHost } from './workspace-host'
@@ -317,7 +319,11 @@ void app.whenReady().then(() => {
   })
   // 目标地址固定为项目主页(通道无 URL 参数),渲染层无法指定其他站点。
   const homepageOpener = createHomepageOpener({
-    openExternal: (url) => shell.openExternal(url)
+    openExternal: (url) => {
+      // 排查「DSH 丢焦点给浏览器」方向：「关于」面板打开项目主页会激活系统浏览器。
+      focusDebug(`[index] openExternal source=about-homepage url=${redactUrl(url)}`)
+      return shell.openExternal(url)
+    }
   })
 
   workspaceHost.setCacheLimit(settings.read().workspaceCacheSize)
@@ -376,6 +382,9 @@ void app.whenReady().then(() => {
     hideInstanceView: () => workspaceHost.hide(),
     // 在系统默认浏览器中打开实例地址：仅放行 http/https/mailto，其余协议拒绝。
     openExternalUrl: async (url) => {
+      // 排查「DSH 丢焦点给浏览器」方向：插件/渲染层经此开外链会激活系统浏览器、
+      // 把前台让给它。记录脱敏 URL，供与 win.blur 日志对齐判定主动让出还是被抢。
+      focusDebug(`[index] openExternal source=plugin-or-renderer url=${redactUrl(url)}`)
       openExternalSafely(url, (target) => shell.openExternal(target))
     },
     closeInstanceView: (instanceId) => workspaceHost.disconnect(instanceId),
