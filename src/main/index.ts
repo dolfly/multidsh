@@ -220,7 +220,11 @@ const gracefulQuit = createGracefulQuit({
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
 if (!hasSingleInstanceLock) app.quit()
 else {
-  app.on('second-instance', () => windowController.showHubWindow())
+  app.on('second-instance', () => {
+    // 排查前台抢焦点：再次启动 App 会触发该事件并把窗口顶到前台。
+    focusDebug('[index] app.second-instance')
+    windowController.showHubWindow()
+  })
 }
 
 // 无头 E2E 里 Chromium 探测不到桌面环境,safeStorage 会回退 basic_text(非真加密),
@@ -471,9 +475,12 @@ void app.whenReady().then(() => {
 
   runtimeController.startAutoStart()
 
-  app.on('activate', () => {
+  app.on('activate', (_event, hasVisibleWindows) => {
     // macOS 惯例：点击 Dock 图标时把窗口带回前台。窗口可能仍然存在但处于隐藏状态
     // （「关闭时最小化到托盘」），此时只判断「有没有窗口」会让点击毫无反应。
+    // 排查前台抢焦点：记录 activate 触发时是否已有可见窗口——若 hasVisibleWindows=true
+    // 仍走 showHubWindow 的 show()+focus()，可能是 activate 把已可见窗口顶到前台抢焦点。
+    focusDebug(`[index] app.activate hasVisibleWindows=${String(hasVisibleWindows)}`)
     windowController.showHubWindow()
   })
 

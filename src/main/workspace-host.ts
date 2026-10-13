@@ -206,8 +206,16 @@ export function createWorkspaceHost(
     )
     if (!winFocused) return
     // 等本次布局提交完成后再转移键盘焦点，避免与窗口激活过程互相覆盖。
+    // 关键：在 setImmediate 回调里**再次**校验窗口是否仍聚焦——同步校验到延迟执行
+    // 之间用户可能已切到其它应用（win 已 blur），此时若仍 webContents.focus()，会把
+    // 窗口抢回前台、夺走其它应用（如如流）的焦点。竞态期失焦则放弃本次聚焦。
     setImmediate(() => {
       if (entry.view.webContents.isDestroyed()) return
+      const current = getHubWindow()
+      if (!current || current.isDestroyed() || !current.isFocused()) {
+        focusDebug(`[workspace-host] focusEntry deferred-skip source=${source} (blurred before setImmediate)`)
+        return
+      }
       entry.view.webContents.focus()
     })
   }
