@@ -1,5 +1,6 @@
 import { BrowserWindow, type BrowserWindowConstructorOptions } from 'electron'
 import type { WorkspaceTooltip } from '@shared/contracts'
+import { focusDebug } from './shell/focus-debug'
 
 export interface WorkspaceTooltipHost {
   show(tooltip: WorkspaceTooltip): Promise<void>
@@ -93,6 +94,14 @@ export function createWorkspaceTooltipHost(
       const request = ++displayRequest
       const parent = getHubWindow()
       if (!parent || parent.isDestroyed()) return
+      // 仅在前台显示：对浮动子窗口 showInactive 会把宿主窗口组排到最前；应用在后台时
+      // 这个置前请求被 macOS 挂起数秒后批准，会把整个应用顶回前台抢走其它应用的焦点。
+      if (!parent.isFocused()) {
+        focusDebug('[workspace-tooltip] show skipped: hub window blurred')
+        validWindow()?.hide()
+        return
+      }
+      focusDebug('[workspace-tooltip] show focused=true')
       const nativeTooltip = ensureWindow(parent)
       const parentBounds = parent.getContentBounds()
       const width = tooltipWidth(tooltip.text) + TOOLTIP_PADDING * 2

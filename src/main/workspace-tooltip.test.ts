@@ -44,9 +44,10 @@ function windows(): TestWindow[] {
   return (BrowserWindow as unknown as { instances: TestWindow[] }).instances
 }
 
-function hubWindow() {
+function hubWindow(focused = true) {
   return {
     isDestroyed: vi.fn(() => false),
+    isFocused: vi.fn(() => focused),
     getContentBounds: vi.fn(() => ({ x: 100, y: 200, width: 1200, height: 800 }))
   }
 }
@@ -97,6 +98,31 @@ describe('createWorkspaceTooltipHost', () => {
     host.hide()
 
     expect(windows()[0]?.hide).toHaveBeenCalledOnce()
+  })
+
+  it('宿主窗口已失焦时跳过显示，避免重排浮动窗口把应用顶到前台抢焦点', async () => {
+    const hub = hubWindow(false)
+    const host = createWorkspaceTooltipHost(() => hub as never)
+    await host.show({ text: '实例', x: 72, y: 160 })
+
+    // 不创建窗口、不 setBounds、不 showInactive：任何重排都会触发 macOS 焦点延迟机制，
+    // 数秒后把后台应用批准为前台。
+    expect(windows()).toHaveLength(0)
+  })
+
+  it('已显示的提示在宿主窗口失焦后的 show 请求中被隐藏', async () => {
+    const focused = hubWindow(true)
+    const host = createWorkspaceTooltipHost(() => focused as never)
+    await host.show({ text: '实例', x: 72, y: 160 })
+    expect(windows()[0]?.showInactive).toHaveBeenCalledOnce()
+
+    // 用户切走应用，renderer 的悬停 debounce 随后到期
+    focused.isFocused.mockReturnValue(false)
+    await host.show({ text: '另一实例', x: 72, y: 200 })
+
+    expect(windows()[0]?.hide).toHaveBeenCalled()
+    expect(windows()[0]?.setBounds).toHaveBeenCalledOnce()
+    expect(windows()[0]?.showInactive).toHaveBeenCalledOnce()
   })
 
   it('被更新请求中止的加载静默退出，只显示最新请求', async () => {
