@@ -5,6 +5,13 @@ import { Modal } from './Modal'
 
 const BRIDGE = window.dshHub
 
+/** 把注入的 ISO 打包时间格式化为本地时间；'unknown'/缺失/非法值原样回落 'unknown'。 */
+function formatBuildTime(iso: string | undefined): string {
+  if (!iso || iso === 'unknown') return 'unknown'
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? 'unknown' : date.toLocaleString()
+}
+
 /**
  * 「关于」面板：应用版本、项目主页链接与运行组件版本。
  *
@@ -37,6 +44,8 @@ export default function AboutDialog() {
       ]
     : []
 
+  const buildTime = formatBuildTime(info?.buildTime)
+
   return (
     <Modal
       title={t('about.title')}
@@ -55,6 +64,18 @@ export default function AboutDialog() {
         >
           {t('about.homepage')} ↗
         </button>
+        {info && (
+          <dl className="about-build">
+            <div className="about-row">
+              <dt>{t('about.build')}</dt>
+              <dd data-testid="about-build-commit">{info.buildCommit}</dd>
+            </div>
+            <div className="about-row">
+              <dt>{t('about.buildTime')}</dt>
+              <dd data-testid="about-build-time">{buildTime}</dd>
+            </div>
+          </dl>
+        )}
         <section className="about-components">
           <h3>{t('about.components')}</h3>
           <dl>

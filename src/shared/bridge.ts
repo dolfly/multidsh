@@ -58,6 +58,10 @@ export const IPC = {
 export interface AppInfo {
   /** package.json 版本（app.getVersion()） */
   appVersion: string
+  /** 构建期注入的 git 短 hash；无 git 时为 'unknown' */
+  buildCommit: string
+  /** 构建期注入的打包时刻（pnpm build 执行时间，ISO 8601）；无法注入时为 'unknown' */
+  buildTime: string
   platform: string
   arch: string
   /** 渲染引擎版本（Electron 内嵌 Chromium） */

@@ -9,6 +9,13 @@ import { systemLocale } from '../system-locale'
 /** ping 入参：字符串或省略/null；与其余通道一致在边界走 zod 校验。 */
 const PingMessageSchema = z.string().max(4096).nullish()
 
+// 构建期由 electron.vite.config.ts 的 define 文本替换；非构建环境（如单测）无此全局，
+// typeof 守卫避免 ReferenceError 并回落 'unknown'。
+declare const __DSH_BUILD_COMMIT__: string
+declare const __DSH_BUILD_TIME__: string
+const BUILD_COMMIT = typeof __DSH_BUILD_COMMIT__ === 'string' ? __DSH_BUILD_COMMIT__ : 'unknown'
+const BUILD_TIME = typeof __DSH_BUILD_TIME__ === 'string' ? __DSH_BUILD_TIME__ : 'unknown'
+
 export function registerAppHandlers(
   processVersions: NodeJS.ProcessVersions & { electron?: string },
   wrap: <T>(task: () => Promise<T> | T) => Promise<IpcResult<T>>
@@ -16,6 +23,8 @@ export function registerAppHandlers(
   ipcMain.handle(IPC.info, (): Promise<IpcResult<AppInfo>> =>
     wrap(() => ({
       appVersion: app.getVersion(),
+      buildCommit: BUILD_COMMIT,
+      buildTime: BUILD_TIME,
       platform: process.platform,
       arch: process.arch,
       chrome: process.versions.chrome,
