@@ -1,6 +1,6 @@
 {
   "name": "dsh-hub-desktop",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "DSH Hub — 多实例 dsh 桌面管理中心:本地 / SSH / 远程认证实例统一管理",
   "main": "./out/main/index.js",
   "private": true,
