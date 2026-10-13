@@ -3,7 +3,7 @@ import { _electron as electron, expect, test } from '@playwright/test'
 import { buildLaunchArgs } from './launch-args'
 import { closeAboutWithEscape, expectAboutClosed, openAboutViaMenu } from './about-menu'
 import { backToOverview } from './overview'
-import type { ElectronApplication, Page } from '@playwright/test'
+import type { ElectronApplication, Locator, Page } from '@playwright/test'
 import { mkdir, readFile, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
@@ -26,6 +26,31 @@ let fakeDshPort: number | null = null
 let fakeGatewayPort: number | null = null
 
 const launchArgs = buildLaunchArgs()
+
+/**
+ * 打开新建向导到「配置」步并等待外部 dsh 扫描结果卡片出现。
+ *
+ * Windows 扫描走 PowerShell/CIM + netstat,冷启动慢且偶发单次失败;失败时
+ * 扫描退化为空结果,向导在本次打开期间不再重扫,故等待超时后关掉向导重开,
+ * 触发一次新的扫描。两轮各自等待 30s,覆盖扫描器最坏预算(PowerShell 15s +
+ * netstat 10s)加渲染余量。
+ */
+async function openWizardAwaitingExternalScan(): Promise<Locator> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await win.getByTestId('new-instance-btn').click()
+    await win.getByRole('button', { name: '下一步' }).click()
+    const external = win.getByTestId('wizard-external-dsh')
+    try {
+      await expect(external).toBeVisible({ timeout: 30_000 })
+      return external
+    } catch (error) {
+      if (attempt === 1) throw error
+      await win.getByTestId('wizard').getByRole('button', { name: '关闭' }).click()
+      await expect(win.getByTestId('wizard')).toBeHidden()
+    }
+  }
+  throw new Error('unreachable')
+}
 
 test.beforeAll(async () => {
   await rm(DATA_DIR, { recursive: true, force: true })
@@ -159,12 +184,10 @@ test('HTTP 实例未启动也能直接打开视图', async () => {
 })
 
 test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，不新建实例', async () => {
-  // Windows 首次扫描走 PowerShell/CIM,冷启动明显慢于 POSIX 的 ps+lsof
-  test.setTimeout(90_000)
-  await win.getByTestId('new-instance-btn').click()
-  await win.getByRole('button', { name: '下一步' }).click()
-  const external = win.getByTestId('wizard-external-dsh')
-  await expect(external).toBeVisible({ timeout: 20_000 })
+  // Windows 首次扫描走 PowerShell/CIM,冷启动明显慢于 POSIX 的 ps+lsof;
+  // 两轮各等 30s + 重启复扫,给足扫描器最坏预算
+  test.setTimeout(180_000)
+  const external = await openWizardAwaitingExternalScan()
   await win.getByTestId('wizard-name').fill('重启后复用实例')
   await external.getByRole('checkbox').check()
   await win.getByTestId('wizard-external-access').fill('test-restart-token')
@@ -192,10 +215,7 @@ test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，
   })
   win = await app.firstWindow()
   await expect(win.getByTestId('app-shell')).toBeVisible()
-  await win.getByTestId('new-instance-btn').click()
-  await win.getByRole('button', { name: '下一步' }).click()
-  const reopenedExternal = win.getByTestId('wizard-external-dsh')
-  await expect(reopenedExternal).toBeVisible({ timeout: 20_000 })
+  const reopenedExternal = await openWizardAwaitingExternalScan()
   await reopenedExternal.getByRole('checkbox').check()
   await expect(win.getByTestId('wizard-name')).toHaveValue('重启后复用实例')
   await expect(win.getByTestId('wizard-external-access')).toHaveValue('')
