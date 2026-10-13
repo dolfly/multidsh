@@ -125,6 +125,22 @@ describe('createWorkspaceTooltipHost', () => {
     expect(windows()[0]?.showInactive).toHaveBeenCalledOnce()
   })
 
+  it('E2E 隐藏模式下窗口不聚焦也照常显示（用例据此校验提示样式）', async () => {
+    const hub = hubWindow(false)
+    const host = createWorkspaceTooltipHost(() => hub as never, undefined, { e2eHidden: true })
+    await host.show({ text: '实例', x: 72, y: 160 })
+
+    expect(windows()[0]?.showInactive).toHaveBeenCalledOnce()
+  })
+
+  it('E2E 隐藏模式不影响守卫之外的默认行为', async () => {
+    const hub = hubWindow(true)
+    const host = createWorkspaceTooltipHost(() => hub as never, undefined, {})
+    await host.show({ text: '实例', x: 72, y: 160 })
+
+    expect(windows()[0]?.showInactive).toHaveBeenCalledOnce()
+  })
+
   it('被更新请求中止的加载静默退出，只显示最新请求', async () => {
     const hub = hubWindow()
     // 复现真实导航语义:同一 webContents 上后一次 loadURL 会中止前一次在途导航

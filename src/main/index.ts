@@ -137,7 +137,11 @@ const workspaceHost = createWorkspaceHost(
       hubWindow.webContents.send(WORKSPACE_HOTKEY_EVENT, event)
   }
 )
-const workspaceTooltipHost = createWorkspaceTooltipHost(() => windowController.getHubWindow())
+const workspaceTooltipHost = createWorkspaceTooltipHost(
+  () => windowController.getHubWindow(),
+  undefined,
+  { e2eHidden }
+)
 
 let vault: Vault | null = null
 

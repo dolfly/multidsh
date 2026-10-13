@@ -41,13 +41,22 @@ function escapeHtml(value: string): string {
   })
 }
 
+export interface WorkspaceTooltipHostOptions {
+  /**
+   * E2E 隐藏模式（窗口不显示也不聚焦）下仍按请求显示提示窗：用例直接读取提示窗
+   * 样式，守卫会把这条路径整个拦掉。生产路径不设此开关，守卫始终生效。
+   */
+  e2eHidden?: boolean
+}
+
 /**
  * 原生工作区是 renderer DOM 之外的 WebContentsView，CSS z-index 无法覆盖它。
  * 这个无焦点子窗口只呈现实例名称，始终位于父窗口的工作区视图上方。
  */
 export function createWorkspaceTooltipHost(
   getHubWindow: () => BrowserWindow | null,
-  createWindow: (options: BrowserWindowConstructorOptions) => BrowserWindow = (options) => new BrowserWindow(options)
+  createWindow: (options: BrowserWindowConstructorOptions) => BrowserWindow = (options) => new BrowserWindow(options),
+  options: WorkspaceTooltipHostOptions = {}
 ): WorkspaceTooltipHost {
   let tooltipWindow: BrowserWindow | null = null
   let displayedText: string | null = null
@@ -96,7 +105,7 @@ export function createWorkspaceTooltipHost(
       if (!parent || parent.isDestroyed()) return
       // 仅在前台显示：对浮动子窗口 showInactive 会把宿主窗口组排到最前；应用在后台时
       // 这个置前请求被 macOS 挂起数秒后批准，会把整个应用顶回前台抢走其它应用的焦点。
-      if (!parent.isFocused()) {
+      if (!options.e2eHidden && !parent.isFocused()) {
         focusDebug('[workspace-tooltip] show skipped: hub window blurred')
         validWindow()?.hide()
         return
