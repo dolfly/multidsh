@@ -476,12 +476,13 @@ void app.whenReady().then(() => {
   runtimeController.startAutoStart()
 
   app.on('activate', (_event, hasVisibleWindows) => {
-    // macOS 惯例：点击 Dock 图标时把窗口带回前台。窗口可能仍然存在但处于隐藏状态
-    // （「关闭时最小化到托盘」），此时只判断「有没有窗口」会让点击毫无反应。
-    // 排查前台抢焦点：记录 activate 触发时是否已有可见窗口——若 hasVisibleWindows=true
-    // 仍走 showHubWindow 的 show()+focus()，可能是 activate 把已可见窗口顶到前台抢焦点。
     focusDebug(`[index] app.activate hasVisibleWindows=${String(hasVisibleWindows)}`)
-    windowController.showHubWindow()
+    // 仅当没有可见窗口（最小化到托盘或窗口已销毁）时才召回：此时 showHubWindow 的
+    // show()+focus() 是用户期望的「从托盘恢复」。窗口已可见时不再强制 show()+focus()——
+    // activate 可能由非用户操作触发（日志实测 hasVisibleWindows=true 反复出现），
+    // 强行置顶会把已可见窗口顶到最前、抢走其它应用（如如流）的焦点；
+    // 真正的 Dock 点击由 macOS 自行把应用带回前台，无需我们再抢。
+    if (!hasVisibleWindows) windowController.showHubWindow()
   })
 
   app.on('browser-window-created', (_event, win) => {

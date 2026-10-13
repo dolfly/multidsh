@@ -118,6 +118,17 @@ export function createWorkspaceHost(
       const hotkey = toWorkspaceHotkey(input, process.platform)
       if (hotkey) forwardHotkey(hotkey)
     })
+    // 排查前台抢焦点（vector B）：工作区 guest（dsh web / 插件）自身调用 focus()/
+    // window.focus() 会让该 WebContentsView 获焦并把宿主窗口顶到前台。记录视图获焦，
+    // 与 focusEntry 对齐——若 view.focus 不紧跟一次 focusEntry，则为 guest 自发获焦。
+    webContents.on('focus', () => {
+      const win = getHubWindow()
+      focusDebug(
+        `[workspace-host] view.webContents focus appFocused=${String(
+          BrowserWindow.getFocusedWindow() !== null
+        )} winFocused=${String(win !== null && !win.isDestroyed() ? win.isFocused() : null)}`
+      )
+    })
     // dsh web 的复制按钮依赖 navigator.clipboard 写入；只放行剪贴板写入类权限，
     // 读取与其他能力保持一律拒绝（最小权限，网页仍无法读取本机剪贴板内容）。
     const isClipboardWrite = (permission: string): boolean =>
