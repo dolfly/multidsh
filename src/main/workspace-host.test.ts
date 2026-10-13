@@ -116,12 +116,26 @@ describe('createWorkspaceHost', () => {
     const permissionRequest = created?.webContents.session.setPermissionRequestHandler.mock.calls[0]?.[0] as (
       contents: unknown,
       permission: string,
-      callback: (allowed: boolean) => void
+      callback: (allowed: boolean) => void,
+      details?: unknown
     ) => void
     const callback = vi.fn()
     permissionRequest(null, 'notifications', callback)
     expect(callback).toHaveBeenCalledWith(false)
-    expect(created?.webContents.session.setPermissionCheckHandler.mock.calls[0]?.[0]()).toBe(false)
+    // 语音输入(getUserMedia 纯音频)放行,摄像头拒绝
+    permissionRequest(null, 'media', callback, { mediaTypes: ['audio'] })
+    expect(callback).toHaveBeenLastCalledWith(true)
+    permissionRequest(null, 'media', callback, { mediaTypes: ['video'] })
+    expect(callback).toHaveBeenLastCalledWith(false)
+    const permissionCheck = created?.webContents.session.setPermissionCheckHandler.mock.calls[0]?.[0] as (
+      contents: unknown,
+      permission: string,
+      requestingOrigin: string,
+      details?: unknown
+    ) => boolean
+    expect(permissionCheck(null, 'notifications', 'http://127.0.0.1:3080/')).toBe(false)
+    expect(permissionCheck(null, 'media', 'http://127.0.0.1:3080/', { mediaType: 'audio' })).toBe(true)
+    expect(permissionCheck(null, 'media', 'http://127.0.0.1:3080/', { mediaType: 'video' })).toBe(false)
     expect(created?.webContents.session.on).toHaveBeenCalledWith('will-download', expect.any(Function))
 
     for (const eventName of ['will-navigate', 'will-redirect']) {

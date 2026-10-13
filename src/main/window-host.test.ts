@@ -6,7 +6,7 @@ vi.mock('electron', () => {
   class FakeWebContents {
     handlers = new Map<string, (...args: unknown[]) => unknown>()
     setWindowOpenHandler = vi.fn()
-    session = { setPermissionRequestHandler: vi.fn() }
+    session = { setPermissionRequestHandler: vi.fn(), setPermissionCheckHandler: vi.fn() }
     on = vi.fn((event: string, listener: (...args: unknown[]) => unknown) => {
       this.handlers.set(event, listener)
       return this
@@ -41,7 +41,10 @@ interface TestWin {
   webContents: {
     handlers: Map<string, (...args: unknown[]) => unknown>
     setWindowOpenHandler: ReturnType<typeof vi.fn>
-    session: { setPermissionRequestHandler: ReturnType<typeof vi.fn> }
+    session: {
+      setPermissionRequestHandler: ReturnType<typeof vi.fn>
+      setPermissionCheckHandler: ReturnType<typeof vi.fn>
+    }
     loadURL: ReturnType<typeof vi.fn>
   }
   closedListener: (() => void) | null
@@ -100,18 +103,24 @@ describe('openInstanceWindow（实例窗口接线, 拦截外跳）', () => {
     expect(handler()).toEqual({ action: 'deny' })
   })
 
-  it('实例分区会话的权限请求一律拒绝', () => {
+  it('实例分区会话安装统一权限策略:纯音频采集与剪贴板写入放行,其余拒绝', () => {
     const win = openInstanceWindow({ instanceId: `p-${++seq}`, title: 't', url: ORIGIN }) as unknown as TestWin
     const setPerm = win.webContents.session.setPermissionRequestHandler
     expect(setPerm).toHaveBeenCalledTimes(1)
+    expect(win.webContents.session.setPermissionCheckHandler).toHaveBeenCalledTimes(1)
     const handler = setPerm.mock.calls[0]?.[0] as (
       _webContents: unknown,
       _permission: string,
-      callback: (granted: boolean) => void
+      callback: (granted: boolean) => void,
+      details?: unknown
     ) => void
     const callback = vi.fn()
     handler(null, 'notifications', callback)
     expect(callback).toHaveBeenCalledWith(false)
+    handler(null, 'media', callback, { mediaTypes: ['audio'] })
+    expect(callback).toHaveBeenLastCalledWith(true)
+    handler(null, 'media', callback, { mediaTypes: ['video'] })
+    expect(callback).toHaveBeenLastCalledWith(false)
   })
 
   it('窗口加载失败经 .catch 处理(不产生未处理拒绝)', async () => {

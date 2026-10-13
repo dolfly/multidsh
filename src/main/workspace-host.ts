@@ -2,6 +2,7 @@ import { BrowserWindow, shell, WebContentsView } from 'electron'
 import type { WorkspaceHotkeyEvent, WorkspaceViewBounds } from '@shared/contracts'
 import { redactUrl } from '@shared/redact'
 import { focusDebug } from './shell/focus-debug'
+import { installInstancePermissionPolicy } from './instance-permission'
 import { prepareInstanceView } from './webview/cookie-import'
 import { buildOpenViewPlan, type SessionCookie } from './webview/open-view-plan'
 import { isAllowedInstanceNavigation, openExternalSafely } from './window-host-policy'
@@ -129,14 +130,9 @@ export function createWorkspaceHost(
         )} winFocused=${String(win !== null && !win.isDestroyed() ? win.isFocused() : null)}`
       )
     })
-    // dsh web 的复制按钮依赖 navigator.clipboard 写入；只放行剪贴板写入类权限，
-    // 读取与其他能力保持一律拒绝（最小权限，网页仍无法读取本机剪贴板内容）。
-    const isClipboardWrite = (permission: string): boolean =>
-      permission === 'clipboard-write' || permission === 'clipboard-sanitized-write'
-    webContents.session.setPermissionRequestHandler((_contents, permission, callback) =>
-      callback(isClipboardWrite(permission))
-    )
-    webContents.session.setPermissionCheckHandler((_contents, permission) => isClipboardWrite(permission))
+    // 权限策略与独立实例窗口共用 instance-permission.ts：放行剪贴板写入与纯音频
+    // 采集（语音输入），其余一律拒绝；分离窗口复用同一分区 session，两处必须一致。
+    installInstancePermissionPolicy(webContents.session)
     webContents.session.on('will-download', (event) => event.preventDefault())
   }
 

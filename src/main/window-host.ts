@@ -3,6 +3,7 @@
  * 隔离存储，禁用 nodeIntegration、开启 contextIsolation/sandbox、拦截外跳（弹窗 + 顶层导航）。
  */
 import { BrowserWindow } from 'electron'
+import { installInstancePermissionPolicy } from './instance-permission'
 import { isAllowedInstanceNavigation } from './window-host-policy'
 
 export interface OpenInstanceViewOptions {
@@ -57,10 +58,9 @@ export function openInstanceWindow(options: OpenInstanceViewOptions): BrowserWin
   }
   win.webContents.on('will-navigate', guardNavigation)
   win.webContents.on('will-redirect', guardNavigation)
-  // 实例分区内的权限请求（通知 / 地理位置 / 剪贴板等）一律拒绝
-  win.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) =>
-    callback(false)
-  )
+  // 权限策略与工作区视图共用 instance-permission.ts：放行剪贴板写入与纯音频采集
+  // （语音输入），通知/地理位置/摄像头等其余权限一律拒绝；两者共享分区 session，必须一致。
+  installInstancePermissionPolicy(win.webContents.session)
   win.on('closed', () => windows.delete(options.instanceId))
   windows.set(options.instanceId, win)
 
