@@ -941,6 +941,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('invalid-state', '未找到可用的 dsh：hub 隔离目录与 PATH 上都没有已安装的运行时')"),
   debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('not-found', `插件未安装：${name}`)"),
   debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('invalid-input', '该插件不含 host 半，无法单独禁用')"),
+  debt('src/main/local-runtime/plugin-manager.ts', "`无法检查更新：插件 ${name} 未发布到 npm registry（本地安装的包不在 registry 中）`"),
   debt('src/main/local-runtime/profile-bundles.ts', "if (!isRecord(manifest)) throw new Error('profile package.json 结构异常，未做改动')"),
   debt('src/main/local-runtime/profile-bundles.ts', "throw new Error('该实例的 profile 尚未初始化（缺少 package.json），请先启动一次实例')"),
   debt('src/main/local-runtime/profile-bundles.ts', "throw new Error(`profile 正被 dsh 占用（${lockPath}），请稍后重试`)"),

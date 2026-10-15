@@ -604,11 +604,24 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         if (!current) throw new Error(`插件未安装：${name}`)
         // view 联网取 latest 的版本、dsh peer 与各版本发布时间（time 是「版本 → 发布时刻」映射，
         // 已装版本的发布时间取自已装版本那一项，latest 的那项不用）。
-        const result = await runPlugin(
-          instance,
-          ['view', name, 'version', 'peerDependencies', 'time', '--json'],
-          resolved
-        )
+        let result: CommandResult
+        try {
+          result = await runPlugin(
+            instance,
+            ['view', name, 'version', 'peerDependencies', 'time', '--json'],
+            resolved
+          )
+        } catch (error) {
+          // 插件未发布到 npm registry（如本地 file:/link: 安装但未发布）：pnpm view 会 404，
+          // 给出明确文案说明原因，而非透出裸 pnpm stderr。
+          if (error instanceof InstanceStoreError && /404|Not Found|ERR_PNPM_FETCH_404/i.test(error.message)) {
+            throw new InstanceStoreError(
+              'not-found',
+              `无法检查更新：插件 ${name} 未发布到 npm registry（本地安装的包不在 registry 中）`
+            )
+          }
+          throw error
+        }
         let meta: {
           version?: string
           peerDependencies?: Record<string, string>

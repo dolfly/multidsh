@@ -425,6 +425,23 @@ describe('createPluginManager.check', () => {
     })
   })
 
+  it('插件未发布到 npm（404）：抛出明确文案，非裸 pnpm stderr', async () => {
+    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
+      void command
+      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
+      // pnpm view 对未发布包返回 exit 1，stderr 含 404 标记。
+      return {
+        code: 1,
+        stdout: '',
+        stderr: 'Command failed with exit code 1: pnpm view dsh-opencode-zen-provider version peerDependencies time --json\nERR_PNPM_FETCH_404 GET https://registry.npmjs.org/dsh-opencode-zen-provider: Not Found - 404'
+      }
+    })
+    const manager = createPluginManager(baseOptions(run))
+    await expect(manager.check(localInstance(), '@xbzbing/dsh-git-panel')).rejects.toThrow(
+      /未发布到 npm registry/
+    )
+  })
+
   it('不兼容：latest peer 要求高于实例 dsh 版本', async () => {
     const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
       void command
