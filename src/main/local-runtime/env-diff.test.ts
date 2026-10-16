@@ -6,19 +6,25 @@ function snapshot(path: string | null, env: Record<string, string> | null): EnvS
 }
 
 describe('diffEnvironment（登录环境刷新前后差异）', () => {
+  // 夹具里的 PATH 用 `:` 拼的 POSIX 形态，必须显式传 darwin/linux：
+  // 缺省按 process.platform 选分隔符，在 Windows CI 上整串会被当成一个条目。
   it('PATH 按条目集合对比：只列新增项，顺序调整不算变化', () => {
     const before = snapshot('/usr/bin:/opt/homebrew/bin', null)
 
-    const added = diffEnvironment(before, snapshot('/usr/bin:/opt/homebrew/bin:/usr/local/bin', null))
+    const added = diffEnvironment(
+      before,
+      snapshot('/usr/bin:/opt/homebrew/bin:/usr/local/bin', null),
+      'darwin'
+    )
     expect(added.pathComparable).toBe(true)
     expect(added.pathAdded).toEqual(['/usr/local/bin'])
     expect(added.pathRemoved).toEqual([])
 
-    const removed = diffEnvironment(before, snapshot('/usr/bin', null))
+    const removed = diffEnvironment(before, snapshot('/usr/bin', null), 'darwin')
     expect(removed.pathRemoved).toEqual(['/opt/homebrew/bin'])
     expect(removed.pathAdded).toEqual([])
 
-    const reordered = diffEnvironment(before, snapshot('/opt/homebrew/bin:/usr/bin', null))
+    const reordered = diffEnvironment(before, snapshot('/opt/homebrew/bin:/usr/bin', null), 'darwin')
     expect(reordered.pathAdded).toEqual([])
     expect(reordered.pathRemoved).toEqual([])
   })
@@ -34,7 +40,7 @@ describe('diffEnvironment（登录环境刷新前后差异）', () => {
   it('变量只回传名字（新增/删除/变更），PATH 不在变量里重复计数', () => {
     const before = snapshot('/a', { PATH: '/a', HTTP_PROXY: 'http://old', KEEP: '1' })
     const after = snapshot('/a:/b', { PATH: '/a:/b', HTTP_PROXY: 'http://new', NEW_VAR: 'x' })
-    const diff = diffEnvironment(before, after)
+    const diff = diffEnvironment(before, after, 'darwin')
     expect(diff.varsComparable).toBe(true)
     expect(diff.varsAdded).toEqual(['NEW_VAR'])
     expect(diff.varsRemoved).toEqual(['KEEP'])

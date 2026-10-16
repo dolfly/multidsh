@@ -129,8 +129,12 @@ describe('createLocalRuntime', () => {
   it('refreshEnv 失效并重解析登录环境缓存，缓存有基线时只重解析一次并返回差异', async () => {
     const loginInvalidate = vi.fn()
     const shellInvalidate = vi.fn()
+    // PATH 夹具必须和 refreshEnv 内部 diffEnvironment 用同一套分隔符（按 process.platform
+    // 选，Windows 上是 ;）；用 node:path 的 delimiter 在「模拟平台」场景下会对不齐，
+    // 硬编码 : 更会把整串当一个条目，在 Windows CI 上断言失败。
+    const pathSeparator = process.platform === 'win32' ? ';' : ':'
     const loginPath = Object.assign(
-      vi.fn(async () => '/usr/bin:/opt/homebrew/bin'),
+      vi.fn(async () => ['/usr/bin', '/opt/homebrew/bin'].join(pathSeparator)),
       {
         invalidate: loginInvalidate,
         // 基线取缓存里上一次的解析结果；peek 不得触发新解析
