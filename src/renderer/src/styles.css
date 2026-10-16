@@ -1690,14 +1690,19 @@ h3,
   opacity: 0;
   transition: opacity 0.12s ease;
 }
+/* 焦点展开只认键盘焦点（:focus-visible）：文本型触发物 tabIndex=0，鼠标点选
+   （复制长文案）同样会聚焦；按 :focus-within 展开会让被点过的行一直挂着气泡，
+   再 hover 相邻行就是两个气泡同时展开。自身聚焦与后代（图标按钮）聚焦各占一条。 */
 .info-tip:hover .info-tip-bubble,
-.info-tip:focus-within .info-tip-bubble,
+.info-tip:focus-visible .info-tip-bubble,
+.info-tip:has(:focus-visible) .info-tip-bubble,
 .info-tip[data-open] .info-tip-bubble {
   opacity: 1;
   transform: translateY(0);
 }
 .info-tip:hover .info-tip-bubble::before,
-.info-tip:focus-within .info-tip-bubble::before,
+.info-tip:focus-visible .info-tip-bubble::before,
+.info-tip:has(:focus-visible) .info-tip-bubble::before,
 .info-tip[data-open] .info-tip-bubble::before {
   opacity: 1;
 }

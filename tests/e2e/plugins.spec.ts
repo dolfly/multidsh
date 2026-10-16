@@ -256,6 +256,16 @@ test('检查升级（不兼容）：给警告不给升级按钮', async () => {
   await status.hover()
   await expect.poll(() => bubble.evaluate((element) => getComputedStyle(element).opacity)).toBe('1')
 
+  // 点选文本（复制长文案的常见动作）后鼠标离开：气泡必须收起 —— 焦点展开只认键盘焦点，
+  // 否则被点过的行气泡常驻，再 hover 相邻行会同时展开两个气泡。
+  await status.click()
+  await win.mouse.move(4, 4)
+  await expect.poll(() => bubble.evaluate((element) => getComputedStyle(element).opacity)).toBe('0')
+  // 键盘 Tab 往返重新聚焦仍然展开（键盘/读屏用户可读完整说明）。
+  await win.keyboard.press('Tab')
+  await win.keyboard.press('Shift+Tab')
+  await expect.poll(() => bubble.evaluate((element) => getComputedStyle(element).opacity)).toBe('1')
+
   // 异常信息写入底部信息栏（信息栏只有一行，完整历史在「更多」弹层）。
   await win.getByTestId('detail-logbar-more').click()
   await expect(win.getByTestId('log-more-body')).toContainText('demo-plugin')
