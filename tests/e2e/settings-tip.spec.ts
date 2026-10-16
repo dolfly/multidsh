@@ -5,8 +5,8 @@ import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 /**
- * 设置页说明图标：长说明收进 info 气泡，hover 展开、点击钉住；
- * 钉住态移开鼠标仍显示，点击卡片空白处收起。同时守住两处结构：
+ * 设置页说明图标：长说明收进问号气泡，hover 或键盘聚焦展开、点击不钉住；
+ * 图标紧跟在文案之后（不在行尾）。同时守住两处结构：
  * 说明不再以常驻段落占行，带说明的复选框行拆成 label + 图标后
  * 点 label 仍能切换勾选。
  */
@@ -34,7 +34,7 @@ test.afterAll(async () => {
 const bubbleOpacity = (bubble: ReturnType<Page['locator']>): Promise<string> =>
   bubble.evaluate((element) => getComputedStyle(element).opacity)
 
-test('说明图标：hover 展开、点击钉住、点击卡片空白处收起', async () => {
+test('说明图标：hover 展开、点击不钉住、键盘聚焦仍展开', async () => {
   await expect(win.getByTestId('app-shell')).toBeVisible()
   await win.getByTestId('settings-btn').click()
   await expect(win.getByTestId('view-settings')).toBeVisible()
@@ -51,22 +51,37 @@ test('说明图标：hover 展开、点击钉住、点击卡片空白处收起',
   // 常驻段落已移除：设置视图里不再有承载这段说明的 .meta 行。
   await expect(win.locator('[data-testid="view-settings"] .meta').filter({ hasText: 'git/node' })).toHaveCount(0)
 
+  // 图标紧跟文案之后：复选框行里 label 与图标是仅有的两个相邻子元素。
+  // has 内的定位器会以候选行为根重新求根，必须给相对选择器（不能带 card 那段链）。
+  const sleepRow = card
+    .locator('.row')
+    .filter({ has: win.getByTestId('settings-prevent-sleep') })
+    .filter({ has: win.locator('.info-tip') })
+  expect(
+    await sleepRow.evaluate((element) => {
+      const children = element.children
+      return (
+        children.length === 2 &&
+        children[0]?.tagName === 'LABEL' &&
+        children[1]?.classList.contains('info-tip')
+      )
+    })
+  ).toBe(true)
+
   // hover 展开。
   await expect.poll(() => bubbleOpacity(bubble)).toBe('0')
   await tip.locator('.info-tip-btn').hover()
   await expect.poll(() => bubbleOpacity(bubble)).toBe('1')
 
-  // 点击钉住：移开鼠标后仍显示，aria-expanded 同步为 true。
-  const button = tip.locator('.info-tip-btn')
-  await button.click()
-  await expect(button).toHaveAttribute('aria-expanded', 'true')
+  // 点击不钉住：点击后移开鼠标，气泡随之收起，不在卡片上残留。
+  await tip.locator('.info-tip-btn').click()
   await win.mouse.move(4, 4)
-  await expect.poll(() => bubbleOpacity(bubble)).toBe('1')
-
-  // 点击卡片空白处收起。
-  await card.locator('h3').first().click()
-  await expect(button).toHaveAttribute('aria-expanded', 'false')
   await expect.poll(() => bubbleOpacity(bubble)).toBe('0')
+
+  // 键盘聚焦仍展开（Tab 往返把焦点经键盘送回图标）。
+  await win.keyboard.press('Tab')
+  await win.keyboard.press('Shift+Tab')
+  await expect.poll(() => bubbleOpacity(bubble)).toBe('1')
 })
 
 test('带说明的复选框行：点 label 正文仍切换勾选', async () => {

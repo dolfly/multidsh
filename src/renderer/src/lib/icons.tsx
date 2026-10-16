@@ -17,6 +17,7 @@ export type IconName =
   | 'check'
   | 'alert'
   | 'info'
+  | 'help'
   | 'lock'
   | 'shield'
   | 'key'
@@ -102,6 +103,14 @@ const ICONS: Record<IconName, JSX.Element> = {
     <>
       <circle cx="12" cy="12" r="8.6" />
       <path d="M12 11v5.2M12 7.8h.01" />
+    </>
+  ),
+  // 问号圆圈：设置项说明入口，与 info 的「i」区分。
+  help: (
+    <>
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M9.7 9.6a2.4 2.4 0 1 1 3.2 2.3c-.7.3-1 .9-1 1.6v.3" />
+      <path d="M12 17.1h.01" />
     </>
   ),
   lock: (

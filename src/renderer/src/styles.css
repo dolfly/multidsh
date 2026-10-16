@@ -456,6 +456,13 @@ h3,
   font-size: 13.5px;
   font-weight: 600;
 }
+/* 分组内的小节标题行：布局与 card-head 相同，但不画分隔线、不占底部间距，
+   间距由外层 mt* 控制；带说明图标的小节用它，卡片只保留标题下的那一条线。 */
+.card-head--bare {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
 .runtime-card {
   display: flex;
   flex-direction: column;
@@ -1618,7 +1625,7 @@ h3,
   opacity: 1;
   transform: translateY(0);
 }
-/* 标题旁的说明图标：正文放在气泡里，hover/聚焦显示，data-open 表示点击钉住。 */
+/* 标题旁的说明图标：正文放在气泡里，hover 或键盘聚焦显示；点击不钉住。 */
 .info-tip {
   position: relative;
   display: inline-flex;
@@ -1630,7 +1637,6 @@ h3,
   align-items: center;
   justify-content: center;
   padding: 2px;
-  border: 0;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
@@ -1692,18 +1698,17 @@ h3,
 }
 /* 焦点展开只认键盘焦点（:focus-visible）：文本型触发物 tabIndex=0，鼠标点选
    （复制长文案）同样会聚焦；按 :focus-within 展开会让被点过的行一直挂着气泡，
-   再 hover 相邻行就是两个气泡同时展开。自身聚焦与后代（图标按钮）聚焦各占一条。 */
+   再 hover 相邻行就是两个气泡同时展开。自身聚焦与后代（问号图标）聚焦各占一条。
+   气泡没有点击态：点一下必然先悬停，移开鼠标即收起，不留残影。 */
 .info-tip:hover .info-tip-bubble,
 .info-tip:focus-visible .info-tip-bubble,
-.info-tip:has(:focus-visible) .info-tip-bubble,
-.info-tip[data-open] .info-tip-bubble {
+.info-tip:has(:focus-visible) .info-tip-bubble {
   opacity: 1;
   transform: translateY(0);
 }
 .info-tip:hover .info-tip-bubble::before,
 .info-tip:focus-visible .info-tip-bubble::before,
-.info-tip:has(:focus-visible) .info-tip-bubble::before,
-.info-tip[data-open] .info-tip-bubble::before {
+.info-tip:has(:focus-visible) .info-tip-bubble::before {
   opacity: 1;
 }
 .n-err {

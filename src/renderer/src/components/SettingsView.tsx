@@ -182,8 +182,8 @@ export default function SettingsView(): ReactNode {
 
         <div className="card">
           {/*
-            标题行右侧挂控件，说明正文收进标题旁的 info 气泡（hover/点击展开），
-            卡片里只保留标题与控件，不再为长说明占行。
+            标题行右侧挂控件，说明正文收进标题后的问号气泡（hover / 键盘聚焦展开，
+            点击不钉住）；小节标题行不画分隔线，卡片只保留标题下那一条。
           */}
           <div className="card-head">
             <h3>{t('settings.general')}</h3>
@@ -206,8 +206,8 @@ export default function SettingsView(): ReactNode {
             />
             <span>{t('settings.autoStart')}</span>
           </label>
-          <div className="row mt12" style={{ gap: 8, alignItems: 'center' }}>
-            <label className="row" style={{ gap: 8, alignItems: 'center', flex: 1, minWidth: 0 }}>
+          <div className="row mt12" style={{ gap: 6, alignItems: 'center' }}>
+            <label className="row" style={{ gap: 8, alignItems: 'center' }}>
               <input
                 type="checkbox"
                 data-testid="settings-prevent-sleep"
@@ -221,8 +221,8 @@ export default function SettingsView(): ReactNode {
               label={t('common.hint')}
             />
           </div>
-          <div className="row mt12" style={{ gap: 8, alignItems: 'center' }}>
-            <label className="row" style={{ gap: 8, alignItems: 'center', flex: 1, minWidth: 0 }}>
+          <div className="row mt12" style={{ gap: 6, alignItems: 'center' }}>
+            <label className="row" style={{ gap: 8, alignItems: 'center' }}>
               <input
                 type="checkbox"
                 data-testid="settings-inherit-shell-env"
@@ -234,8 +234,8 @@ export default function SettingsView(): ReactNode {
             <InfoTip text={t('settings.inheritShellEnvHint')} label={t('common.hint')} />
           </div>
 
-          {/* 环境重新检测是一次性动作：按钮固定在标题行右侧，说明收进标题旁的气泡。 */}
-          <div className="card-head mt12">
+          {/* 环境重新检测是一次性动作：按钮固定在标题行右侧，说明收进标题后的气泡。 */}
+          <div className="card-head card-head--bare mt16">
             <div className="row" style={{ gap: 6, minWidth: 0 }}>
               <h3>{t('settings.refreshEnv')}</h3>
               <InfoTip text={t('settings.refreshEnvHint')} label={t('common.hint')} />
@@ -251,7 +251,7 @@ export default function SettingsView(): ReactNode {
           </div>
 
           {/* 缓存数量同样标题在上、控件在标题行右侧，与上方动作行保持一致。 */}
-          <div className="card-head mt12">
+          <div className="card-head card-head--bare mt16">
             <div className="row" style={{ gap: 6, minWidth: 0 }}>
               <h3>{t('settings.workspaceCache')}</h3>
               <InfoTip text={t('settings.workspaceCacheHint')} label={t('common.hint')} />
