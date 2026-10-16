@@ -47,3 +47,20 @@ export function InfoTip(props: { text: string; label: string }): ReactNode {
     </span>
   )
 }
+
+/**
+ * 文本型说明气泡：包住被省略号截断的状态文本，hover 或键盘聚焦即显示完整内容。
+ * 触发物是文本本身而非按钮：内部结构与 testid 保持原样，只多一层气泡容器；
+ * 文本可聚焦（tabIndex=0），读屏经 aria-describedby 读到完整正文。
+ */
+export function HoverTip(props: { text: string; children: ReactNode }): ReactNode {
+  const bubbleId = useId()
+  return (
+    <span className="info-tip" tabIndex={0} aria-describedby={bubbleId}>
+      {props.children}
+      <span className="info-tip-bubble" id={bubbleId} role="tooltip">
+        {props.text}
+      </span>
+    </span>
+  )
+}

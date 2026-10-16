@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   canOfferUpgrade,
+  classifyCheckOutcome,
   initialCheckState,
   pluginSourceKey,
   pluginApplyNotice,
@@ -240,5 +241,29 @@ describe('pluginApplyNotice（改动后的提示方案）', () => {
 
   it('运行中 + restart-required（升级/替换已装包，或 profile 无 HMR）→ 需重启', () => {
     expect(pluginApplyNotice({ running: true, application: 'restart-required' })).toBe('restart-required')
+  })
+})
+
+describe('classifyCheckOutcome（检查结果的信息栏归类）', () => {
+  it('有新版且兼容 → update', () => {
+    expect(classifyCheckOutcome(check({ hasUpdate: true, compatible: true }))).toBe('update')
+  })
+
+  it('有新版但不兼容 → incompatible（异常信息）', () => {
+    expect(classifyCheckOutcome(check({ hasUpdate: true, compatible: false }))).toBe('incompatible')
+  })
+
+  it('不兼容且 dsh 版本未知 → incompatible（无法判定也记异常）', () => {
+    expect(
+      classifyCheckOutcome(check({ hasUpdate: true, compatible: false, dshVersion: null }))
+    ).toBe('incompatible')
+  })
+
+  it('无新版 → none（已最新不写信息栏）', () => {
+    expect(classifyCheckOutcome(check({ hasUpdate: false }))).toBe('none')
+  })
+
+  it('没有结果 → none', () => {
+    expect(classifyCheckOutcome(null)).toBe('none')
   })
 })

@@ -542,6 +542,35 @@ export const MESSAGES = {
     zh: '已授予 {name}@{version} 对 dsh {dshVersion} 的兼容豁免（allow-version --accept-risk）',
     en: 'Granted compatibility exemption for {name}@{version} on dsh {dshVersion} (allow-version --accept-risk)'
   },
+  /** 检查更新的信息栏记录：有更新与异常写入，已最新不写（避免每次检查刷屏）。 */
+  'detail.plugin.log.updateAvailable': {
+    zh: '检查更新：{name} 有新版本 {latest}（当前 {current}）',
+    en: 'Update check: {name} has a new version {latest} (installed {current})'
+  },
+  'detail.plugin.log.incompatible': {
+    zh: '检查异常：{name} 新版 {latest} 要求 dsh {peer}，当前 {current}',
+    en: 'Check warning: {name} {latest} requires dsh {peer}, current {current}'
+  },
+  'detail.plugin.log.checkFailed': {
+    zh: '检查更新失败：{name} — {msg}',
+    en: 'Update check failed: {name} — {msg}'
+  },
+  'detail.plugin.log.loadFailed': {
+    zh: '插件列表加载失败：{msg}',
+    en: 'Failed to load plugin list: {msg}'
+  },
+  'detail.plugin.log.checkAllUpdates': {
+    zh: '检查更新完成：{count} 个插件有新版本（{list}）',
+    en: 'Update check complete: {count} plugin(s) with new versions ({list})'
+  },
+  'detail.plugin.log.checkAllIncompatible': {
+    zh: '检查异常：{count} 个插件新版与当前 dsh 不兼容（{list}）',
+    en: 'Check warning: {count} plugin(s) incompatible with the current dsh ({list})'
+  },
+  'detail.plugin.log.checkAllFailed': {
+    zh: '检查更新失败：{count} 个插件（{list}）',
+    en: 'Update check failed for {count} plugin(s) ({list})'
+  },
   'detail.plugin.exemptionGrantedTitle': { zh: '已授予兼容豁免', en: 'Compatibility exemption granted' },
   'detail.plugin.exemptionGrantedBody': {
     zh: '「{name}@{version}」与 dsh {dshVersion} 不兼容，已按你的操作授予豁免（接受风险）并启用；运行可能崩溃或丢失数据。',

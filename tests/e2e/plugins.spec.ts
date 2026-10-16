@@ -245,8 +245,22 @@ test('检查升级（不兼容）：给警告不给升级按钮', async () => {
   await expect(win.getByTestId('plugin-row-demo-plugin')).toBeVisible({ timeout: 15_000 })
   await win.getByTestId('plugin-check-demo-plugin').click()
   // 不兼容：出现警告，且不出现升级按钮。
-  await expect(win.getByTestId('plugin-incompatible-demo-plugin')).toBeVisible({ timeout: 15_000 })
+  const status = win.getByTestId('plugin-incompatible-demo-plugin')
+  await expect(status).toBeVisible({ timeout: 15_000 })
   await expect(win.getByTestId('plugin-upgrade-demo-plugin')).toHaveCount(0)
+
+  // 行内说明按宽度截断：hover 展开气泡给出完整文案（与截断前同文）。
+  const tip = win.locator('.info-tip').filter({ has: status })
+  const bubble = tip.locator('.info-tip-bubble')
+  await expect(bubble).toHaveText((await status.textContent()) ?? '')
+  await status.hover()
+  await expect.poll(() => bubble.evaluate((element) => getComputedStyle(element).opacity)).toBe('1')
+
+  // 异常信息写入底部信息栏（信息栏只有一行，完整历史在「更多」弹层）。
+  await win.getByTestId('detail-logbar-more').click()
+  await expect(win.getByTestId('log-more-body')).toContainText('demo-plugin')
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('log-more')).toBeHidden()
 })
 
 test('一键检查：批量进行中锁定单行检查按钮，结束后解锁', async () => {
@@ -271,6 +285,12 @@ test('一键检查：批量进行中锁定单行检查按钮，结束后解锁',
   // 批量结束后解锁，并给出升级按钮（view 返回 1.1.0）。
   await expect(win.getByTestId('plugin-upgrade-demo-plugin')).toBeVisible({ timeout: 30_000 })
   await expect(rowCheck).toBeEnabled()
+
+  // 有更新按类别汇总写入底部信息栏。
+  await win.getByTestId('detail-logbar-more').click()
+  await expect(win.getByTestId('log-more-body')).toContainText('demo-plugin')
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('log-more')).toBeHidden()
 })
 
 

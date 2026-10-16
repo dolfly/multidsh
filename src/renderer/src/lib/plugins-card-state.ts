@@ -109,6 +109,20 @@ export function showsUpToDate(check: PluginCheckState): boolean {
   return check.status === 'done' && check.result !== null && !check.result.hasUpdate
 }
 
+/** 一次检查结果写入底部信息栏时的归类。 */
+export type CheckOutcome = 'update' | 'incompatible' | 'none'
+
+/**
+ * 把检查结果归入信息栏要记录的三类（纯函数，便于测试）：
+ * - `update`：有新版且兼容，可升级；
+ * - `incompatible`：有新版但不兼容（含 dsh 版本未知的无法判定），属于异常信息；
+ * - `none`：无新版或没有结果，不记录，避免每次检查都刷一行。
+ */
+export function classifyCheckOutcome(result: PluginUpdateCheck | null): CheckOutcome {
+  if (result === null || !result.hasUpdate) return 'none'
+  return result.compatible ? 'update' : 'incompatible'
+}
+
 /**
  * 插件改动后的提示方案（纯函数，便于测试）。
  *

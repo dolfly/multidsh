@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { PluginAutoDisabled, PluginInfo } from '@shared/contracts'
+import type { PluginAutoDisabled, PluginInfo, PluginUpdateCheck } from '@shared/contracts'
 import type { Translator } from '@shared/i18n'
 import { Icon } from '../../lib/icons'
 import { fmtLogTime } from '../../lib/format'
 import { runWithConcurrency } from '../../lib/concurrency'
 import { ackAutoDisabled, isAutoDisabledAcked } from '../../lib/auto-disabled-ack'
 import { Modal } from '../Modal'
+import { HoverTip } from '../InfoTip'
 import { useAppStore } from '../../store'
 import {
   canOfferUpgrade,
+  classifyCheckOutcome,
   initialCheckState,
   pluginApplyNotice,
   pluginSourceKey,
@@ -131,6 +133,8 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
       } else {
         setLoadError(result.message)
         setPlugins([])
+        // 列表都拿不到属于异常信息：写入信息栏留痕，界面同时显示行内错误。
+        logActivity(t('detail.plugin.log.loadFailed', { msg: result.message }))
       }
     },
     [instanceId, language, logActivity, t, toast, notifyAutoDisabledOnce]
@@ -154,6 +158,32 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
 
   const checkOf = (name: string): PluginCheckState => checks[name] ?? initialCheckState
 
+  /**
+   * 一次检查结果写入底部信息栏：有更新与异常（不兼容 / 无法判定）各记一条；
+   * 「已是最新」不记 —— 每次检查都写会让信息栏被无信息量的行刷满。
+   */
+  const logCheckOutcome = (result: PluginUpdateCheck): void => {
+    const outcome = classifyCheckOutcome(result)
+    if (outcome === 'update') {
+      logActivity(
+        t('detail.plugin.log.updateAvailable', {
+          name: result.name,
+          latest: result.latest,
+          current: result.current
+        })
+      )
+    } else if (outcome === 'incompatible') {
+      logActivity(
+        t('detail.plugin.log.incompatible', {
+          name: result.name,
+          latest: result.latest,
+          peer: result.dshPeer ?? '—',
+          current: result.dshVersion ?? '—'
+        })
+      )
+    }
+  }
+
   /** 检查单个插件；返回是否成功（供批量检查汇总）。 */
   const runCheck = async (name: string): Promise<void> => {
     if (!BRIDGE) return
@@ -161,8 +191,10 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     const result = await BRIDGE.plugin.check(instanceId, name)
     if (result.ok) {
       setChecks((prev) => ({ ...prev, [name]: { status: 'done', result: result.value, error: null } }))
+      logCheckOutcome(result.value)
     } else {
       setChecks((prev) => ({ ...prev, [name]: { status: 'error', result: null, error: result.message } }))
+      logActivity(t('detail.plugin.log.checkFailed', { name, msg: result.message }))
     }
     setLastCheckedAt(new Date().toISOString())
   }
@@ -171,6 +203,7 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
    * 一键批量检查所有插件更新：小并发（CHECK_CONCURRENCY）同时进行，避免串行过慢，
    * 也不至于同时拉起过多子进程；批量期间单行检查按钮锁定，保证同一时刻只有系统检查在跑。
    * 用户切换界面时本函数继续执行到结束（结果由主进程落盘，回来仍能看到标记）。
+   * 信息栏按类别汇总各记一行（可升级 / 不兼容 / 失败），不逐插件刷屏。
    */
   const runCheckAll = async (): Promise<void> => {
     if (!BRIDGE || plugins === null || checkingAll) return
@@ -180,16 +213,47 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
       for (const plugin of targets) {
         setChecks((prev) => ({ ...prev, [plugin.name]: { status: 'checking', result: null, error: null } }))
       }
+      const updated: string[] = []
+      const incompatible: string[] = []
+      const failed: string[] = []
       await runWithConcurrency(targets, CHECK_CONCURRENCY, async (plugin) => {
         const result = await BRIDGE.plugin.check(instanceId, plugin.name)
-        setChecks((prev) => ({
-          ...prev,
-          [plugin.name]: result.ok
-            ? { status: 'done', result: result.value, error: null }
-            : { status: 'error', result: null, error: result.message }
-        }))
+        if (result.ok) {
+          setChecks((prev) => ({
+            ...prev,
+            [plugin.name]: { status: 'done', result: result.value, error: null }
+          }))
+          const outcome = classifyCheckOutcome(result.value)
+          if (outcome === 'update') updated.push(`${plugin.name} ${result.value.latest}`)
+          else if (outcome === 'incompatible') incompatible.push(`${plugin.name} ${result.value.latest}`)
+        } else {
+          setChecks((prev) => ({
+            ...prev,
+            [plugin.name]: { status: 'error', result: null, error: result.message }
+          }))
+          failed.push(`${plugin.name}: ${result.message}`)
+        }
       })
       setLastCheckedAt(new Date().toISOString())
+      const separator = t('common.listSeparator')
+      if (updated.length > 0) {
+        logActivity(
+          t('detail.plugin.log.checkAllUpdates', { count: updated.length, list: updated.join(separator) })
+        )
+      }
+      if (incompatible.length > 0) {
+        logActivity(
+          t('detail.plugin.log.checkAllIncompatible', {
+            count: incompatible.length,
+            list: incompatible.join(separator)
+          })
+        )
+      }
+      if (failed.length > 0) {
+        logActivity(
+          t('detail.plugin.log.checkAllFailed', { count: failed.length, list: failed.join(separator) })
+        )
+      }
     } finally {
       setCheckingAll(false)
     }
@@ -527,22 +591,25 @@ function PluginRow(props: {
             </span>
           )}
           {showsIncompatibleWarning(check) && check.result !== null && (
-            <span
-              className="meta err-text plugin-status-inline"
-              title={incompatibleText}
-              data-testid={`plugin-incompatible-${plugin.name}`}
-            >
-              {incompatibleText}
-            </span>
+            // 行内宽度有限必然截断：完整说明由 hover/聚焦气泡给出（原 title 由气泡取代）。
+            <HoverTip text={incompatibleText}>
+              <span
+                className="meta err-text plugin-status-inline"
+                data-testid={`plugin-incompatible-${plugin.name}`}
+              >
+                {incompatibleText}
+              </span>
+            </HoverTip>
           )}
           {check.status === 'error' && check.error !== null && (
-            <span
-              className="meta err-text plugin-status-inline"
-              title={t('detail.plugin.checkFailed', { msg: check.error })}
-              data-testid={`plugin-check-error-${plugin.name}`}
-            >
-              {t('detail.plugin.checkFailed', { msg: check.error })}
-            </span>
+            <HoverTip text={t('detail.plugin.checkFailed', { msg: check.error })}>
+              <span
+                className="meta err-text plugin-status-inline"
+                data-testid={`plugin-check-error-${plugin.name}`}
+              >
+                {t('detail.plugin.checkFailed', { msg: check.error })}
+              </span>
+            </HoverTip>
           )}
           {plugin.githubUrl && (
             <button
