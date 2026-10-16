@@ -122,3 +122,22 @@ test('设置页「关于」触发点打开叠加窗口（无菜单栏平台的�
   await expectAboutClosed(app)
   await expect(win.getByTestId('view-settings')).toBeVisible()
 })
+
+test('数据列点击复制：就地反馈已复制，剪贴板拿到与展示一致的值', async () => {
+  const about = await openAboutViaMenu(app)
+  const realChrome = await app.evaluate(() => process.versions.chrome)
+  const cell = about.getByTestId('about-chromium')
+
+  // 未交互时只是纯文本；hover 才露出复制 affordance（图标常驻占位，这里只验证可点与状态标记）。
+  await cell.locator('button').click()
+  await expect(cell.locator('button')).toHaveAttribute('data-copied', 'true')
+  // 复制的是展示值本身：主进程读系统剪贴板核对。
+  const copied = await app.evaluate(({ clipboard }) => clipboard.readText())
+  expect(copied).toBe(realChrome)
+
+  // 反馈短暂停留后复位为可再次复制的状态。
+  await expect(cell.locator('button')).not.toHaveAttribute('data-copied', 'true', { timeout: 4_000 })
+
+  await closeAboutWithEscape(about)
+  await expectAboutClosed(app)
+})

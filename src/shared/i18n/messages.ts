@@ -844,6 +844,9 @@ export const MESSAGES = {
   'about.build': { zh: '构建版本', en: 'Build' },
   'about.buildTime': { zh: '打包时间', en: 'Build time' },
   'about.components': { zh: '运行组件', en: 'Runtime components' },
+  /** 数据列点击复制：悬浮提示与复制后的就地反馈。 */
+  'about.copy': { zh: '点击复制', en: 'Click to copy' },
+  'about.copied': { zh: '已复制', en: 'Copied' },
   'about.copyright': { zh: '版权所有 © 2026 xbzbing', en: 'Copyright © 2026 xbzbing' }
 } as const satisfies Record<string, Message>
 
