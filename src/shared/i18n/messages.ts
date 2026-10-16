@@ -24,6 +24,8 @@ export const MESSAGES = {
   'common.loading': { zh: '加载中…', en: 'Loading…' },
   'common.backToOverview': { zh: '回到总览', en: 'Back to overview' },
   'common.unknown': { zh: '未知', en: 'Unknown' },
+  // 说明图标的读屏名称；具体说明正文由气泡按上下文提供。
+  'common.hint': { zh: '说明', en: 'Details' },
   /** 列表连接符：中文用顿号、英文用逗号加空格（避免在代码里硬编码中日韩标点）。 */
   'common.listSeparator': { zh: '、', en: ', ' },
 
@@ -172,6 +174,8 @@ export const MESSAGES = {
   'settings.themeSystem': { zh: '跟随系统', en: 'System' },
   'settings.themeLight': { zh: '浅色', en: 'Light' },
   'settings.themeDark': { zh: '深色', en: 'Dark' },
+  // 通用设置卡的分组标题：偏好开关与环境/缓存设置分列其下。
+  'settings.general': { zh: '通用偏好', en: 'Preferences' },
   'settings.tray': { zh: '关闭窗口时最小化到托盘', en: 'Minimize to tray when the window closes' },
   'settings.autoStart': { zh: '开机自启', en: 'Launch at login' },
   'settings.notifications': { zh: '实例状态通知', en: 'Instance status notifications' },
@@ -198,6 +202,8 @@ export const MESSAGES = {
     zh: '装了新工具（如 git/node）后点此重新检测 PATH，重启实例即可生效，无需重启应用',
     en: 'After installing new tools (e.g. git/node), click to re-detect PATH; restart instances to apply, no app restart needed'
   },
+  // 按钮文案，与分组标题 settings.refreshEnv 区分，避免同一行出现重复字样。
+  'settings.refreshEnvAction': { zh: '立即检测', en: 'Re-detect' },
   'settings.refreshEnvDone': {
     zh: '环境已重新检测，重启实例后生效',
     en: 'Environment re-detected; takes effect after restarting instances'

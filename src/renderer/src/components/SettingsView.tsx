@@ -4,6 +4,7 @@ import type { VaultStatusSnapshot, LocalSpaceSnapshot } from '@shared/contracts'
 import { LANGUAGES, THEMES } from '@shared/settings'
 import type { LanguagePreference, Theme } from '@shared/settings'
 import { Icon } from '../lib/icons'
+import { InfoTip } from './InfoTip'
 import { Modal } from './Modal'
 import { useAppStore } from '../store'
 
@@ -180,6 +181,13 @@ export default function SettingsView(): ReactNode {
         </div>
 
         <div className="card">
+          {/*
+            标题行右侧挂控件，说明正文收进标题旁的 info 气泡（hover/点击展开），
+            卡片里只保留标题与控件，不再为长说明占行。
+          */}
+          <div className="card-head">
+            <h3>{t('settings.general')}</h3>
+          </div>
           <label className="row" style={{ gap: 8, alignItems: 'center' }}>
             <input
               type="checkbox"
@@ -198,57 +206,56 @@ export default function SettingsView(): ReactNode {
             />
             <span>{t('settings.autoStart')}</span>
           </label>
-          <label className="row mt12" style={{ gap: 8, alignItems: 'flex-start' }}>
-            <input
-              type="checkbox"
-              data-testid="settings-prevent-sleep"
-              checked={settings.preventSleepWhenRunning}
-              onChange={(event) => apply({ preventSleepWhenRunning: event.target.checked })}
-            />
-            <span style={{ flex: 1 }}>
+          <div className="row mt12" style={{ gap: 8, alignItems: 'center' }}>
+            <label className="row" style={{ gap: 8, alignItems: 'center', flex: 1, minWidth: 0 }}>
+              <input
+                type="checkbox"
+                data-testid="settings-prevent-sleep"
+                checked={settings.preventSleepWhenRunning}
+                onChange={(event) => apply({ preventSleepWhenRunning: event.target.checked })}
+              />
               <span>{t('settings.preventSleepWhenRunning')}</span>
-              <span className="meta" style={{ display: 'block', marginTop: 2 }}>
-                {t('settings.preventSleepWhenRunningHint')}
-              </span>
-            </span>
-          </label>
-          <label className="row mt12" style={{ gap: 8, alignItems: 'flex-start' }}>
-            <input
-              type="checkbox"
-              data-testid="settings-inherit-shell-env"
-              checked={settings.inheritShellEnv}
-              onChange={(event) => apply({ inheritShellEnv: event.target.checked })}
+            </label>
+            <InfoTip
+              text={t('settings.preventSleepWhenRunningHint')}
+              label={t('common.hint')}
             />
-            <span style={{ flex: 1 }}>
+          </div>
+          <div className="row mt12" style={{ gap: 8, alignItems: 'center' }}>
+            <label className="row" style={{ gap: 8, alignItems: 'center', flex: 1, minWidth: 0 }}>
+              <input
+                type="checkbox"
+                data-testid="settings-inherit-shell-env"
+                checked={settings.inheritShellEnv}
+                onChange={(event) => apply({ inheritShellEnv: event.target.checked })}
+              />
               <span>{t('settings.inheritShellEnv')}</span>
-              <span className="meta" style={{ display: 'block', marginTop: 2 }}>
-                {t('settings.inheritShellEnvHint')}
-              </span>
-            </span>
-          </label>
-          <div className="row mt12" style={{ gap: 8, alignItems: 'flex-start' }}>
-            <span style={{ flex: 1 }}>
-              <span>{t('settings.refreshEnv')}</span>
-              <span className="meta" style={{ display: 'block', marginTop: 2 }}>
-                {t('settings.refreshEnvHint')}
-              </span>
-            </span>
+            </label>
+            <InfoTip text={t('settings.inheritShellEnvHint')} label={t('common.hint')} />
+          </div>
+
+          {/* 环境重新检测是一次性动作：按钮固定在标题行右侧，说明收进标题旁的气泡。 */}
+          <div className="card-head mt12">
+            <div className="row" style={{ gap: 6, minWidth: 0 }}>
+              <h3>{t('settings.refreshEnv')}</h3>
+              <InfoTip text={t('settings.refreshEnvHint')} label={t('common.hint')} />
+            </div>
             <button
               className="btn btn-secondary btn-sm"
               data-testid="settings-refresh-env"
               disabled={refreshing}
               onClick={refreshEnv}
             >
-              <Icon name="refresh" /> {t('settings.refreshEnv')}
+              <Icon name="refresh" /> {t('settings.refreshEnvAction')}
             </button>
           </div>
-          <label className="row mt12" style={{ gap: 8, alignItems: 'center' }}>
-            <span style={{ flex: 1 }}>
-              <span>{t('settings.workspaceCache')}</span>
-              <span className="meta" style={{ display: 'block', marginTop: 2 }}>
-                {t('settings.workspaceCacheHint')}
-              </span>
-            </span>
+
+          {/* 缓存数量同样标题在上、控件在标题行右侧，与上方动作行保持一致。 */}
+          <div className="card-head mt12">
+            <div className="row" style={{ gap: 6, minWidth: 0 }}>
+              <h3>{t('settings.workspaceCache')}</h3>
+              <InfoTip text={t('settings.workspaceCacheHint')} label={t('common.hint')} />
+            </div>
             <input
               className="input"
               type="number"
@@ -262,9 +269,9 @@ export default function SettingsView(): ReactNode {
                 const value = Number(event.target.value)
                 if (Number.isInteger(value) && value >= 1 && value <= 10) apply({ workspaceCacheSize: value })
               }}
-              style={{ width: 70 }}
+              style={{ width: 70, flex: 'none' }}
             />
-          </label>
+          </div>
         </div>
       </div>
 
