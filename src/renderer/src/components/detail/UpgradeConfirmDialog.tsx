@@ -90,6 +90,7 @@ export default function UpgradeConfirmDialog(props: {
       title={t('detail.plugin.upgradeTitle')}
       onClose={close}
       closeLabel={closeLabel}
+      className="modal-plugin"
       testId="upgrade-confirm-dialog"
       footer={
         <>

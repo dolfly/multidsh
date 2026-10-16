@@ -6,6 +6,7 @@ import type { MessageKey } from '@shared/i18n/messages'
 import { DEFAULT_PLUGIN_REGISTRY, REGISTRY_PRESETS } from '@shared/settings'
 import { Icon } from '../../lib/icons'
 import { Modal } from '../Modal'
+import { InfoTip } from '../InfoTip'
 import { useAppStore } from '../../store'
 import InstallConfirmPanel from './InstallConfirmPanel'
 
@@ -154,6 +155,7 @@ export default function InstallPluginDialog(props: {
       title={t('detail.plugin.installTitle')}
       onClose={close}
       closeLabel={closeLabel}
+      className="modal-plugin"
       testId="install-plugin-dialog"
       footer={
         <>
@@ -252,18 +254,23 @@ export default function InstallPluginDialog(props: {
             riskAccepted={riskAccepted}
             onRiskChange={setRiskAccepted}
           />
-          <label className="check mt12">
-            <input
-              type="checkbox"
-              checked={enableAfter}
-              onChange={(event) => setEnableAfter(event.target.checked)}
-              data-testid="install-confirm-enable-after"
+          <div className="row mt12" style={{ gap: 6, alignItems: 'center' }}>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={enableAfter}
+                onChange={(event) => setEnableAfter(event.target.checked)}
+                data-testid="install-confirm-enable-after"
+              />
+              <span>{t('detail.plugin.confirmEnableAfter')}</span>
+            </label>
+            {/* 取消勾选的后果收进气泡（贴在正文底部，向上并向右展开），不占确认区版面。 */}
+            <InfoTip
+              text={t('detail.plugin.confirmEnableAfterHint')}
+              label={t('common.hint')}
+              placement="above-start"
             />
-            <span>
-              {t('detail.plugin.confirmEnableAfter')}
-              <span className="hint">{t('detail.plugin.confirmEnableAfterHint')}</span>
-            </span>
-          </label>
+          </div>
           {installError !== null && (
             <p className="meta err-text mt8" data-testid="install-plugin-error">
               {t('detail.plugin.installFailed', { msg: installError })}

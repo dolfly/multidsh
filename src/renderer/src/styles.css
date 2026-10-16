@@ -1477,6 +1477,10 @@ h3,
 .modal.wide {
   width: min(700px, 100%);
 }
+/* 插件安装与升级确认：版本事实、兼容性说明和更新内容比普通确认框长，宽度加一档。 */
+.modal.modal-plugin {
+  width: min(560px, 100%);
+}
 .modal-head {
   flex: none;
   display: flex;
@@ -1717,6 +1721,28 @@ h3,
 .info-tip:focus-visible .info-tip-bubble::before,
 .info-tip:has(:focus-visible) .info-tip-bubble::before {
   opacity: 1;
+}
+/* 向上展开：入口贴在对话框正文（滚动容器）底部时，向下展开的气泡会被裁掉；
+   箭头随之翻转指向上方触发物。展开态的位移由上面的 :hover 规则覆盖。 */
+.info-tip-above .info-tip-bubble {
+  top: auto;
+  bottom: calc(100% + 7px);
+  transform: translateY(3px);
+}
+.info-tip-above .info-tip-bubble::before {
+  top: auto;
+  bottom: -8px;
+  border-bottom-color: transparent;
+  border-top-color: color-mix(in oklch, var(--fg) 92%, var(--bg));
+}
+/* 触发物在对话框左半侧：改以左缘为锚向右展开，向左展开会顶出对话框被 overflow 裁掉。 */
+.info-tip-start .info-tip-bubble {
+  right: auto;
+  left: 0;
+}
+.info-tip-start .info-tip-bubble::before {
+  right: auto;
+  left: 10px;
 }
 .n-err {
   background: var(--danger-soft);

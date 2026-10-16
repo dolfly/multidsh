@@ -460,6 +460,41 @@ test('安装两步：确定解析出版本、确认后才下发带 --registry �
   // 未点安装前不得有任何 add。
   expect((await readMutations()).length).toBe(before)
 
+  // 对话框比默认（452px）宽一档：版本事实与更新内容一屏能读下。
+  expect((await dialog.boundingBox())?.width ?? 0).toBeGreaterThan(500)
+
+  // 「安装后启用」的后果说明默认不显示，hover 问号才展开；气泡贴在正文底部向上展开，
+  // 且整体落在正文与对话框之内（正文是滚动容器、对话框 overflow:hidden，越界即被裁掉）。
+  const tip = dialog.locator('.info-tip-above')
+  const bubble = tip.locator('.info-tip-bubble')
+  await expect(bubble).toHaveText('取消则只安装，插件落在「已禁用」状态')
+  await expect.poll(() => bubble.evaluate((element) => getComputedStyle(element).opacity)).toBe('0')
+  await tip.locator('.info-tip-btn').hover()
+  await expect.poll(() => bubble.evaluate((element) => getComputedStyle(element).opacity)).toBe('1')
+  const bubbleBox = await bubble.boundingBox()
+  const bodyBox = await dialog.locator('.modal-body').boundingBox()
+  const dialogBox = await dialog.boundingBox()
+  expect(bubbleBox).not.toBeNull()
+  expect(bodyBox).not.toBeNull()
+  expect(dialogBox).not.toBeNull()
+  const bubbleRect = bubbleBox ?? { x: 0, y: 0, width: 0, height: 0 }
+  const bodyRect = bodyBox ?? { x: 0, y: 0, width: 0, height: 0 }
+  const dialogRect = dialogBox ?? { x: 0, y: 0, width: 0, height: 0 }
+  expect(Math.floor(bubbleRect.y)).toBeGreaterThanOrEqual(Math.ceil(bodyRect.y))
+  expect(Math.ceil(bubbleRect.y + bubbleRect.height)).toBeLessThanOrEqual(
+    Math.floor(bodyRect.y + bodyRect.height)
+  )
+  expect(Math.floor(bubbleRect.x)).toBeGreaterThanOrEqual(Math.ceil(dialogRect.x))
+  expect(Math.ceil(bubbleRect.x + bubbleRect.width)).toBeLessThanOrEqual(
+    Math.floor(dialogRect.x + dialogRect.width)
+  )
+  // 问号在勾选框之外：点它只读说明，不会把「安装后启用」点掉。
+  await tip.locator('.info-tip-btn').click()
+  await expect(win.getByTestId('install-confirm-enable-after')).toBeChecked()
+  // 鼠标移开即收起，不在确认区残留气泡。
+  await win.getByTestId('install-confirm-enable-after').hover()
+  await expect.poll(() => bubble.evaluate((element) => getComputedStyle(element).opacity)).toBe('0')
+
   await win.getByTestId('install-plugin-submit').click()
   await expect(dialog).toBeHidden({ timeout: 60_000 })
   const mutations = await readMutations()
@@ -497,8 +532,11 @@ test('升级二次确认：弹窗给出目标版本，取消不执行、确认�
   const dialog = win.getByTestId('upgrade-confirm-dialog')
   await expect(dialog).toBeVisible()
   await expect(win.getByTestId('upgrade-confirm-submit')).toContainText(LATEST_VERSION, { timeout: 20_000 })
-  // 升级不改启用态：不出现「安装后启用」勾选。
+  // 升级不改启用态：不出现「安装后启用」勾选，也没有它的说明气泡。
   await expect(win.getByTestId('install-confirm-enable-after')).toHaveCount(0)
+  await expect(dialog.locator('.info-tip')).toHaveCount(0)
+  // 与安装第二步同宽：同一套确认区不因入口不同而变窄。
+  expect((await dialog.boundingBox())?.width ?? 0).toBeGreaterThan(500)
 
   // 取消：不产生任何改动。
   await win.getByTestId('upgrade-confirm-cancel').click()

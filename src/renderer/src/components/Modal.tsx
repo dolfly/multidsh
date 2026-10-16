@@ -20,6 +20,8 @@ function tabbableWithin(dialog: HTMLElement): HTMLElement[] {
 /** 浮层容器:背景模糊 + 居中,点击背景关闭 */
 export function Modal(props: {
   wide?: boolean
+  /** 追加到对话框容器上的布局类，用于在默认与 wide 之外另定宽度档位。 */
+  className?: string
   title: string
   sub?: string
   onClose: () => void
@@ -93,7 +95,7 @@ export function Modal(props: {
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className={`modal${props.wide ? ' wide' : ''}`}
+        className={`modal${props.wide ? ' wide' : ''}${props.className ? ` ${props.className}` : ''}`}
         data-testid={props.testId}
         role="dialog"
         aria-modal="true"
