@@ -467,9 +467,16 @@ h3,
   display: flex;
   flex-direction: column;
 }
-.runtime-card .runtime-actions {
+/* 操作行整组贴卡底：贴底由 wrap 的 auto 边距承担，wrap 的 padding 保证分隔线上方至少 12px。 */
+.runtime-actions-wrap {
   margin-top: auto;
   padding-top: 12px;
+}
+/* 数据与检测结果（升级按钮/版本状态）同操作按钮之间的分隔线。 */
+.runtime-actions-divider {
+  border-top: 1px solid var(--border);
+}
+.runtime-card .runtime-actions {
   /* 操作按钮变多，窄窗口放不下时换行而不是把按钮文字挤成两行。 */
   flex-wrap: wrap;
 }

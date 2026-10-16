@@ -71,43 +71,55 @@ export default function RuntimeCard(props: RuntimeCardProps): ReactNode {
       </dl>
       {/* dsh 版本管理：检测结果与升级进度留在正文，检查更新按钮在下方操作行。 */}
       <DshVersionPanel control={versionControl} />
-      <div className="row mt12 runtime-actions">
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={actions.openOrStart}
-          disabled={display === 'connecting'}
-          data-testid="open-view-btn"
-        >
-          <Icon name="external" />
-          {display === 'connecting'
-            ? t('detail.openingWorkspace')
-            : status?.status === 'running'
-              ? t('detail.openWorkspace')
-              : t('detail.startWorkspace')}
-        </button>
-        {/* 重启只针对 hub 拉起的运行中进程；外部接管的进程归用户所有。 */}
-        {canControl && (
+      {/*
+        分隔线上方 = 数据与检测结果（升级按钮/版本状态），下方 = 操作按钮；
+        整组仍贴卡底（贴底与线上的最小间距由 runtime-actions-wrap 提供）。
+      */}
+      <div className="runtime-actions-wrap">
+        <div className="runtime-actions-divider" aria-hidden="true" />
+        <div className="row mt12 runtime-actions">
           <button
-            className="btn btn-danger btn-sm"
-            onClick={actions.restart}
-            disabled={restarting}
-            data-testid="restart-btn"
+            className="btn btn-primary btn-sm"
+            onClick={actions.openOrStart}
+            disabled={display === 'connecting'}
+            data-testid="open-view-btn"
           >
-            <Icon name="refresh" /> {restarting ? t('detail.restarting') : t('detail.restart')}
+            <Icon name="external" />
+            {display === 'connecting'
+              ? t('detail.openingWorkspace')
+              : status?.status === 'running'
+                ? t('detail.openWorkspace')
+                : t('detail.startWorkspace')}
           </button>
-        )}
-        {/* 关闭实例：断开工作区并停止 hub 托管的运行中进程；外部接管进程归用户所有，不提供。 */}
-        {canControl && (
-          <button className="btn btn-danger btn-sm" onClick={actions.stop} disabled={stopping} data-testid="stop-btn">
-            <Icon name="power" /> {stopping ? t('detail.stopping') : t('detail.stop')}
+          {/* 重启只针对 hub 拉起的运行中进程；外部接管的进程归用户所有。 */}
+          {canControl && (
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={actions.restart}
+              disabled={restarting}
+              data-testid="restart-btn"
+            >
+              <Icon name="refresh" /> {restarting ? t('detail.restarting') : t('detail.restart')}
+            </button>
+          )}
+          {/* 关闭实例：断开工作区并停止 hub 托管的运行中进程；外部接管进程归用户所有，不提供。 */}
+          {canControl && (
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={actions.stop}
+              disabled={stopping}
+              data-testid="stop-btn"
+            >
+              <Icon name="power" /> {stopping ? t('detail.stopping') : t('detail.stop')}
+            </button>
+          )}
+          {/* transport 不可修改；端口留空时自动分配，运行中修改在下次启动生效。 */}
+          <button className="btn btn-secondary btn-sm" onClick={actions.edit} data-testid="edit-btn">
+            <Icon name="edit" /> {t('edit.openButton')}
           </button>
-        )}
-        {/* transport 不可修改；端口留空时自动分配，运行中修改在下次启动生效。 */}
-        <button className="btn btn-secondary btn-sm" onClick={actions.edit} data-testid="edit-btn">
-          <Icon name="edit" /> {t('edit.openButton')}
-        </button>
-        {/* 检查更新与编辑同一行，放在编辑之后。 */}
-        <DshVersionCheckButton control={versionControl} />
+          {/* 检查更新与编辑同一行，放在编辑之后。 */}
+          <DshVersionCheckButton control={versionControl} />
+        </div>
       </div>
     </div>
   )
