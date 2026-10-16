@@ -8,6 +8,7 @@ import { delimiter, dirname, join } from 'node:path'
 import { homedir } from 'node:os'
 import type {
   DshVersionProgressEvent,
+  EnvironmentDiff,
   InstanceStatusEvent,
   LocalInstance
 } from '@shared/contracts'
@@ -20,6 +21,7 @@ import { isExternalRuntime, resolveSystemDshUsage } from './dsh-source-policy'
 import { searchNodeDirs } from './node-dirs'
 import { resolveLoginPathOnce } from './login-path'
 import { resolveShellEnvOnce } from './shell-env'
+import { diffEnvironment } from './env-diff'
 import { httpHealthProbe, retryProbe, type HealthProbe } from '../transport/probe'
 import { createStatusBus } from '../transport/status-bus'
 import { nodeModeExecutable } from '../node-mode'
@@ -68,14 +70,21 @@ export interface LocalRuntimeOptions extends LaunchOptions {
   resolveNode?: (scriptPath: string) => string | null
   /**
    * 登录环境 PATH 解析（登录 shell / Windows 注册表）；null=不可用时回退继承 PATH。
-   * 缺省用进程内缓存的真实解析；注入以便测试。可选 `.invalidate()` 供 refreshEnv 清缓存。
+   * 缺省用进程内缓存的真实解析；注入以便测试。可选 `.invalidate()` 供 refreshEnv 清缓存，
+   * 可选 `.peek()` 读缓存作刷新前基线（不触发解析）。
    */
-  loginPath?: (() => Promise<string | null>) & { invalidate?: () => void }
+  loginPath?: (() => Promise<string | null>) & {
+    invalidate?: () => void
+    peek?: () => Promise<string | null> | undefined
+  }
   /**
    * 当前用户登录 shell 的完整环境解析（含 .zshrc/.bashrc 的 export）；null=不可用。
-   * 缺省用进程内缓存的真实解析；注入以便测试。可选 `.invalidate()` 供 refreshEnv 清缓存。
+   * 缺省用进程内缓存的真实解析；注入以便测试。可选 `.invalidate()` / `.peek()`，同上。
    */
-  shellEnv?: (() => Promise<Map<string, string> | null>) & { invalidate?: () => void }
+  shellEnv?: (() => Promise<Map<string, string> | null>) & {
+    invalidate?: () => void
+    peek?: () => Promise<Map<string, string> | null> | undefined
+  }
   /**
    * 是否把登录 shell 完整环境合并进本机实例；false 时仅合并 PATH（回退旧行为）。
    * 缺省 true；由设置项 inheritShellEnv 决定，读取函数注入以便运行中改设置即时生效。
@@ -117,8 +126,9 @@ export interface LocalRuntimeManager {
    * 失效并重新解析登录环境缓存（PATH / shell 环境），使下一次启动的实例解析到最新环境。
    * 用于用户装了新工具（如 git）后无需重启 app：清缓存并预热，之后 (重)启实例即生效。
    * 已在运行的实例进程环境不可变，须由调用方重启后才会用上新环境。
+   * 返回刷新前后的差异（只含 PATH 条目与变量名），供调用方报告「多了什么」。
    */
-  refreshEnv(): Promise<void>
+  refreshEnv(): Promise<EnvironmentDiff>
   /**
    * 接管后 statusOf 返回 running + 外部 URL,「打开视图」直接可用;
    * stop() 只断开接管,**绝不终止**用户自己的进程。
@@ -497,11 +507,22 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
     },
 
     async refreshEnv() {
+      // 单侧解析失败按不可用（null）处理：diffEnvironment 据此标记该侧不可比。
+      const settle = <T>(task: Promise<T>): Promise<T | null> => task.catch(() => null)
+      // 基线：优先读缓存里上一次的解析结果（peek 不触发解析）；冷缓存先解析一次建立基线。
+      const [beforePath, beforeEnv] = await Promise.all([
+        settle(loginPath.peek?.() ?? loginPath()),
+        settle(shellEnv.peek?.() ?? shellEnv())
+      ])
       // 清掉进程内缓存的登录环境解析；下次启动的实例会重新解析到最新 PATH / shell 环境。
       loginPath.invalidate?.()
       shellEnv.invalidate?.()
-      // 预热：装了新工具后立刻重解析一次，使随后（手动或被重启触发）的启动不必等解析。
-      await Promise.allSettled([loginPath(), shellEnv()])
+      // 预热：重解析的结果既是与基线对比的新值，也让随后（手动或被重启触发）的启动不必等解析。
+      const [afterPath, afterEnv] = await Promise.all([settle(loginPath()), settle(shellEnv())])
+      return diffEnvironment(
+        { path: beforePath, env: beforeEnv },
+        { path: afterPath, env: afterEnv }
+      )
     },
 
     async start(instance) {

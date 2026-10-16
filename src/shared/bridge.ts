@@ -17,6 +17,7 @@ import type {
   DshVersionCatalog,
   DshVersionCheck,
   DshVersionProgressEvent,
+  EnvironmentRefreshResult,
   ExternalDshWebSnapshot,
   HostKeyDecision,
   HostKeyPromptPayload,
@@ -232,11 +233,11 @@ export interface DshHubBridge {
      */
     openDataDir: () => Promise<IpcResult<null>>
     /**
-     * 重新检测本机环境（登录 PATH / shell 环境）并失效缓存。
-     * **没有参数**；返回当前正在运行、可由 hub 重启的本机实例 id，
-     * 渲染层据此提示用户是否重启这些实例以应用新环境。
+     * 刷新环境缓存（失效并重新解析登录 PATH / shell 环境）。
+     * **没有参数**；返回刷新前后的环境差异，以及正在运行、可由 hub 重启的本机实例 id，
+     * 渲染层据此报告变化并提示用户是否重启这些实例。
      */
-    refreshEnvironment: () => Promise<IpcResult<string[]>>
+    refreshEnvironment: () => Promise<IpcResult<EnvironmentRefreshResult>>
   }
   /** 凭据保险库：默认保存密码和会话；用户可显式取消。 */
   vault: {

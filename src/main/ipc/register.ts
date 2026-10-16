@@ -210,12 +210,16 @@ export function registerIpc(store: InstanceStore, deps: IpcDeps): AuthProbeContr
       settings: deps.settings,
       onSettingsChanged: deps.onSettingsChanged,
       openDataDir: deps.openDataDir,
-      // 失效登录环境缓存并重解析，返回正在运行、可由 hub 重启的本机实例（外部接管的除外）。
+      // 失效登录环境缓存并重解析：回传刷新前后的差异，以及正在运行、可由 hub
+      // 重启的本机实例（外部接管的除外），供渲染层报告变化并提示重启生效。
       refreshEnvironment: async () => {
-        await deps.runtime.refreshEnv()
-        return deps.runtime
-          .runningIds()
-          .filter((id) => deps.runtime.statusOf(id)?.runtimeSource !== 'external')
+        const diff = await deps.runtime.refreshEnv()
+        return {
+          instances: deps.runtime
+            .runningIds()
+            .filter((id) => deps.runtime.statusOf(id)?.runtimeSource !== 'external'),
+          diff
+        }
       }
     },
     wrap

@@ -85,6 +85,8 @@ export interface CachedResolver<T> {
   (): Promise<T>
   /** 清空缓存，下次调用重新解析。 */
   invalidate(): void
+  /** 只读已缓存的解析结果；尚未解析（或已被失效）返回 undefined，不触发新解析。 */
+  peek?(): Promise<T> | undefined
 }
 
 /** 进程内缓存的解析器：解析有启动开销，结果只在应用生命周期内有意义；失败同样缓存为 null。 */
@@ -97,6 +99,7 @@ export function createLoginPathResolver(probe: () => Promise<string | null>): Ca
   resolver.invalidate = (): void => {
     cached = null
   }
+  resolver.peek = (): Promise<string | null> | undefined => cached ?? undefined
   return resolver
 }
 

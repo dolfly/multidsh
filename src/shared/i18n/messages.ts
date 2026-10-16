@@ -28,6 +28,8 @@ export const MESSAGES = {
   'common.hint': { zh: '说明', en: 'Details' },
   /** 列表连接符：中文用顿号、英文用逗号加空格（避免在代码里硬编码中日韩标点）。 */
   'common.listSeparator': { zh: '、', en: ', ' },
+  // 分句连接：toast 明细由多个短句拼成时使用。
+  'common.clauseSeparator': { zh: '；', en: '; ' },
 
   // —— 侧栏 / 导航 ——
   'nav.overview': { zh: '总览', en: 'Overview' },
@@ -199,20 +201,32 @@ export const MESSAGES = {
   },
   'settings.refreshEnv': { zh: '重新检测环境变量', en: 'Re-detect environment' },
   'settings.refreshEnvHint': {
-    zh: '装了新工具（如 git/node）后点此重新检测 PATH，重启实例即可生效，无需重启应用',
-    en: 'After installing new tools (e.g. git/node), click to re-detect PATH; restart instances to apply, no app restart needed'
+    zh: '装了新工具（如 git/node）后点此刷新环境缓存，会列出 PATH 与环境变量的增删；重启实例即可生效，无需重启应用',
+    en: 'After installing new tools (e.g. git/node), refresh the environment cache here to see PATH and variable changes; restart instances to apply, no app restart needed'
   },
-  // 按钮文案，与分组标题 settings.refreshEnv 区分，避免同一行出现重复字样。
-  'settings.refreshEnvAction': { zh: '立即检测', en: 'Re-detect' },
-  'settings.refreshEnvDone': {
-    zh: '环境已重新检测，重启实例后生效',
-    en: 'Environment re-detected; takes effect after restarting instances'
+  // 按钮文案：动作是「刷新缓存」；有无新工具由刷新后的 diff 报告，不在此判断。
+  'settings.refreshEnvAction': { zh: '刷新环境缓存', en: 'Refresh cache' },
+  // 刷新结果 toast：有变化列明细（PATH 条目与变量名），无变化/不可比各自成句。
+  'settings.refreshEnvChangedTitle': {
+    zh: '环境已刷新，发现变化',
+    en: 'Environment refreshed: changes found'
   },
-  'settings.refreshEnvFailed': { zh: '重新检测环境失败', en: 'Failed to re-detect environment' },
+  'settings.refreshEnvNoChange': { zh: '环境已刷新，无变化', en: 'Environment refreshed; no changes' },
+  'settings.refreshEnvIncomparable': {
+    zh: '环境已刷新，环境不可解析，无法对比',
+    en: 'Environment refreshed; environment unresolvable, nothing to compare'
+  },
+  'settings.refreshEnvDiffPathAdded': { zh: 'PATH 新增 {list}', en: 'PATH added: {list}' },
+  'settings.refreshEnvDiffPathRemoved': { zh: 'PATH 删除 {list}', en: 'PATH removed: {list}' },
+  'settings.refreshEnvDiffVars': {
+    zh: '环境变量：新增 {added}、删除 {removed}、变更 {changed}',
+    en: 'Variables: {added} added, {removed} removed, {changed} changed'
+  },
+  'settings.refreshEnvFailed': { zh: '刷新环境缓存失败', en: 'Failed to refresh environment cache' },
   'settings.refreshEnvRestartTitle': { zh: '重启实例以应用新环境', en: 'Restart instances to apply' },
   'settings.refreshEnvRestartBody': {
-    zh: '已重新检测环境。检测到 {count} 个正在运行的本机实例，是否立即重启以应用新环境？重启会短暂中断正在使用的工作区。',
-    en: 'Environment re-detected. {count} local instance(s) are running. Restart them now to apply the new environment? Restarting briefly interrupts the workspaces in use.'
+    zh: '已刷新环境缓存。检测到 {count} 个正在运行的本机实例，是否立即重启以应用新环境？重启会短暂中断正在使用的工作区。',
+    en: 'Environment cache refreshed. {count} local instance(s) are running. Restart them now to apply the new environment? Restarting briefly interrupts the workspaces in use.'
   },
   'settings.refreshEnvRestartConfirm': { zh: '立即重启', en: 'Restart now' },
   'settings.refreshEnvRestartLater': { zh: '稍后手动', en: 'Later' },

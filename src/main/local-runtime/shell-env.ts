@@ -131,6 +131,7 @@ export function createShellEnvResolver(
   resolver.invalidate = (): void => {
     cached = null
   }
+  resolver.peek = (): Promise<Map<string, string> | null> | undefined => cached ?? undefined
   return resolver
 }
 

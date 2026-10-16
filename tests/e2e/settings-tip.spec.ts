@@ -93,3 +93,18 @@ test('带说明的复选框行：点 label 正文仍切换勾选', async () => {
   await label.click()
   await expect(box).toBeChecked({ checked: before })
 })
+
+test('刷新环境缓存：无运行实例只出结果 toast，不弹重启确认', async () => {
+  test.setTimeout(60_000)
+  // 承接上一条：设置页仍打开、本机无运行实例。
+  // 先等勾选留下的「设置已保存」toast 消失，确保新 toast 来自本次刷新。
+  await expect(win.getByTestId('toast')).toHaveCount(0, { timeout: 15_000 })
+  // 冷缓存要先解析登录环境再失效重解析，两轮子进程解析给足超时预算。
+  await win.getByTestId('settings-refresh-env').click()
+  const toast = win.getByTestId('toast').first()
+  await expect(toast).toBeVisible({ timeout: 30_000 })
+  // 结果 toast（有变化 / 无变化 / 不可比 / 失败）都要落在环境刷新这条语义上
+  await expect(toast).toContainText(/环境|nvironment/i)
+  // 没有可重启的实例，不该出现重启确认框
+  await expect(win.getByTestId('settings-confirm-restart-env')).toHaveCount(0)
+})

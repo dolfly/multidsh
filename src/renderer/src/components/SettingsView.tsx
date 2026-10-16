@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { VaultStatusSnapshot, LocalSpaceSnapshot } from '@shared/contracts'
+import type { EnvironmentDiff, VaultStatusSnapshot, LocalSpaceSnapshot } from '@shared/contracts'
 import { LANGUAGES, THEMES } from '@shared/settings'
 import type { LanguagePreference, Theme } from '@shared/settings'
 import { Icon } from '../lib/icons'
@@ -99,8 +99,44 @@ export default function SettingsView(): ReactNode {
     void BRIDGE?.openAbout()
   }
 
+  /** 明细最多列 3 条，更多用省略号收尾（PATH 可能一次新增很多条）。 */
+  const clipList = (items: string[]): string =>
+    items.length > 3
+      ? `${items.slice(0, 3).join(t('common.listSeparator'))}…`
+      : items.join(t('common.listSeparator'))
+
   /**
-   * 重新检测本机环境（PATH / 登录 shell）：失效主进程缓存并重解析。
+   * 把刷新后的环境差异写进 toast：有变化列明细（只列 PATH 条目与变量名，
+   * 变量值可能含凭据，不出主进程），无变化与不可比各自成句。
+   */
+  const reportEnvDiff = (diff: EnvironmentDiff): void => {
+    const parts: string[] = []
+    if (diff.pathAdded.length > 0) {
+      parts.push(t('settings.refreshEnvDiffPathAdded', { list: clipList(diff.pathAdded) }))
+    }
+    if (diff.pathRemoved.length > 0) {
+      parts.push(t('settings.refreshEnvDiffPathRemoved', { list: clipList(diff.pathRemoved) }))
+    }
+    if (diff.varsAdded.length + diff.varsRemoved.length + diff.varsChanged.length > 0) {
+      parts.push(
+        t('settings.refreshEnvDiffVars', {
+          added: diff.varsAdded.length,
+          removed: diff.varsRemoved.length,
+          changed: diff.varsChanged.length
+        })
+      )
+    }
+    if (parts.length > 0) {
+      toast('ok', t('settings.refreshEnvChangedTitle'), parts.join(t('common.clauseSeparator')))
+    } else if (diff.pathComparable || diff.varsComparable) {
+      toast('ok', t('settings.refreshEnvNoChange'))
+    } else {
+      toast('ok', t('settings.refreshEnvIncomparable'))
+    }
+  }
+
+  /**
+   * 刷新环境缓存（PATH / 登录 shell）：失效主进程缓存并重解析，报告前后差异。
    * 若有正在运行、可重启的本机实例，弹出确认框由用户决定是否立即重启生效。
    */
   const refreshEnv = (): void => {
@@ -114,8 +150,8 @@ export default function SettingsView(): ReactNode {
           toast('err', t('settings.refreshEnvFailed'), result.message)
           return
         }
-        if (result.value.length > 0) setRestartPrompt(result.value)
-        else toast('ok', t('settings.refreshEnvDone'))
+        reportEnvDiff(result.value.diff)
+        if (result.value.instances.length > 0) setRestartPrompt(result.value.instances)
       })
       .finally(() => setRefreshing(false))
   }

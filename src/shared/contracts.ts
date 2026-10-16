@@ -462,11 +462,38 @@ export const SETTINGS_IPC = {
   /** 应用数据目录由主进程自行解析；通道不接受参数。 */
   openDataDir: 'settings:openDataDir',
   /**
-   * 重新检测本机环境（登录 PATH / shell 环境）并失效缓存；无参数。
-   * 返回当前正在运行、可由 hub 重启的本机实例 id，供渲染层决定是否提示重启生效。
+   * 刷新环境缓存（失效并重新解析登录 PATH / shell 环境）；无参数。
+   * 返回刷新前后的环境差异，以及当前正在运行、可由 hub 重启的本机实例 id，
+   * 供渲染层报告变化并决定是否提示重启生效。
    */
   refreshEnvironment: 'settings:refreshEnvironment'
 } as const
+
+/**
+ * 刷新环境缓存前后的差异。
+ *
+ * 只回传 PATH 条目与变量**名**：变量值可能含凭据，绝不外传（值仅在主进程内
+ * 用于判定是否变化）。列表按新/旧顺序排列，仅列增删项 —— PATH 顺序调整不计。
+ */
+export interface EnvironmentDiff {
+  /** 两侧 PATH 均解析成功；false = 无法对比（解析失败/不可用），路径列表为空。 */
+  pathComparable: boolean
+  /** 两侧登录 shell 环境均解析成功；false = 无法对比（非 zsh/bash 等），变量列表为空。 */
+  varsComparable: boolean
+  pathAdded: string[]
+  pathRemoved: string[]
+  varsAdded: string[]
+  varsRemoved: string[]
+  /** 两侧都有但取值不同的变量名（只给名字）。 */
+  varsChanged: string[]
+}
+
+/** `settings:refreshEnvironment` 的返回。 */
+export interface EnvironmentRefreshResult {
+  /** 正在运行、可由 hub 重启的本机实例 id（外部接管的除外）。 */
+  instances: string[]
+  diff: EnvironmentDiff
+}
 
 export type AuthPhase =
   | 'unknown'

@@ -20,6 +20,7 @@ import type { LocalRuntimeManager } from '../local-runtime/local-runtime'
 import type { SshTunnelManager } from '../transport/ssh-tunnel'
 import type { HttpEndpointManager } from '../transport/http-endpoint'
 import { createInstanceStore } from '../registry/instance-store'
+import { emptyEnvironmentDiff } from '../local-runtime/env-diff'
 import { registerIpc } from './register'
 
 type Listener = (...args: unknown[]) => unknown
@@ -157,7 +158,7 @@ beforeEach(async () => {
     start: vi.fn(async () => undefined),
     stop: vi.fn(async () => undefined),
     stopAll: vi.fn(async () => undefined),
-    refreshEnv: vi.fn(async () => undefined),
+    refreshEnv: vi.fn(async () => emptyEnvironmentDiff()),
     adopt: vi.fn(async () => undefined),
     upgradeInstance: vi.fn(async () => undefined)
   }
@@ -2721,17 +2722,31 @@ describe('registerIpc', () => {
     expect(bad.ok).toBe(false)
   })
 
-  it('settings:refreshEnvironment 失效登录环境缓存并返回运行中、可重启的本机实例', async () => {
+  it('settings:refreshEnvironment 刷新缓存并返回环境差异与可重启的本机实例', async () => {
     runtimeFake.runningIds.mockReturnValue(['a', 'b', 'ext'])
     runtimeFake.statusOf.mockImplementation((id: string) =>
       id === 'ext' ? { runtimeSource: 'external' } : { runtimeSource: 'hub' }
     )
+    runtimeFake.refreshEnv.mockResolvedValue({
+      pathComparable: true,
+      varsComparable: false,
+      pathAdded: ['/opt/homebrew/bin'],
+      pathRemoved: [],
+      varsAdded: [],
+      varsRemoved: [],
+      varsChanged: []
+    })
 
-    const result = (await invoke('settings:refreshEnvironment')) as { ok: boolean; value: string[] }
+    const result = (await invoke('settings:refreshEnvironment')) as {
+      ok: boolean
+      value: { instances: string[]; diff: { pathAdded: string[] } }
+    }
 
     expect(result.ok).toBe(true)
     // 外部接管的实例不可由 hub 重启，必须被排除
-    expect(result.value).toEqual(['a', 'b'])
+    expect(result.value.instances).toEqual(['a', 'b'])
+    // 刷新前后的环境差异原样回传，供渲染层报告「多了什么」
+    expect(result.value.diff.pathAdded).toEqual(['/opt/homebrew/bin'])
     expect(runtimeFake.refreshEnv).toHaveBeenCalledOnce()
   })
 

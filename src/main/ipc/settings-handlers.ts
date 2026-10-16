@@ -1,19 +1,20 @@
 import { ipcMain } from 'electron'
 import { z } from 'zod'
-import { SETTINGS_IPC, type IpcResult } from '@shared/contracts'
+import { SETTINGS_IPC, type EnvironmentRefreshResult, type IpcResult } from '@shared/contracts'
 import { SettingsSchema, type Settings } from '@shared/settings'
 import type { SettingsStore } from '../settings/settings-store'
 import { DataDirOpenError } from '../shell/open-data-dir'
+import { emptyEnvironmentDiff } from '../local-runtime/env-diff'
 
 export interface SettingsHandlerDeps {
   settings: SettingsStore
   onSettingsChanged?: (settings: Settings, changedKeys: readonly (keyof Settings)[]) => void
   openDataDir?: () => Promise<void>
   /**
-   * 重新检测本机环境（登录 PATH / shell 环境）并失效缓存；返回当前正在运行、
-   * 可由 hub 重启的本机实例 id，供渲染层决定是否提示重启生效。
+   * 刷新环境缓存（失效并重新解析登录 PATH / shell 环境），返回刷新前后的差异，
+   * 以及当前正在运行、可由 hub 重启的本机实例 id，供渲染层报告变化并提示重启生效。
    */
-  refreshEnvironment?: () => Promise<string[]>
+  refreshEnvironment?: () => Promise<EnvironmentRefreshResult>
 }
 
 export function registerSettingsHandlers(
@@ -55,11 +56,11 @@ export function registerSettingsHandlers(
 
   ipcMain.handle(
     SETTINGS_IPC.refreshEnvironment,
-    (_event, ...args: unknown[]): Promise<IpcResult<string[]>> =>
+    (_event, ...args: unknown[]): Promise<IpcResult<EnvironmentRefreshResult>> =>
       wrap(async () => {
         z.tuple([]).parse(args)
-        // 不可用时按「无运行中实例」处理：失效缓存是副作用，没有端口可返回也不报错。
-        if (!deps.refreshEnvironment) return []
+        // 不可用时按「无实例、无可比差异」处理：刷新是副作用，返回空结果也不报错。
+        if (!deps.refreshEnvironment) return { instances: [], diff: emptyEnvironmentDiff() }
         return deps.refreshEnvironment()
       })
   )

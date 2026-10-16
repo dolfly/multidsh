@@ -126,11 +126,24 @@ function readyLine(port = 31234): string {
 }
 
 describe('createLocalRuntime', () => {
-  it('refreshEnv 失效并重解析登录环境缓存（装新工具后无需重启 app）', async () => {
+  it('refreshEnv 失效并重解析登录环境缓存，缓存有基线时只重解析一次并返回差异', async () => {
     const loginInvalidate = vi.fn()
     const shellInvalidate = vi.fn()
-    const loginPath = Object.assign(vi.fn(async () => '/usr/bin'), { invalidate: loginInvalidate })
-    const shellEnv = Object.assign(vi.fn(async () => new Map<string, string>()), { invalidate: shellInvalidate })
+    const loginPath = Object.assign(
+      vi.fn(async () => '/usr/bin:/opt/homebrew/bin'),
+      {
+        invalidate: loginInvalidate,
+        // 基线取缓存里上一次的解析结果；peek 不得触发新解析
+        peek: vi.fn(async () => '/usr/bin')
+      }
+    )
+    const shellEnv = Object.assign(
+      vi.fn(async () => new Map([['HTTP_PROXY', 'http://new']])),
+      {
+        invalidate: shellInvalidate,
+        peek: vi.fn(async () => new Map([['HTTP_PROXY', 'http://old']]))
+      }
+    )
 
     const manager = createLocalRuntime({
       store: storeStub,
@@ -140,13 +153,46 @@ describe('createLocalRuntime', () => {
       shellEnv
     })
 
-    await manager.refreshEnv()
+    const diff = await manager.refreshEnv()
 
     expect(loginInvalidate).toHaveBeenCalledOnce()
     expect(shellInvalidate).toHaveBeenCalledOnce()
-    // 预热：失效后立刻重解析一次，使随后的启动不必等待解析
+    // 预热：失效后立刻重解析一次，使随后的启动不必等待解析；基线来自 peek，不额外解析
     expect(loginPath).toHaveBeenCalledOnce()
     expect(shellEnv).toHaveBeenCalledOnce()
+    expect(diff.pathComparable).toBe(true)
+    expect(diff.pathAdded).toEqual(['/opt/homebrew/bin'])
+    expect(diff.pathRemoved).toEqual([])
+    expect(diff.varsChanged).toEqual(['HTTP_PROXY'])
+  })
+
+  it('refreshEnv 冷缓存（没有 peek 结果）先解析一次建立基线，再失效重解析', async () => {
+    const loginPath = Object.assign(vi.fn(async () => '/usr/bin'), { invalidate: vi.fn() })
+    const shellEnv = Object.assign(vi.fn(async () => new Map<string, string>()), {
+      invalidate: vi.fn()
+    })
+
+    const manager = createLocalRuntime({
+      store: storeStub,
+      installer: makeFakeInstaller(),
+      dataRoot: '/tmp/hub-data',
+      loginPath,
+      shellEnv
+    })
+
+    const diff = await manager.refreshEnv()
+
+    // 基线 + 刷新后的重解析各一次
+    expect(loginPath).toHaveBeenCalledTimes(2)
+    expect(shellEnv).toHaveBeenCalledTimes(2)
+    expect(diff.pathComparable).toBe(true)
+    expect(diff.varsComparable).toBe(true)
+    // 两次解析结果相同 → 无变化
+    expect(diff.pathAdded).toEqual([])
+    expect(diff.pathRemoved).toEqual([])
+    expect(diff.varsAdded).toEqual([])
+    expect(diff.varsRemoved).toEqual([])
+    expect(diff.varsChanged).toEqual([])
   })
 
   it('start → 就绪行 → 健康探测通过 → running(带 url/port/version)', async () => {
