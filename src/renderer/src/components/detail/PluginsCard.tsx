@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { PluginAutoDisabled, PluginInfo, PluginUpdateCheck } from '@shared/contracts'
+import type {
+  PluginAutoDisabled,
+  PluginInfo,
+  PluginInstallPlan,
+  PluginUpdateCheck
+} from '@shared/contracts'
 import type { Translator } from '@shared/i18n'
 import { Icon } from '../../lib/icons'
 import { fmtLogTime } from '../../lib/format'
@@ -23,6 +28,9 @@ import {
   type PluginCheckState
 } from '../../lib/plugins-card-state'
 import InstallPluginDialog from './InstallPluginDialog'
+import type { InstallConfirmation } from './InstallPluginDialog'
+import UpgradeConfirmDialog from './UpgradeConfirmDialog'
+import type { UpgradeOutcome } from './UpgradeConfirmDialog'
 import Switch from '../Switch'
 
 const BRIDGE = window.dshHub
@@ -43,6 +51,12 @@ interface RowBusy {
 /** 卸载二次确认目标。 */
 interface RemoveTarget {
   name: string
+}
+
+/** 升级二次确认目标：点行内「升级到 x」后先确认再执行。 */
+interface UpgradeTarget {
+  name: string
+  version: string
 }
 
 /** 重启提醒目标（改动含 host 半后弹出）。 */
@@ -81,6 +95,7 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
   const [busy, setBusy] = useState<Record<string, RowBusy>>({})
   const [showInstall, setShowInstall] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null)
+  const [upgradeTarget, setUpgradeTarget] = useState<UpgradeTarget | null>(null)
   const [restartPrompt, setRestartPrompt] = useState<RestartPrompt | null>(null)
   /** 上次「检查更新」完成时刻（对整卡的批量或单条检查都刷新）；null = 本会话尚未检查。 */
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null)
@@ -280,8 +295,12 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     toast('ok', t('detail.plugin.mutationDone'), t('detail.plugin.appliedHint', { name }))
   }
 
-  const runUpgrade = async (name: string, version: string): Promise<void> => {
-    if (!BRIDGE) return
+  /**
+   * 升级执行与收尾：留痕、清掉该插件的检查标记、刷新列表，最后按生效口径提示。
+   * 失败把 message 交回二次确认对话框就地显示，对话框据此保持打开。
+   */
+  const performUpgrade = async (name: string, version: string): Promise<UpgradeOutcome> => {
+    if (!BRIDGE) return { ok: false }
     setRowBusy(name, { upgrading: true })
     logActivity(t('detail.plugin.log.upgrading', { name, version }))
     const result = await BRIDGE.plugin.upgrade(instanceId, name, version)
@@ -289,7 +308,7 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     if (!result.ok) {
       logActivity(t('detail.plugin.log.upgradeFailed', { name, msg: result.message }))
       toast('err', t('detail.plugin.upgradeFailed', { msg: result.message }))
-      return
+      return { ok: false, message: result.message }
     }
     logActivity(t('detail.plugin.log.upgraded', { name, version }))
     // 升级后该插件版本已变，自身旧检查结果失效——清掉它，其它插件的检查状态保留。
@@ -300,6 +319,7 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     })
     await load({ keepChecks: true })
     afterMutation(name, result.value.application)
+    return { ok: true }
   }
 
   /** 启用/禁用插件：改 profile 的加载清单，禁用后仍在列表可见（可升级/卸载/再启用）。
@@ -352,19 +372,24 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     afterMutation(name, result.value.application)
   }
 
-  const submitInstall = async (spec: string): Promise<void> => {
-    if (!BRIDGE) return
-    logActivity(t('detail.plugin.log.installing', { spec }))
-    const result = await BRIDGE.plugin.install(instanceId, spec)
-    if (!result.ok) {
-      logActivity(t('detail.plugin.log.installFailed', { spec, msg: result.message }))
-      toast('err', t('detail.plugin.installFailed', { msg: result.message }))
-      return
-    }
-    logActivity(t('detail.plugin.log.installed', { spec }))
-    setShowInstall(false)
+  /** 安装开始：信息栏留痕（安装由对话框执行，失败错误就地显示在对话框内）。 */
+  const logInstallStart = (plan: PluginInstallPlan): void => {
+    logActivity(t('detail.plugin.log.installing', { spec: plan.installSpec }))
+  }
+
+  /** 安装成功：留痕 + 刷新列表 + 生效提示（对话框随后自行关闭）。 */
+  const finishInstall = async (
+    plan: PluginInstallPlan,
+    confirmation: InstallConfirmation
+  ): Promise<void> => {
+    logActivity(t('detail.plugin.log.installed', { spec: plan.installSpec }))
     await load({ keepChecks: true })
-    afterMutation(spec, result.value.application)
+    afterMutation(plan.packageName ?? plan.installSpec, confirmation.application)
+  }
+
+  /** 安装失败：信息栏留痕（错误同时就地显示在对话框内）。 */
+  const logInstallFailed = (plan: PluginInstallPlan, message: string): void => {
+    logActivity(t('detail.plugin.log.installFailed', { spec: plan.installSpec, msg: message }))
   }
 
   const confirmRestart = (): void => {
@@ -473,7 +498,7 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
               busy={rowBusy(plugin.name)}
               locked={checkingAll}
               onCheck={() => void runCheck(plugin.name)}
-              onUpgrade={(version) => void runUpgrade(plugin.name, version)}
+              onUpgrade={(version) => setUpgradeTarget({ name: plugin.name, version })}
               onToggleEnabled={(enabled) => void runToggle(plugin.name, enabled)}
               onRemove={() => setRemoveTarget({ name: plugin.name })}
               onOpenLink={openLink}
@@ -483,7 +508,25 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
       )}
 
       {showInstall && (
-        <InstallPluginDialog t={t} onClose={() => setShowInstall(false)} onSubmit={submitInstall} />
+        <InstallPluginDialog
+          t={t}
+          instanceId={instanceId}
+          onClose={() => setShowInstall(false)}
+          onInstallStart={logInstallStart}
+          onInstalled={finishInstall}
+          onInstallFailed={logInstallFailed}
+        />
+      )}
+
+      {upgradeTarget !== null && (
+        <UpgradeConfirmDialog
+          t={t}
+          instanceId={instanceId}
+          name={upgradeTarget.name}
+          version={upgradeTarget.version}
+          onClose={() => setUpgradeTarget(null)}
+          onConfirm={() => performUpgrade(upgradeTarget.name, upgradeTarget.version)}
+        />
       )}
 
       {removeTarget !== null && (

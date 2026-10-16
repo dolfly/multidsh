@@ -1,22 +1,28 @@
 /**
- * dsh 插件管理通道（仅本机实例）：列表、检查升级、安装、升级、卸载，以及打开插件外链。
+ * dsh 插件管理通道（仅本机实例）：列表、检查升级、安装前版本解析、安装、包增强信息、升级、卸载，
+ * 以及打开插件外链。
  *
  * profile 与 DSH_HOME 由 PluginManager 按实例推导，渲染层只提供实例 id 与受校验的包名/spec；
- * 外链打开只接受 https 且域名在白名单（npmjs.com / github.com），交系统默认浏览器。
+ * 安装源只接受档位枚举（URL 由主进程映射），外链打开只接受 https 且域名在白名单
+ * （npmjs.com / github.com），交系统默认浏览器。
  */
 import { ipcMain } from 'electron'
 import { z } from 'zod'
 import {
   DSH_VERSION_PATTERN,
+  PLUGIN_INSTALL_OPTIONS_SCHEMA,
   PLUGIN_IPC,
   PLUGIN_NAME_SCHEMA,
+  PLUGIN_RESOLVE_OPTIONS_SCHEMA,
   PLUGIN_SPEC_SCHEMA,
   type IpcResult,
   type LocalInstance,
   type PluginCheckSnapshot,
   type PluginEnableResult,
   type PluginInfo,
+  type PluginInstallPlan,
   type PluginMutationResult,
+  type PluginPackageInfo,
   type PluginUpdateCheck
 } from '@shared/contracts'
 import { InstanceStoreError, requireInstance, type InstanceStore } from '../registry/instance-store'
@@ -72,13 +78,50 @@ export function registerPluginHandlers(store: InstanceStore, deps: PluginHandler
     })
   )
 
-  ipcMain.handle(PLUGIN_IPC.install, (_event, id: unknown, spec: unknown): Promise<IpcResult<PluginMutationResult>> =>
-    wrap(async () => {
-      const instance = await requireLocal(id)
-      const pluginSpec = PLUGIN_SPEC_SCHEMA.parse(spec)
-      if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
-      return deps.pluginManager.install(instance, pluginSpec)
-    })
+  ipcMain.handle(
+    PLUGIN_IPC.resolveInstall,
+    (
+      _event,
+      id: unknown,
+      spec: unknown,
+      options: unknown
+    ): Promise<IpcResult<PluginInstallPlan>> =>
+      wrap(async () => {
+        const instance = await requireLocal(id)
+        const pluginSpec = PLUGIN_SPEC_SCHEMA.parse(spec)
+        const parsedOptions = PLUGIN_RESOLVE_OPTIONS_SCHEMA.parse(options ?? {})
+        if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
+        return deps.pluginManager.resolveInstall(instance, pluginSpec, parsedOptions)
+      })
+  )
+
+  ipcMain.handle(
+    PLUGIN_IPC.install,
+    (
+      _event,
+      id: unknown,
+      spec: unknown,
+      options: unknown
+    ): Promise<IpcResult<PluginMutationResult>> =>
+      wrap(async () => {
+        const instance = await requireLocal(id)
+        const pluginSpec = PLUGIN_SPEC_SCHEMA.parse(spec)
+        const parsedOptions = PLUGIN_INSTALL_OPTIONS_SCHEMA.parse(options ?? {})
+        if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
+        return deps.pluginManager.install(instance, pluginSpec, parsedOptions)
+      })
+  )
+
+  ipcMain.handle(
+    PLUGIN_IPC.packageInfo,
+    (_event, id: unknown, name: unknown, version: unknown): Promise<IpcResult<PluginPackageInfo>> =>
+      wrap(async () => {
+        const instance = await requireLocal(id)
+        const pluginName = PLUGIN_NAME_SCHEMA.parse(name)
+        const targetVersion = PLUGIN_VERSION_SCHEMA.parse(version)
+        if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
+        return deps.pluginManager.packageInfo(instance, pluginName, targetVersion)
+      })
   )
 
   ipcMain.handle(

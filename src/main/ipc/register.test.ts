@@ -117,6 +117,8 @@ let pluginManagerFake: {
   check: ReturnType<typeof vi.fn>
   checkState: ReturnType<typeof vi.fn>
   install: ReturnType<typeof vi.fn>
+  resolveInstall: ReturnType<typeof vi.fn>
+  packageInfo: ReturnType<typeof vi.fn>
   upgrade: ReturnType<typeof vi.fn>
   remove: ReturnType<typeof vi.fn>
   setEnabled: ReturnType<typeof vi.fn>
@@ -254,6 +256,24 @@ beforeEach(async () => {
     })),
     checkState: vi.fn(async () => ({ lastCheckedAt: null, updates: {}, checking: [] })),
     install: vi.fn(async () => ({ hasHostSide: false })),
+    resolveInstall: vi.fn(async () => ({
+      installSpec: 'demo-plugin@1.1.0',
+      input: 'demo-plugin',
+      kind: 'npm',
+      packageName: 'demo-plugin',
+      targetVersion: '1.1.0',
+      latestVersion: '1.1.0',
+      versionSource: 'resolved-latest',
+      publishedAt: null,
+      dshPeer: null,
+      dshVersion: null,
+      compatible: true,
+      installedVersion: null
+    })),
+    packageInfo: vi.fn(async () => ({
+      downloads: null,
+      releaseNotes: { text: null, source: 'none', pageUrl: null, truncated: false }
+    })),
     upgrade: vi.fn(async () => ({ hasHostSide: false })),
     remove: vi.fn(async () => ({ hasHostSide: false })),
     setEnabled: vi.fn(async (instance, name, enabled) => ({ name, enabled }))
@@ -348,6 +368,8 @@ describe('registerIpc', () => {
       'plugin:check',
       'plugin:checkState',
       'plugin:install',
+      'plugin:resolveInstall',
+      'plugin:packageInfo',
       'plugin:upgrade',
       'plugin:remove',
       'plugin:setEnabled',
@@ -806,6 +828,96 @@ describe('registerIpc', () => {
     expect(result.ok).toBe(false)
     expect(result.code).toBe('invalid-input')
     expect(pluginManagerFake.install).not.toHaveBeenCalled()
+  })
+
+  it('plugin:install：第三参 options 经校验后透传（enable + registry）', async () => {
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
+    if (!created.ok) throw new Error('创建失败')
+    const result = (await invoke('plugin:install', created.value.id, 'demo-plugin@1.1.0', {
+      enable: false,
+      registry: 'npmjs'
+    })) as { ok: boolean }
+    expect(result.ok).toBe(true)
+    expect(pluginManagerFake.install).toHaveBeenCalledWith(
+      expect.objectContaining({ id: created.value.id }),
+      'demo-plugin@1.1.0',
+      { enable: false, registry: 'npmjs' }
+    )
+  })
+
+  it('plugin:install：非法安装源档位被拒，不到达命令层', async () => {
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
+    if (!created.ok) throw new Error('创建失败')
+    const result = (await invoke('plugin:install', created.value.id, 'demo-plugin', {
+      registry: 'https://evil.example.com'
+    })) as { ok: boolean; code?: string }
+    expect(result).toMatchObject({ ok: false, code: 'invalid-input' })
+    expect(pluginManagerFake.install).not.toHaveBeenCalled()
+  })
+
+  it('plugin:resolveInstall：解析计划透传给渲染层（含安装源）', async () => {
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
+    if (!created.ok) throw new Error('创建失败')
+    const result = (await invoke('plugin:resolveInstall', created.value.id, 'demo-plugin', {
+      registry: 'npmjs'
+    })) as { ok: boolean; value: { installSpec: string; targetVersion: string } }
+    expect(result.ok).toBe(true)
+    expect(result.value.installSpec).toBe('demo-plugin@1.1.0')
+    expect(result.value.targetVersion).toBe('1.1.0')
+    expect(pluginManagerFake.resolveInstall).toHaveBeenCalledWith(
+      expect.objectContaining({ id: created.value.id }),
+      'demo-plugin',
+      { registry: 'npmjs' }
+    )
+  })
+
+  it('plugin:resolveInstall：非 local 实例报 invalid-input', async () => {
+    const created = (await invoke('instances:create', {
+      transport: 'http',
+      name: 'HTTP',
+      authMode: 'auto',
+      endpointUrl: 'http://127.0.0.1:1/dsh'
+    })) as { ok: boolean; value: { id: string } }
+    if (!created.ok) throw new Error('创建失败')
+    const result = (await invoke('plugin:resolveInstall', created.value.id, 'demo-plugin')) as {
+      ok: boolean
+      code?: string
+    }
+    expect(result).toMatchObject({ ok: false, code: 'invalid-input' })
+  })
+
+  it('plugin:packageInfo：包名与版本经校验后转发（取不到内容不是错误）', async () => {
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
+    if (!created.ok) throw new Error('创建失败')
+    const result = (await invoke('plugin:packageInfo', created.value.id, 'demo-plugin', '1.1.0')) as {
+      ok: boolean
+      value: { releaseNotes: { source: string } }
+    }
+    expect(result.ok).toBe(true)
+    expect(result.value.releaseNotes.source).toBe('none')
+    expect(pluginManagerFake.packageInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ id: created.value.id }),
+      'demo-plugin',
+      '1.1.0'
+    )
+
+    const bad = (await invoke('plugin:packageInfo', created.value.id, 'demo-plugin', 'bad version')) as {
+      ok: boolean
+      code?: string
+    }
+    expect(bad).toMatchObject({ ok: false, code: 'invalid-input' })
   })
 
   it('plugin:setEnabled：校验入参后转发（布尔 + 包名）', async () => {

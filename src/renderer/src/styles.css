@@ -2346,6 +2346,20 @@ details.adv[open] {
 .plugin-detail {
   margin: 10px 0 4px 20px;
 }
+/* 更新内容正文：纯文本渲染（不引入 Markdown 依赖），限高滚动避免撑破对话框。 */
+.release-notes {
+  margin: 0;
+  max-height: 150px;
+  overflow: auto;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in oklch, var(--bg) 45%, var(--surface));
+  font-size: 12.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .link-btn {
   background: none;
   border: none;

@@ -28,7 +28,10 @@ import type {
   LocalLauncherSnapshot,
   LocalSpaceSnapshot,
   PluginInfo,
+  PluginInstallOptions,
+  PluginInstallPlan,
   PluginMutationResult,
+  PluginPackageInfo,
   PluginCheckSnapshot,
   PluginEnableResult,
   PluginUpdateCheck,
@@ -166,7 +169,19 @@ export interface DshHubBridge {
     /** 读取持久化的检查状态（可升级标记 + 在飞检查），挂载时恢复。 */
     checkState: (id: string) => Promise<IpcResult<PluginCheckSnapshot>>
     /** 安装插件；spec 为 npm 名 / name@version / github: / file: 形态。 */
-    install: (id: string, spec: string) => Promise<IpcResult<PluginMutationResult>>
+    install: (
+      id: string,
+      spec: string,
+      options?: PluginInstallOptions
+    ) => Promise<IpcResult<PluginMutationResult>>
+    /** 安装前解析版本（npm 裸名按 registry 选出版本，不再用 dist-tag `latest` 直装）。 */
+    resolveInstall: (
+      id: string,
+      spec: string,
+      options?: PluginInstallOptions
+    ) => Promise<IpcResult<PluginInstallPlan>>
+    /** 单个版本的更新内容与近 30 天下载量（确认区懒加载；取不到不算错误）。 */
+    packageInfo: (id: string, name: string, version: string) => Promise<IpcResult<PluginPackageInfo>>
     /** 升级到指定版本（显式版本，非 latest）。 */
     upgrade: (id: string, name: string, version: string) => Promise<IpcResult<PluginMutationResult>>
     /** 卸载插件。 */

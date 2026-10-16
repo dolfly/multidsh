@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, normalizeSettings, resolveLanguage, sanitizeEnvRegistry, SettingsSchema } from './settings'
+import {
+  DEFAULT_PLUGIN_REGISTRY,
+  DEFAULT_SETTINGS,
+  isAllowedNpmRegistry,
+  normalizeSettings,
+  pluginRegistryUrl,
+  resolveLanguage,
+  sanitizeEnvRegistry,
+  SettingsSchema
+} from './settings'
 
 describe('settings（非敏感偏好）', () => {
   it('默认值:跟随系统语言与主题、不驻留托盘、不自启、开通知', () => {
@@ -121,5 +130,17 @@ describe('settings（非敏感偏好）', () => {
     expect(sanitizeEnvRegistry('http://evil.example.com/')).toBeUndefined()
     expect(sanitizeEnvRegistry('file:///tmp/evil-registry')).toBeUndefined()
     expect(sanitizeEnvRegistry('not a url')).toBeUndefined()
+  })
+
+  it('插件安装源档位映射为 https URL，缺省与未知档位都回落默认源', () => {
+    expect(DEFAULT_PLUGIN_REGISTRY).toBe('npmmirror')
+    expect(pluginRegistryUrl('npmmirror')).toBe('https://registry.npmmirror.com')
+    expect(pluginRegistryUrl('npmjs')).toBe('https://registry.npmjs.org')
+    expect(pluginRegistryUrl(undefined)).toBe('https://registry.npmmirror.com')
+    expect(pluginRegistryUrl(null)).toBe('https://registry.npmmirror.com')
+    // 映射结果必须过信任根校验：档位无法被用来指定明文或任意源。
+    expect(isAllowedNpmRegistry(pluginRegistryUrl('npmmirror'))).toBe(true)
+    expect(isAllowedNpmRegistry(pluginRegistryUrl('npmjs'))).toBe(true)
+    expect(isAllowedNpmRegistry(pluginRegistryUrl(undefined))).toBe(true)
   })
 })

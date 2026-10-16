@@ -1,7 +1,7 @@
 import { _electron as electron, expect, test } from '@playwright/test'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 /**
@@ -21,10 +21,37 @@ import { join, resolve } from 'node:path'
 const VERSION = '0.1.7-rc.2'
 const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-plugins')
 const ENTRY_DIR = join(DATA_DIR, 'runtimes', `dsh-${VERSION}`, 'node_modules', '@deepseek-ai', 'dsh', 'lib')
+/** 假 dsh 记录的插桩文件：每次 add/remove 追加一行 JSON。 */
+const MUTATION_LOG = join(DATA_DIR, 'plugin-mutations.jsonl')
 
 /** 假插件已装版本与它在假 registry 里的发布时间（view 的 time 映射中已装版本那一项）。 */
 const INSTALLED_VERSION = '1.0.0'
 const INSTALLED_PUBLISHED_AT = '2026-09-20T02:30:00.000Z'
+
+/**
+ * 假 registry 的候选版本：故意不按版本序排列（`1.0.10` 在 `1.0.9` 前），
+ * 且 dist-tag `latest` 停在已装版本（滞后）——解析必须取「最大稳定版」而不是末位或 dist-tag。
+ */
+const LATEST_VERSION = '1.1.0'
+const FAKE_VERSIONS = ['1.0.0', '1.0.10', '1.0.9', LATEST_VERSION]
+
+/** 假 dsh 记录的 add/remove 调用。 */
+interface FakeMutation {
+  cmd: string
+  args: string[]
+}
+
+async function readMutations(): Promise<FakeMutation[]> {
+  try {
+    const text = await readFile(MUTATION_LOG, 'utf8')
+    return text
+      .split('\n')
+      .filter((line) => line.trim() !== '')
+      .map((line) => JSON.parse(line) as FakeMutation)
+  } catch {
+    return []
+  }
+}
 
 /** 与渲染层 fmtLogTime 同口径（本地时区，YYYY-MM-DD HH:mm:ss）。 */
 function fmtLogTime(iso: string): string {
@@ -44,10 +71,12 @@ let instanceId = ''
 /**
  * 假 dsh 入口：只认 `plugin --profile <p> <sub> ...`。
  * - list --json：一个含 host+client 半的 npm 插件；
- * - view ... --json：默认返回兼容的新版本；`DSH_E2E_PLUGIN_INCOMPAT=1` 时返回不兼容版本；
- * - add / remove：打印并成功退出（同时把 add 的包写进一个 sentinel 便于断言可选）。
+ * - view ... --json：版本信息（versions 故意乱序且 dist-tag 滞后，用于验证解析不取末位、
+ *   也不盲信 dist-tag）；`DSH_E2E_PLUGIN_INCOMPAT=1` 时返回不兼容 peer；
+ * - add / remove：追加到 DSH_E2E_PLUGIN_ADD_LOG（若有），供断言实际下发的 spec 与 --registry。
  */
 const FAKE_BIN = `
+const fs = require('fs')
 const args = process.argv.slice(2)
 const i = args.indexOf('plugin')
 if (i === -1) { process.exit(0) }
@@ -77,13 +106,23 @@ if (cmd === 'view') {
   if (delay > 0) { const until = Date.now() + delay; while (Date.now() < until) {} }
   const incompat = process.env.DSH_E2E_PLUGIN_INCOMPAT === '1'
   process.stdout.write(JSON.stringify({
-    version: '1.1.0',
+    version: ${JSON.stringify(LATEST_VERSION)},
+    versions: ${JSON.stringify(FAKE_VERSIONS)},
+    'dist-tags': { latest: ${JSON.stringify(INSTALLED_VERSION)} },
     peerDependencies: { '@deepseek-ai/dsh': incompat ? '>=0.2.0' : '>=0.1.7-rc.2' },
-    time: { ${JSON.stringify(INSTALLED_VERSION)}: ${JSON.stringify(INSTALLED_PUBLISHED_AT)}, '1.1.0': '2026-09-28T11:16:59.586Z' }
+    repository: { type: 'git', url: 'git+https://github.com/demo/demo-plugin.git' },
+    time: { ${JSON.stringify(INSTALLED_VERSION)}: ${JSON.stringify(INSTALLED_PUBLISHED_AT)}, ${JSON.stringify(LATEST_VERSION)}: '2026-09-28T11:16:59.586Z' }
   }))
   process.exit(0)
 }
-if (cmd === 'add' || cmd === 'remove') { process.stdout.write('ok'); process.exit(0) }
+if (cmd === 'add' || cmd === 'remove') {
+  const log = process.env.DSH_E2E_PLUGIN_ADD_LOG
+  if (log) {
+    try { fs.appendFileSync(log, JSON.stringify({ cmd: cmd, args: sub.slice(1) }) + '\\n') } catch (error) {}
+  }
+  process.stdout.write('ok')
+  process.exit(0)
+}
 process.exit(0)
 `
 
@@ -107,6 +146,8 @@ test.beforeAll(async () => {
   const pluginDir = join(DATA_DIR, 'fake-plugin')
   await mkdir(pluginDir, { recursive: true })
   await writeFile(join(pluginDir, 'package.json'), JSON.stringify(FAKE_PLUGIN_MANIFEST), 'utf8')
+  // 假 dsh 的 add/remove 插桩：插件安装与升级的断言都读它。
+  process.env.DSH_E2E_PLUGIN_ADD_LOG = MUTATION_LOG
 
   app = await electron.launch({
     args: buildLaunchArgs(),
@@ -391,4 +432,85 @@ test('陈旧的检查记录（旧版本写入 / 已装版本更高）→ 不再�
     }
   })
   await expect(win.getByTestId('plugin-incompatible-demo-plugin')).toHaveCount(0)
+})
+
+test('安装两步：确定解析出版本、确认后才下发带 --registry 的 name@版本', async () => {
+  test.setTimeout(120_000)
+  await openDetail()
+  const before = (await readMutations()).length
+
+  await win.getByTestId('plugins-install-btn').click()
+  const dialog = win.getByTestId('install-plugin-dialog')
+  await expect(dialog).toBeVisible()
+  // 第一步：安装源两档（默认国内镜像）+ 常驻安全提醒。
+  await expect(win.getByTestId('install-plugin-source')).toHaveValue('npmmirror')
+  await expect(win.getByTestId('install-plugin-source')).toContainText('npmjs')
+  await expect(dialog).toContainText('来源不明的插件可能损坏 DSH')
+
+  await win.getByTestId('install-plugin-input').fill('demo-plugin')
+  await win.getByTestId('install-plugin-submit').click()
+
+  // 第二步：解析出的版本是最大稳定版（假 registry 的 dist-tag 滞后、versions 乱序）。
+  const versionRow = win.getByTestId('install-confirm-version')
+  await expect(versionRow).toBeVisible({ timeout: 20_000 })
+  await expect(versionRow).toContainText(LATEST_VERSION)
+  await expect(win.getByTestId('install-confirm-downloads')).toBeVisible()
+  await expect(win.getByTestId('install-plugin-submit')).toContainText(LATEST_VERSION)
+
+  // 未点安装前不得有任何 add。
+  expect((await readMutations()).length).toBe(before)
+
+  await win.getByTestId('install-plugin-submit').click()
+  await expect(dialog).toBeHidden({ timeout: 60_000 })
+  const mutations = await readMutations()
+  expect(mutations.length).toBe(before + 1)
+  const add = mutations.at(-1)
+  expect(add?.cmd).toBe('add')
+  // 安装规格是解析出的具体版本，且与解析同源。
+  expect(add?.args[0]).toBe(`demo-plugin@${LATEST_VERSION}`)
+  expect(add?.args).toContain('--registry')
+  expect(add?.args).toContain('https://registry.npmmirror.com')
+
+  // 输入变更作废确认区：重新打开后改内容应回到第一步。
+  await win.getByTestId('plugins-install-btn').click()
+  await expect(dialog).toBeVisible()
+  await win.getByTestId('install-plugin-input').fill('demo-plugin@1.0.0')
+  await win.getByTestId('install-plugin-submit').click()
+  await expect(versionRow).toContainText('重装', { timeout: 20_000 })
+  await win.getByTestId('install-plugin-input').fill('demo-plugin@1.0.10')
+  await expect(win.getByTestId('install-confirm-version')).toHaveCount(0)
+  await win.getByTestId('install-plugin-cancel').click()
+  await expect(dialog).toBeHidden()
+})
+
+test('升级二次确认：弹窗给出目标版本，取消不执行、确认才升级', async () => {
+  test.setTimeout(120_000)
+  await openDetail()
+  const upgrade = win.getByTestId('plugin-upgrade-demo-plugin')
+  if (!(await upgrade.isVisible())) {
+    await win.getByTestId('plugin-check-demo-plugin').click()
+  }
+  await expect(upgrade).toBeVisible({ timeout: 20_000 })
+  const before = (await readMutations()).length
+
+  await upgrade.click()
+  const dialog = win.getByTestId('upgrade-confirm-dialog')
+  await expect(dialog).toBeVisible()
+  await expect(win.getByTestId('upgrade-confirm-submit')).toContainText(LATEST_VERSION, { timeout: 20_000 })
+  // 升级不改启用态：不出现「安装后启用」勾选。
+  await expect(win.getByTestId('install-confirm-enable-after')).toHaveCount(0)
+
+  // 取消：不产生任何改动。
+  await win.getByTestId('upgrade-confirm-cancel').click()
+  await expect(dialog).toBeHidden()
+  expect((await readMutations()).length).toBe(before)
+
+  // 确认后才执行升级。
+  await upgrade.click()
+  await expect(dialog).toBeVisible()
+  await win.getByTestId('upgrade-confirm-submit').click()
+  await expect(dialog).toBeHidden({ timeout: 60_000 })
+  const mutations = await readMutations()
+  expect(mutations.length).toBe(before + 1)
+  expect(mutations.at(-1)?.args[0]).toBe(`demo-plugin@${LATEST_VERSION}`)
 })

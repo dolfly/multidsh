@@ -20,6 +20,23 @@ export const REGISTRY_PRESETS = [
 ] as const
 
 /**
+ * 插件安装源档位。以**枚举**而非 URL 传递：渲染层无法借 IPC 指定任意源，
+ * URL 只在主进程映射（两档与向导预设同值，便于用户对照）。
+ */
+export const PLUGIN_REGISTRY_OPTIONS = ['npmmirror', 'npmjs'] as const
+export type PluginRegistryOption = (typeof PLUGIN_REGISTRY_OPTIONS)[number]
+
+/** 插件安装源默认档位（国内镜像：解析与安装都更快）。 */
+export const DEFAULT_PLUGIN_REGISTRY: PluginRegistryOption = 'npmmirror'
+
+/** 档位 → registry URL（唯一映射处；返回值必然是 https，可直接过 isAllowedNpmRegistry）。 */
+export function pluginRegistryUrl(option: PluginRegistryOption | null | undefined): string {
+  const labelKey = option === 'npmjs' ? 'wizard.registryNpmjs' : 'wizard.registryNpmmirror'
+  const match = REGISTRY_PRESETS.find((preset) => preset.labelKey === labelKey)
+  return match?.value ?? REGISTRY_PRESETS[0].value
+}
+
+/**
  * npm 镜像信任根：registry 自证完整性且执行生命周期脚本，只接受 https；
  * 本地镜像（回环 http）放行。其余协议（file:/ftp:/javascript: 等）一律拒绝。
  */

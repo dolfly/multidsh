@@ -506,6 +506,80 @@ export const MESSAGES = {
     zh: '支持 npm 包名（可带 @版本）、GitHub 仓库、本地路径。',
     en: 'Accepts an npm name (optionally @version), a GitHub repo, or a local path.'
   },
+  // —— 安装两步：第一步（确定版本）——
+  'detail.plugin.installSource': { zh: '安装源', en: 'Install source' },
+  'detail.plugin.installResolve': { zh: '确定', en: 'Confirm' },
+  'detail.plugin.installResolving': { zh: '解析中…', en: 'Resolving…' },
+  'detail.plugin.installResolveHint': {
+    zh: '未指定版本时按所选安装源解析最新版',
+    en: 'Without a version, the newest release is resolved from the selected source'
+  },
+  'detail.plugin.installSafety': {
+    zh: '请确认插件来源可信。插件在本机以你的权限运行，来源不明的插件可能损坏 DSH，或读取和泄露你的数据。',
+    en: 'Make sure the plugin source is trustworthy. Plugins run on this machine with your permissions, so an unknown plugin can damage DSH or read and leak your data.'
+  },
+  'detail.plugin.resolveFailed': { zh: '无法解析该版本：{msg}', en: 'Cannot resolve the version: {msg}' },
+  // —— 安装/升级确认区（第二步，两者共用）——
+  'detail.plugin.confirmInstallSection': { zh: '将安装', en: 'To install' },
+  'detail.plugin.confirmUpgradeSection': { zh: '将升级到', en: 'To upgrade to' },
+  'detail.plugin.confirmVersion': { zh: '版本', en: 'Version' },
+  'detail.plugin.confirmSourceNpm': { zh: 'npm registry', en: 'npm registry' },
+  'detail.plugin.confirmSourceGithub': { zh: 'GitHub 仓库', en: 'GitHub repository' },
+  'detail.plugin.confirmSourceFile': { zh: '本地路径', en: 'Local path' },
+  'detail.plugin.confirmDownloads': { zh: '近 30 天下载', en: 'Downloads (30d)' },
+  'detail.plugin.confirmDownloadsNote': { zh: 'npm 官方口径', en: 'npm official' },
+  'detail.plugin.confirmCompat': { zh: 'dsh 兼容', en: 'dsh compatibility' },
+  'detail.plugin.confirmCompatOk': { zh: '满足', en: 'satisfied' },
+  'detail.plugin.confirmCompatFail': { zh: '不满足', en: 'not satisfied' },
+  'detail.plugin.confirmCompatUnknown': { zh: '无法判定', en: 'cannot be determined' },
+  'detail.plugin.confirmInstalledReplace': {
+    zh: '已装 {version}，安装后将替换',
+    en: 'Installed {version}; will be replaced'
+  },
+  'detail.plugin.confirmInstalledSame': {
+    zh: '已装 {version} · 版本已相符（重装）',
+    en: 'Installed {version} · same version (reinstall)'
+  },
+  'detail.plugin.confirmUninstalled': { zh: '未安装', en: 'Not installed' },
+  'detail.plugin.confirmRisk': {
+    zh: '我已知晓该风险，仍要安装',
+    en: 'I understand the risk and still want to install'
+  },
+  'detail.plugin.confirmEnableAfter': { zh: '安装后启用', en: 'Enable after install' },
+  'detail.plugin.confirmEnableAfterHint': {
+    zh: '取消则只安装，插件落在「已禁用」状态',
+    en: 'When cleared, the plugin is installed but left disabled'
+  },
+  'detail.plugin.confirmInputChanged': {
+    zh: '输入变更后需重新确定',
+    en: 'Confirm again after editing the identifier'
+  },
+  'detail.plugin.installAction': { zh: '安装 {version}', en: 'Install {version}' },
+  'detail.plugin.reinstallAction': { zh: '重装 {version}', en: 'Reinstall {version}' },
+  'detail.plugin.upgradeTitle': { zh: '升级插件', en: 'Upgrade plugin' },
+  'detail.plugin.upgradeKeepState': {
+    zh: '升级不改变启用状态：当前已禁用的插件升级后仍为禁用。',
+    en: 'Upgrading does not change the enabled state: a disabled plugin stays disabled.'
+  },
+  'detail.plugin.upgradeInterruptNote': {
+    zh: '升级会短暂中断正在使用的工作区',
+    en: 'Upgrading briefly interrupts the workspaces in use'
+  },
+  'detail.plugin.upgradeFailedInline': { zh: '升级失败：{msg}', en: 'Failed to upgrade: {msg}' },
+  // —— 更新内容（确认区懒加载）——
+  'detail.plugin.releaseNotesTitle': { zh: '更新内容', en: "What's new" },
+  'detail.plugin.releaseNotesLoading': { zh: '获取中…', en: 'Loading…' },
+  'detail.plugin.releaseNotesEmpty': {
+    zh: '未找到该版本的更新说明',
+    en: 'No release notes found for this version'
+  },
+  'detail.plugin.releaseNotesTruncated': {
+    zh: '内容过长已截断，完整说明见发布页',
+    en: 'Truncated for length; see the release page for the full text'
+  },
+  'detail.plugin.releaseNotesOpen': { zh: '打开发布页', en: 'Open release page' },
+  'detail.plugin.releaseNotesSourceGithub': { zh: 'GitHub Release', en: 'GitHub release' },
+  'detail.plugin.releaseNotesSourceChangelog': { zh: '仓库 CHANGELOG', en: 'Repository CHANGELOG' },
   'detail.plugin.installSubmit': { zh: '安装', en: 'Install' },
   'detail.plugin.installing': { zh: '安装中…', en: 'Installing…' },
   'detail.plugin.installed': { zh: '已安装', en: 'Installed' },

@@ -7,6 +7,7 @@
 import { z } from 'zod'
 import { tryParseEndpoint } from './endpoint'
 import { LAUNCHERS, type LocalLauncher } from './local-launch'
+import { PLUGIN_REGISTRY_OPTIONS, type PluginRegistryOption } from './settings'
 
 // ===== 枚举 =====
 
@@ -710,6 +711,13 @@ export const PLUGIN_IPC = {
   checkState: 'plugin:checkState',
   /** 安装插件；spec 为 npm 名 / name@version / github: / file: 形态。 */
   install: 'plugin:install',
+  /**
+   * 安装前解析版本：npm 裸名按 registry 选出版本（不再用 dist-tag `latest` 直装），
+   * 返回确认区所需的版本、来源、发布时间与 dsh 兼容信息。
+   */
+  resolveInstall: 'plugin:resolveInstall',
+  /** 单个版本的更新内容与近 30 天下载量（安装确认与升级确认共用，懒加载）。 */
+  packageInfo: 'plugin:packageInfo',
   /** 升级到指定版本（显式版本，非 latest）。 */
   upgrade: 'plugin:upgrade',
   /** 卸载插件。 */
@@ -743,6 +751,90 @@ export const PLUGIN_NAME_SCHEMA = z
   .min(1)
   .max(256)
   .regex(/^(@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*$/i, '插件名形态非法')
+
+/** 插件安装源档位校验（枚举；非法取值在 IPC 边界被拒，不会落到命令参数）。 */
+export const PLUGIN_REGISTRY_SCHEMA = z.enum(PLUGIN_REGISTRY_OPTIONS)
+
+/**
+ * 解析与安装的可选参数：
+ * - `enable`：安装后是否启用（缺省 true，与既有行为一致）；
+ * - `registry`：安装源档位（缺省 npmmirror，由主进程映射为 URL）。
+ */
+export const PLUGIN_INSTALL_OPTIONS_SCHEMA = z.object({
+  enable: z.boolean().optional(),
+  registry: PLUGIN_REGISTRY_SCHEMA.optional()
+})
+
+export type PluginInstallOptions = z.infer<typeof PLUGIN_INSTALL_OPTIONS_SCHEMA>
+
+/** 解析安装版本的可选参数（只需要安装源）。 */
+export const PLUGIN_RESOLVE_OPTIONS_SCHEMA = z.object({
+  registry: PLUGIN_REGISTRY_SCHEMA.optional()
+})
+
+/** 安装 spec 的种类；github/file 不联网解析版本，只展示来源。 */
+export type PluginInstallKind = 'npm' | 'github' | 'file'
+
+/** 目标版本的来源：用户显式指定 / 主进程按 registry 解析出的最新版 / 无版本（github、file）。 */
+export type PluginVersionSource = 'requested' | 'resolved-latest' | 'none'
+
+/**
+ * 安装前解析出的计划：确认区据此渲染，安装时回传 `installSpec`。
+ * 「用户看到什么就装什么」——installSpec 是所确认的对象，后续 registry 发新版不改变本次选择。
+ */
+export interface PluginInstallPlan {
+  /** 实际交给安装的 spec：npm 恒为 `name@x.y.z`，github/file 原样。 */
+  installSpec: string
+  /** 用户输入（trim 后）；渲染层用它作废过期结果。 */
+  input: string
+  kind: PluginInstallKind
+  /** npm 包名；github/file 为 null。 */
+  packageName: string | null
+  /** 目标版本；github/file 为 null。 */
+  targetVersion: string | null
+  /** registry 的 dist-tags.latest，仅作对照展示；取不到为 null。 */
+  latestVersion: string | null
+  versionSource: PluginVersionSource
+  /** 目标版本发布时间（ISO）；取不到为 null。 */
+  publishedAt: string | null
+  /** 目标版本的 dsh 兼容范围（展示用）；未声明为 null。 */
+  dshPeer: string | null
+  /** 实际执行命令的 dsh 版本；未知为 null。 */
+  dshVersion: string | null
+  /** null = 无法判定（github/file 或 dsh 版本未知），界面不强制风险勾选。 */
+  compatible: boolean | null
+  /** 已装同名版本；未装为 null。 */
+  installedVersion: string | null
+}
+
+/** npm 官方口径的最近 30 天下载量。 */
+export interface PluginDownloads {
+  count: number
+  /** 统计区间起止（YYYY-MM-DD，含端点，与 npm 接口同形）。 */
+  start: string
+  end: string
+}
+
+/** 某个版本的更新内容。 */
+export interface PluginReleaseNotes {
+  /** 正文（纯文本）；null = 未找到。 */
+  text: string | null
+  source: 'github-release' | 'changelog' | 'none'
+  /** 「打开发布页」目标；取不到仓库时为 null。 */
+  pageUrl: string | null
+  /** 正文超过上限被截断。 */
+  truncated: boolean
+}
+
+/** 安装/升级确认区用的增强信息（更新内容 + 下载量）；取不到不算错误。 */
+export interface PluginPackageInfo {
+  /** 非 npm 来源或接口失败时为 null，界面显示占位符。 */
+  downloads: PluginDownloads | null
+  releaseNotes: PluginReleaseNotes
+}
+
+/** 插件安装源档位（对外再导出，渲染层只依赖契约）。 */
+export type { PluginRegistryOption }
 
 /** 解析出的已装插件信息（渲染层展示用；图标以 data-uri 内联）。 */
 export interface PluginInfo {

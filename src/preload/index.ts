@@ -21,6 +21,7 @@ import {
   type HttpAuthDetection,
   type RuntimeConfirmPromptPayload,
   type IpcResult,
+  type PluginRegistryOption,
   type SshHostKeyForgetInput,
   type SshKeyPreviewInput,
   type SshKeyPreviewResult,
@@ -95,7 +96,18 @@ const bridge: DshHubBridge = {
     list: (id: string, locale?: 'zh' | 'en') => ipcRenderer.invoke(PLUGIN_IPC.list, id, locale ?? 'zh'),
     check: (id: string, name: string) => ipcRenderer.invoke(PLUGIN_IPC.check, id, name),
     checkState: (id: string) => ipcRenderer.invoke(PLUGIN_IPC.checkState, id),
-    install: (id: string, spec: string) => ipcRenderer.invoke(PLUGIN_IPC.install, id, spec),
+    install: (
+      id: string,
+      spec: string,
+      options?: { enable?: boolean; registry?: PluginRegistryOption }
+    ) => ipcRenderer.invoke(PLUGIN_IPC.install, id, spec, options),
+    resolveInstall: (
+      id: string,
+      spec: string,
+      options?: { enable?: boolean; registry?: PluginRegistryOption }
+    ) => ipcRenderer.invoke(PLUGIN_IPC.resolveInstall, id, spec, options),
+    packageInfo: (id: string, name: string, version: string) =>
+      ipcRenderer.invoke(PLUGIN_IPC.packageInfo, id, name, version),
     upgrade: (id: string, name: string, version: string) =>
       ipcRenderer.invoke(PLUGIN_IPC.upgrade, id, name, version),
     remove: (id: string, name: string) => ipcRenderer.invoke(PLUGIN_IPC.remove, id, name),
