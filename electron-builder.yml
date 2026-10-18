@@ -4,6 +4,11 @@ productName: DSH Hub
 # `electron` 已随 devDependencies 安装。复用其解压分发包可避免 builder 在每次
 # macOS 打包时额外访问 GitHub；离线或网络抖动环境仍可稳定出包。
 electronDist: node_modules/electron/dist
+# NSIS 工具链用统一 bundle（makensis 3.12 + 插件一档打包，入口脚本自设 NSISDIR）：
+# legacy 3.0.4.1 的 mac 端 makensis 只有 x86_64，在未装 Rosetta 的 Apple Silicon 上
+# 打包直接失败（spawn EBADCPU）；统一 bundle 按 uname 选 mac/arm64 原生二进制。
+toolsets:
+  nsis: "1.2.1"
 directories:
   buildResources: build
   output: dist
