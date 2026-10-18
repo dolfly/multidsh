@@ -522,6 +522,7 @@ export const MESSAGES = {
   // —— 安装/升级确认区（第二步，两者共用）——
   'detail.plugin.confirmInstallSection': { zh: '将安装', en: 'To install' },
   'detail.plugin.confirmUpgradeSection': { zh: '将升级到', en: 'To upgrade to' },
+  'detail.plugin.confirmPlugin': { zh: '插件', en: 'Plugin' },
   'detail.plugin.confirmVersion': { zh: '版本', en: 'Version' },
   'detail.plugin.confirmSourceNpm': { zh: 'npm registry', en: 'npm registry' },
   'detail.plugin.confirmSourceGithub': { zh: 'GitHub 仓库', en: 'GitHub repository' },

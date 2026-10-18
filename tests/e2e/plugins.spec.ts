@@ -458,6 +458,8 @@ test('安装两步：确定解析出版本、确认后才下发带 --registry �
   await expect(versionRow).toContainText(INSTALLED_VERSION)
   await expect(versionRow).toContainText('→')
   await expect(win.getByTestId('install-confirm-downloads')).toBeVisible()
+  // 插件名在版本行之上：先看清对象再读版本。
+  await expect(win.getByTestId('install-confirm-name')).toHaveText('demo-plugin')
   await expect(win.getByTestId('install-plugin-submit')).toContainText(LATEST_VERSION)
 
   // 未点安装前不得有任何 add。
@@ -552,6 +554,12 @@ test('升级二次确认：弹窗给出目标版本，取消不执行、确认�
   await expect(versionRow).toContainText(INSTALLED_VERSION)
   await expect(versionRow).toContainText('→')
   await expect(versionRow).toContainText(LATEST_VERSION)
+  // 插件名显示在版本行之上，且就是本次点开的对象：先看清升级谁，避免点错。
+  const nameRow = win.getByTestId('install-confirm-name')
+  await expect(nameRow).toHaveText('demo-plugin')
+  const nameBox = await nameRow.boundingBox()
+  const versionBox = await versionRow.boundingBox()
+  expect(nameBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(versionBox?.y ?? -1)
 
   // 取消：不产生任何改动。
   await win.getByTestId('upgrade-confirm-cancel').click()

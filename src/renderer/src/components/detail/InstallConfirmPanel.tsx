@@ -28,8 +28,9 @@ export interface InstallConfirmPanelProps {
 }
 
 /**
- * 确认区：版本 / 发布时间 / 近 30 天下载 / dsh 兼容四项事实，加不兼容风险勾选与更新内容。
+ * 确认区：插件名 / 版本 / 发布时间 / 近 30 天下载 / dsh 兼容五项事实，加不兼容风险勾选与更新内容。
  *
+ * 插件名排在版本之前：升级弹窗不回显输入，先看清对象再读版本，避免升错插件。
  * 安装第二步与升级二次确认共用；提交按钮与「安装后启用」勾选由调用方渲染。
  * 更新内容与下载量是增强信息：主进程取不到时按「无」渲染（显示占位符），不影响提交。
  */
@@ -120,6 +121,9 @@ export default function InstallConfirmPanel(props: InstallConfirmPanelProps): Re
         <span className="badge">{sourceBadge}</span>
       </div>
       <dl className="kv">
+        {/* 插件名在版本之上：npm 用包名，github/file 没有包名，用实际安装的 spec 作对象标识。 */}
+        <dt>{t('detail.plugin.confirmPlugin')}</dt>
+        <dd data-testid="install-confirm-name">{packageName ?? plan.installSpec}</dd>
         <dt>{t('detail.plugin.confirmVersion')}</dt>
         <dd data-testid="install-confirm-version">
           {versionEvolution ? (
