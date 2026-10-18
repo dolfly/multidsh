@@ -908,8 +908,8 @@ export interface PluginUpdateCheck {
  * `application` 与 dsh 自身的 ChangeResult.application 同口径（dsh plugin CLI 不返回该字段，
  * 由 hub 按同一规则推断）：
  * - `applied`：已热生效，无需重启（仅 HMR 可用的 profile，如 web）；
- * - `restart-required`：已保存但未激活，需重启 Host（替换/升级已装包时无条件如此，
- *   Node 模块缓存无法为已加载的包换模块代；或 profile 无 HMR）。
+ * - `restart-required`：已保存但未激活，需重启 Host（仅 profile 无 HMR 时——
+ *   替换/升级已装包同样热生效，dsh-hmr 按磁盘身份换模块代，无「已装包必须重启」特例）。
  */
 export interface PluginMutationResult {
   hasHostSide: boolean

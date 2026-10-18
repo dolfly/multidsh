@@ -278,7 +278,7 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
   /**
    * 改动后的提示：按 dsh 的生效语义（主进程算出的 application）与实例运行状态决定——
    * 未运行 → 已保存，下次启动生效；applied → 已即时生效；restart-required → 提示重启。
-   * 「是否需要重启」与插件有没有 host 半无关：升级/替换已装包时即使有 HMR 也必须重启。
+   * 「是否需要重启」只看该 profile 是否可用 HMR，与插件有没有 host 半、是否替换已装包无关。
    */
   const afterMutation = (name: string, application: 'applied' | 'restart-required'): void => {
     const notice = pluginApplyNotice({ running: instanceRunning, application })

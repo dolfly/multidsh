@@ -480,8 +480,8 @@ export const MESSAGES = {
   },
   'detail.plugin.restartTitle': { zh: '需要重启实例', en: 'Restart required' },
   'detail.plugin.restartBody': {
-    zh: '「{name}」的改动需要重启实例后才能生效（升级或替换已安装的插件时，运行中的实例无法热替换已加载的模块）。是否立即重启？',
-    en: 'Changes to "{name}" take effect only after a restart: a running instance cannot hot-swap modules for an already-installed plugin. Restart now?'
+    zh: '「{name}」的改动需要重启实例后才能生效（该实例未启用热更新，运行中的实例无法加载插件改动）。是否立即重启？',
+    en: 'Changes to "{name}" take effect only after a restart: this instance runs without hot reload, so a running instance cannot load plugin changes. Restart now?'
   },
   'detail.plugin.restartNow': { zh: '立即重启', en: 'Restart now' },
   'detail.plugin.restartLater': { zh: '稍后手动', en: 'Later' },

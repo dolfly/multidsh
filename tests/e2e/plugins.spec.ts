@@ -263,7 +263,7 @@ test('发布时间：已装版本的快照持久化，刷新后仍在', async ()
 test('卸载二次确认：确认框只说明后果，不再按 host 半预告重启', async () => {
   await win.getByTestId('plugin-remove-demo-plugin').click()
   await expect(win.getByTestId('plugin-remove-confirm')).toBeVisible()
-  // 是否需要重启由改动后的 application 决定（升级/替换已装包才必然重启），
+  // 是否需要重启由改动后的 application 决定（只看 profile 是否可用 HMR），
   // 确认框不按 host 半预告，避免误导。
   await expect(win.getByTestId('plugin-remove-host-hint')).toHaveCount(0)
   // 收尾：关闭确认框，避免影响后续用例。

@@ -129,7 +129,7 @@ export function classifyCheckOutcome(result: PluginUpdateCheck | null): CheckOut
  * 判据来自 dsh 的 ChangeResult.application（dsh plugin CLI 不返回，由主进程按同一规则推断）：
  * - 实例未运行 → 改动已保存，下次启动生效（没有运行中的 Host 可重启）；
  * - `applied` → 已热生效，无需重启；
- * - `restart-required` → 需重启实例（替换/升级已装包，或 profile 无 HMR）。
+ * - `restart-required` → 需重启实例（profile 无 HMR；替换/升级已装包同样热生效，无特例）。
  */
 export type PluginApplyNotice = 'saved' | 'applied' | 'restart-required'
 

@@ -202,7 +202,12 @@ export function profileHasHmr(profile: string, bundles: readonly string[] | null
 /** dsh 语义下的生效结果：`applied` 已热生效；`restart-required` 需重启 Host。 */
 export type PluginApplication = 'applied' | 'restart-required'
 
-/** 非「替换已装包」的操作：有 HMR 即热生效，否则需重启。 */
+/**
+ * 生效口径，与 dsh 一致（dsh-plugin-manager 的 change()：有 HMR 即 applied，
+ * 仅在 reconcile 报出 restartReason 时才要求重启）。替换/升级已装包同样热生效——
+ * dsh-hmr 按磁盘身份（inode/size/mtime）判定模块 stale 并热重载新模块代，
+ * 没有「替换已装包必须重启」的特例。
+ */
 function defaultApplication(hmr: boolean): PluginApplication {
   return hmr ? 'applied' : 'restart-required'
 }
@@ -1117,9 +1122,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       const { home, profile } = homeAndProfile(instance)
       const profileDir = join(home, 'profiles', profile)
       const before = await bundleStore.read(profileDir)
-      // 安装前该包名已在 dependencies 里 = 替换/升级/重装已装包：dsh 对此无条件要求重启
-      // （Node 模块缓存无法为已加载的包载入新模块代），只有全新包名才能 HMR 即装即用。
-      const replaced = before !== null && before.dependencies.some((name) => specMatchesName(spec, name))
 
       const resolved = await resolveDshEntry(instance)
       await runPlugin(instance, ['add', spec], resolved, registry)
@@ -1134,24 +1136,30 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       }
       const after = await bundleStore.read(profileDir)
       const hmr = await hmrAvailable(instance, profileDir, after?.bundles ?? before?.bundles ?? null)
+      // 与 dsh 同口径：替换/重装已装包同样热生效（dsh-hmr 按磁盘身份换模块代），只看 HMR。
       return {
         hasHostSide,
-        application: replaced ? 'restart-required' : defaultApplication(hmr)
+        application: defaultApplication(hmr)
       }
     },
 
     async upgrade(instance, name, version, options = {}): Promise<PluginMutationResult> {
       const registry = options.registry ?? DEFAULT_PLUGIN_REGISTRY
+      const { home, profile } = homeAndProfile(instance)
+      const profileDir = join(home, 'profiles', profile)
       const resolved = await resolveDshEntry(instance)
       const hadHostSide = await hostSideOf(instance, name, resolved)
       // 升级默认与 check 同源（npmmirror）；用户可在升级确认对话框改选安装源。
       await runPlugin(instance, ['add', `${name}@${version}`], resolved, registry)
       // 升级换了版本：清掉可升级标记，并同步落下新版本的发布时间快照（无需再次检查即可显示）。
       await syncCheckAfterUpgrade(instance, name, resolved)
-      // 升级必然替换已装包 → 与 dsh 同口径：即使有 HMR 也要重启才能换掉已加载的模块代。
+      // 与 dsh 同口径：升级（替换已装包）同样热生效——dsh-hmr 按磁盘身份换模块代，
+      // 只看 HMR 是否可用，不因换版本而无条件要求重启。
+      const after = await bundleStore.read(profileDir)
+      const hmr = await hmrAvailable(instance, profileDir, after?.bundles ?? null)
       return {
         hasHostSide: hadHostSide || (await hostSideOf(instance, name, resolved)),
-        application: 'restart-required'
+        application: defaultApplication(hmr)
       }
     },
 
@@ -1165,7 +1173,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       await runPlugin(instance, ['remove', name], resolved)
       // 卸载后该插件的检查痕迹（可升级标记、发布时间快照）不再有意义。
       await dropCheck(instance.id, name)
-      // 卸载走 dsh 的默认规则（无「替换已装包」特例）：有 HMR 即热卸载，否则需重启。
+      // 卸载走 dsh 的默认规则：有 HMR 即热卸载，否则需重启。
       const hmr = await hmrAvailable(instance, profileDir, before?.bundles ?? null)
       return { hasHostSide, application: defaultApplication(hmr) }
     }

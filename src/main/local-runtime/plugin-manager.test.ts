@@ -1215,7 +1215,7 @@ describe('createPluginManager mutations', () => {
     expect(profileHasHmr('custom', null)).toBe(false)
   })
 
-  it('install（全新包名 + web/HMR）→ applied；已装包名 → restart-required', async () => {
+  it('install（web/HMR）→ applied；替换已装包同样热生效（与 dsh 同口径，无重启特例）', async () => {
     const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
       void command
       if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
@@ -1231,7 +1231,7 @@ describe('createPluginManager mutations', () => {
     })
     expect((await fresh.install(localInstance(), 'new-plugin')).application).toBe('applied')
 
-    // 已装包名（重装/替换）→ 即使有 HMR 也必须重启
+    // 已装包名（重装/替换）：dsh-hmr 按磁盘身份热重载新模块代 → 同样 applied，不要求重启。
     const replace = createPluginManager({
       ...baseOptions(run),
       bundleStore: fakeBundles({
@@ -1241,7 +1241,7 @@ describe('createPluginManager mutations', () => {
     })
     expect(
       (await replace.install(localInstance(), '@xbzbing/dsh-git-panel@1.2.0')).application
-    ).toBe('restart-required')
+    ).toBe('applied')
   })
 
   it('install：无 HMR 的 profile → 即使全新包名也需重启', async () => {
@@ -1261,15 +1261,31 @@ describe('createPluginManager mutations', () => {
     expect((await manager.install(instance, 'new-plugin')).application).toBe('restart-required')
   })
 
-  it('upgrade → 无条件 restart-required（替换已装包无法热替换模块代）', async () => {
+  it('upgrade → 走默认规则：web/HMR 下 applied（替换已装包同样热生效），无 HMR 下 restart-required', async () => {
     const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
       void command
       if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
       return { code: 0, stdout: '', stderr: '' }
     })
-    const manager = createPluginManager({ ...baseOptions(run) })
-    const result = await manager.upgrade(localInstance(), '@xbzbing/dsh-git-panel', '1.2.0')
-    expect(result.application).toBe('restart-required')
+    // web profile（默认）：dsh-hmr 热重载新模块代 → applied，不因换版本要求重启。
+    const web = createPluginManager({ ...baseOptions(run) })
+    const webResult = await web.upgrade(localInstance(), '@xbzbing/dsh-git-panel', '1.2.0')
+    expect(webResult.application).toBe('applied')
+
+    // 无 HMR 的 profile：包已装但宿主无法热重载 → 需重启。
+    const headless = createPluginManager({
+      ...baseOptions(run),
+      bundleStore: fakeBundles({
+        bundles: ['@deepseek-ai/dsh-base'],
+        dependencies: ['@xbzbing/dsh-git-panel']
+      }).store
+    })
+    const headlessResult = await headless.upgrade(
+      localInstance({ profile: 'headless' }),
+      '@xbzbing/dsh-git-panel',
+      '1.2.0'
+    )
+    expect(headlessResult.application).toBe('restart-required')
   })
 
   it('remove → 走默认规则：web/HMR 下 applied，无 HMR 下 restart-required', async () => {

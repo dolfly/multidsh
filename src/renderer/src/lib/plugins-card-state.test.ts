@@ -235,11 +235,11 @@ describe('pluginApplyNotice（改动后的提示方案）', () => {
     expect(pluginApplyNotice({ running: false, application: 'restart-required' })).toBe('saved')
   })
 
-  it('运行中 + applied（全新安装且 HMR 可用）→ 已即时生效', () => {
+  it('运行中 + applied（HMR 可用，含替换/升级已装包）→ 已即时生效', () => {
     expect(pluginApplyNotice({ running: true, application: 'applied' })).toBe('applied')
   })
 
-  it('运行中 + restart-required（升级/替换已装包，或 profile 无 HMR）→ 需重启', () => {
+  it('运行中 + restart-required（profile 无 HMR）→ 需重启', () => {
     expect(pluginApplyNotice({ running: true, application: 'restart-required' })).toBe('restart-required')
   })
 })
