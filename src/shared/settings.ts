@@ -37,6 +37,27 @@ export function pluginRegistryUrl(option: PluginRegistryOption | null | undefine
 }
 
 /**
+ * 设置里的镜像地址 → 预设下拉的取值键：留空为跟随系统，命中预设取预设 URL，其余归自定义。
+ * 向导与编辑实例对话框共用（下拉按此键选中对应项）。
+ */
+export function registryPresetKey(url: string): string {
+  if (url === '') return 'system'
+  return REGISTRY_PRESETS.some((preset) => preset.value === url) ? url : 'custom'
+}
+
+/**
+ * 设置里的镜像地址 → 插件命令的默认安装源档位：命中两档预设按对应档位，自定义或留空回落默认档。
+ * 插件命令只接受枚举档位（URL 由主进程映射），自定义内网 registry 不参与插件默认源；
+ * 单次安装/升级仍可在确认对话框改选预设档位。
+ */
+export function pluginRegistryFromUrl(url: string): PluginRegistryOption {
+  const normalized = url.trim().replace(/\/+$/, '')
+  if (normalized === pluginRegistryUrl('npmjs')) return 'npmjs'
+  if (normalized === pluginRegistryUrl('npmmirror')) return 'npmmirror'
+  return DEFAULT_PLUGIN_REGISTRY
+}
+
+/**
  * npm 镜像信任根：registry 自证完整性且执行生命周期脚本，只接受 https；
  * 本地镜像（回环 http）放行。其余协议（file:/ftp:/javascript: 等）一律拒绝。
  */

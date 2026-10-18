@@ -1662,7 +1662,7 @@ describe('createPluginManager registry 口径', () => {
     expect(npmjsAdd[1].slice(-2)).toEqual(['--registry', 'https://registry.npmjs.org'])
   })
 
-  it('check 与 upgrade 固定按默认源（npmmirror）追加 --registry', async () => {
+  it('check 与 upgrade 未注入镜像设置时按缺省源（npmmirror）追加 --registry', async () => {
     const run = registryRun()
     const manager = createPluginManager(baseOptions(run))
     await manager.check(localInstance(), '@xbzbing/dsh-git-panel')
@@ -1675,6 +1675,32 @@ describe('createPluginManager registry 口径', () => {
     }
     const addCall = run.mock.calls.find(([, args]) => args.includes('add'))!
     expect(addCall[1].slice(-2)).toEqual(['--registry', 'https://registry.npmmirror.com'])
+  })
+
+  it('defaultRegistry 注入（镜像设为 npmjs）：check/resolve/upgrade 的缺省都跟随，显式档位优先', async () => {
+    const run = registryRun()
+    const manager = createPluginManager({
+      ...baseOptions(run),
+      defaultRegistry: () => 'npmjs'
+    })
+    await manager.check(localInstance(), '@xbzbing/dsh-git-panel')
+    await manager.resolveInstall(localInstance(), 'demo-plugin')
+    await manager.upgrade(localInstance(), '@xbzbing/dsh-git-panel', '1.2.0')
+
+    for (const [, args] of run.mock.calls.filter(([, callArgs]) => callArgs.includes('view'))) {
+      expect(args.slice(-2)).toEqual(['--registry', 'https://registry.npmjs.org'])
+    }
+    const addCall = run.mock.calls.find(([, args]) => args.includes('add'))!
+    expect(addCall[1].slice(-2)).toEqual(['--registry', 'https://registry.npmjs.org'])
+
+    // 显式档位压过注入的默认档：本次操作用户改选了 npmmirror 就按 npmmirror。
+    const explicit = registryRun()
+    await createPluginManager({
+      ...baseOptions(explicit),
+      defaultRegistry: () => 'npmjs'
+    }).upgrade(localInstance(), '@xbzbing/dsh-git-panel', '1.2.0', { registry: 'npmmirror' })
+    const explicitAdd = explicit.mock.calls.find(([, args]) => args.includes('add'))!
+    expect(explicitAdd[1].slice(-2)).toEqual(['--registry', 'https://registry.npmmirror.com'])
   })
 
   it('upgrade：可改选安装源（npmjs 走 npmjs，npmmirror 与缺省同参）', async () => {

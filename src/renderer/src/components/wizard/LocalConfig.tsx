@@ -1,17 +1,11 @@
 import type { ReactNode } from 'react'
-import { REGISTRY_PRESETS } from '@shared/settings'
+import { REGISTRY_PRESETS, registryPresetKey } from '@shared/settings'
 import { LAUNCHERS } from '@shared/local-launch'
 import type { Translator } from '@shared/i18n'
 import { Icon } from '../../lib/icons'
 import type { DshVersionCatalog } from '@shared/contracts'
 import { useAppStore } from '../../store'
 import type { ExternalWorkspace, WizardForm } from './types'
-
-/** 将注册表值映射到下拉选项：'' 为跟随系统，预设 URL 为对应选项，其余为自定义。 */
-function registryOptionKey(url: string): string {
-  if (url === '') return 'system'
-  return REGISTRY_PRESETS.some((preset) => preset.value === url) ? url : 'custom'
-}
 
 /** 外部 dsh 接管相关字段。 */
 export interface ExternalAdoption {
@@ -185,7 +179,7 @@ export default function LocalConfig(props: LocalConfigProps): ReactNode {
               <select
                 className="input"
                 id="wizard-registry"
-                value={registryOptionKey(form.registry)}
+                value={registryPresetKey(form.registry)}
                 onChange={(event) => {
                   const key = event.target.value
                   if (key === 'custom') return // 仅切出输入框；当前值保持原样，由输入框失焦落盘
@@ -203,7 +197,7 @@ export default function LocalConfig(props: LocalConfigProps): ReactNode {
                 ))}
                 <option value="custom">{t('wizard.registryCustom')}</option>
               </select>
-              {registryOptionKey(form.registry) === 'custom' && (
+              {registryPresetKey(form.registry) === 'custom' && (
                 <input
                   className="input num mt4"
                   id="wizard-registry-url"

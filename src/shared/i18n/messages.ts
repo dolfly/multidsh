@@ -354,8 +354,8 @@ export const MESSAGES = {
   },
   'wizard.registryLabel': { zh: '安装镜像', en: 'Registry mirror' },
   'wizard.registryHint': {
-    zh: '下载 dsh 时使用的 npm 镜像；中国大陆推荐 npmmirror，海外推荐 npmjs。',
-    en: 'The npm registry used to download dsh. Use npmmirror in China, npmjs elsewhere.'
+    zh: 'dsh 下载与插件检查/安装的默认镜像；应用级设置，对所有实例生效。中国大陆推荐 npmmirror，海外推荐 npmjs。',
+    en: 'Default npm mirror for dsh downloads and plugin check/install. App-wide setting applied to all instances. Use npmmirror in China, npmjs elsewhere.'
   },
   'wizard.registryNpmmirror': { zh: 'npmmirror（国内加速）', en: 'npmmirror (China)' },
   'wizard.registryNpmjs': { zh: 'npmjs（官方源）', en: 'npmjs (Global)' },
@@ -764,6 +764,7 @@ export const MESSAGES = {
   'edit.profileLabel': { zh: 'Profile', en: 'Profile' },
   'edit.profilePlaceholder': { zh: '留空 = web', en: 'Empty = web' },
   'edit.profileInvalid': { zh: 'Profile 只能使用相对路径，且不能包含 .. 或以 - 开头', en: 'Profile must be a relative path without .. or a leading -' },
+  'edit.registryInvalid': { zh: '镜像地址必须是 https URL（本地镜像允许回环 http）', en: 'The mirror must be an https URL (loopback http is allowed for local mirrors)' },
   'edit.autoStartLabel': { zh: '应用启动时自动拉起', en: 'Start automatically with the app' },
   'edit.hostLabel': { zh: '主机', en: 'Host' },
   'edit.usernameLabel': { zh: '用户名', en: 'Username' },

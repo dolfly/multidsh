@@ -4,7 +4,9 @@ import {
   DEFAULT_SETTINGS,
   isAllowedNpmRegistry,
   normalizeSettings,
+  pluginRegistryFromUrl,
   pluginRegistryUrl,
+  registryPresetKey,
   resolveLanguage,
   sanitizeEnvRegistry,
   SettingsSchema
@@ -142,5 +144,22 @@ describe('settings（非敏感偏好）', () => {
     expect(isAllowedNpmRegistry(pluginRegistryUrl('npmmirror'))).toBe(true)
     expect(isAllowedNpmRegistry(pluginRegistryUrl('npmjs'))).toBe(true)
     expect(isAllowedNpmRegistry(pluginRegistryUrl(undefined))).toBe(true)
+  })
+
+  it('registryPresetKey:空=system、预设 URL 取 URL、其余归 custom（向导与编辑共用）', () => {
+    expect(registryPresetKey('')).toBe('system')
+    expect(registryPresetKey('https://registry.npmmirror.com')).toBe('https://registry.npmmirror.com')
+    expect(registryPresetKey('https://registry.npmjs.org')).toBe('https://registry.npmjs.org')
+    expect(registryPresetKey('http://127.0.0.1:4873')).toBe('custom')
+    expect(registryPresetKey('https://npm.example.com/')).toBe('custom')
+  })
+
+  it('pluginRegistryFromUrl:预设映射对应档位，自定义与空串回落默认档', () => {
+    expect(pluginRegistryFromUrl('https://registry.npmjs.org')).toBe('npmjs')
+    expect(pluginRegistryFromUrl('https://registry.npmmirror.com')).toBe('npmmirror')
+    // 尾斜杠与首尾空白是用户手输常见形态，按同一档位识别。
+    expect(pluginRegistryFromUrl(' https://registry.npmjs.org/ ')).toBe('npmjs')
+    expect(pluginRegistryFromUrl('')).toBe(DEFAULT_PLUGIN_REGISTRY)
+    expect(pluginRegistryFromUrl('http://127.0.0.1:4873')).toBe(DEFAULT_PLUGIN_REGISTRY)
   })
 })

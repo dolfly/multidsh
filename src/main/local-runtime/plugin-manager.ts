@@ -125,6 +125,11 @@ export interface PluginManagerOptions {
   bundleStore?: ProfileBundleStore
   /** 更新内容与下载量取数（注入便于测试）；缺省走 npm 下载量接口与 GitHub Release/CHANGELOG。 */
   packageInfoFetchers?: PackageInfoFetchers
+  /**
+   * 插件命令（check/resolve/install/upgrade）未显式指定安装源时使用的默认档位；
+   * 由设置项注入（读取函数，运行中改设置即时生效）。缺省 npmmirror。
+   */
+  defaultRegistry?: () => PluginRegistryOption
 }
 
 /** 插件信息与检查结果的单一定义在 @shared/contracts；此处再导出以保留既有导入路径。 */
@@ -154,7 +159,7 @@ export interface PluginManager {
   /** 某版本的更新内容（GitHub Release → CHANGELOG → 无）与近 30 天下载量；取不到不是错误。 */
   packageInfo(instance: LocalInstance, name: string, version: string): Promise<PluginPackageInfo>
   /**
-   * 升级到指定版本：默认与 check 同源（npmmirror），`options.registry` 可在升级确认
+   * 升级到指定版本：默认与 check 同源（同一默认档位，随设置），`options.registry` 可在升级确认
    * 对话框改选安装源（选定后解析与安装同源）。
    */
   upgrade(
@@ -385,6 +390,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   const stateStore = options.stateStore ?? createPluginStateStore(options.dataRoot)
   const bundleStore = options.bundleStore ?? createProfileBundleStore()
   const packageInfoFetchers = options.packageInfoFetchers ?? createPackageInfoFetchers()
+  /** 未显式指定安装源时的默认档位（由设置项注入；缺省国内镜像）。 */
+  const defaultRegistry = options.defaultRegistry ?? ((): PluginRegistryOption => DEFAULT_PLUGIN_REGISTRY)
 
   /**
    * 在飞检查的插件名（实例 id → 名字集合）。检查在后台跑到结束（用户切走也不中止），
@@ -520,7 +527,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       instance,
       ['view', name, 'time', '--json'],
       resolved,
-      DEFAULT_PLUGIN_REGISTRY
+      defaultRegistry()
     )
     const at = publishedTimeMap(result.stdout)?.[installed]
     return typeof at === 'string' && at !== '' ? { version: installed, at } : null
@@ -700,7 +707,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         instance,
         ['view', `${name}@${version}`, 'repository', 'homepage', '--json'],
         resolved,
-        DEFAULT_PLUGIN_REGISTRY
+        defaultRegistry()
       )
       const parsed: unknown = JSON.parse(result.stdout || '{}')
       const meta = recordOf(parsed)
@@ -868,14 +875,14 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         const current = plugins.find((plugin) => plugin.name === name)
         if (!current) throw new Error(`插件未安装：${name}`)
         // view 联网取 latest 的版本、dsh peer 与各版本发布时间（time 是「版本 → 发布时刻」映射，
-        // 已装版本的发布时间取自已装版本那一项，latest 的那项不用）。固定按默认安装源，与安装同源。
+        // 已装版本的发布时间取自已装版本那一项，latest 的那项不用）。按默认安装源查询，与安装同源。
         let result: CommandResult
         try {
           result = await runPlugin(
             instance,
             ['view', name, 'version', 'peerDependencies', 'time', '--json'],
             resolved,
-            DEFAULT_PLUGIN_REGISTRY
+            defaultRegistry()
           )
         } catch (error) {
           // 插件未发布到 npm registry（如本地 file:/link: 安装但未发布）：pnpm view 会 404，
@@ -1006,7 +1013,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         }
       }
 
-      const registry = options.registry ?? DEFAULT_PLUGIN_REGISTRY
+      const registry = options.registry ?? defaultRegistry()
       const resolved = await resolveDshEntry(instance)
       const { name, requested } = splitNpmSpec(input)
       const installedVersion = installedVersionOf(await listPlugins(instance, 'zh', resolved), name)
@@ -1118,7 +1125,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     },
 
     async install(instance, spec, options = {}): Promise<PluginMutationResult> {
-      const registry = options.registry ?? DEFAULT_PLUGIN_REGISTRY
+      const registry = options.registry ?? defaultRegistry()
       const { home, profile } = homeAndProfile(instance)
       const profileDir = join(home, 'profiles', profile)
       const before = await bundleStore.read(profileDir)
@@ -1144,12 +1151,12 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     },
 
     async upgrade(instance, name, version, options = {}): Promise<PluginMutationResult> {
-      const registry = options.registry ?? DEFAULT_PLUGIN_REGISTRY
+      const registry = options.registry ?? defaultRegistry()
       const { home, profile } = homeAndProfile(instance)
       const profileDir = join(home, 'profiles', profile)
       const resolved = await resolveDshEntry(instance)
       const hadHostSide = await hostSideOf(instance, name, resolved)
-      // 升级默认与 check 同源（npmmirror）；用户可在升级确认对话框改选安装源。
+      // 升级默认与 check 同源（同一默认档位，随设置）；用户可在升级确认对话框改选安装源。
       await runPlugin(instance, ['add', `${name}@${version}`], resolved, registry)
       // 升级换了版本：清掉可升级标记，并同步落下新版本的发布时间快照（无需再次检查即可显示）。
       await syncCheckAfterUpgrade(instance, name, resolved)

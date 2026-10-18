@@ -7,7 +7,7 @@ import type {
   InstanceStatusEvent,
   RuntimeConfirmRequest
 } from '@shared/contracts'
-import { sanitizeEnvRegistry, type Settings } from '@shared/settings'
+import { pluginRegistryFromUrl, sanitizeEnvRegistry, type Settings } from '@shared/settings'
 import { mapRuntimeTransition } from './audit/audit-mapping'
 import type { AuditEntry } from './audit/audit-log'
 import { startAutoStartInstances } from './local-runtime/auto-start'
@@ -140,7 +140,9 @@ export function createRuntimeController(deps: RuntimeControllerDeps): RuntimeCon
     pnpmBinDir,
     // 与本机实例启动同源的环境继承：打包后 GUI 从 Finder/Dock 启动只继承 launchd 最小 PATH，
     // 缺 pnpm/node 目录会让 dsh plugin 转发 pnpm 失败；运行中改设置即时生效。
-    inheritShellEnv: () => deps.readSettings().inheritShellEnv
+    inheritShellEnv: () => deps.readSettings().inheritShellEnv,
+    // 插件命令的默认安装源跟随生效镜像（设置优先、环境变量次之）；运行中改设置即时生效。
+    defaultRegistry: () => pluginRegistryFromUrl(effectiveRegistry())
   })
   const runtime = createLocalRuntime({
     installer,

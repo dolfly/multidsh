@@ -172,3 +172,51 @@ test('本地实例可编辑，端口留空时回到自动分配', async () => {
   expect(cleared?.port).toBeNull()
   await win.screenshot({ path: join(SHOT_DIR, 'edit-saved.png'), animations: 'disabled' })
 })
+
+test('本机编辑对话框可切换安装镜像，保存后 settings.json 落盘', async () => {
+  // 选中上个用例改过名的本机实例（编辑入口在详情页）。
+  await win.getByTestId('brand').click()
+  await expect(win.getByTestId('instances-table')).toBeVisible()
+  await win.getByTestId('instances-table').getByText('改名后的本地实例', { exact: true }).click()
+  const workspaceBack = win.getByTestId('workspace-back-btn')
+  if (await workspaceBack.isVisible()) await workspaceBack.click()
+  await expect(win.getByTestId('view-detail')).toBeVisible()
+  await win.getByTestId('edit-btn').click()
+  const dialog = win.getByTestId('edit-dialog')
+  await expect(dialog).toBeVisible()
+
+  const registry = win.getByTestId('edit-registry')
+  await expect(registry).toBeVisible()
+  // 新数据目录：镜像未设置 → 跟随系统；两档预设与自定义都可选。
+  await expect(registry).toHaveValue('system')
+  await expect(registry).toContainText('npmmirror')
+  await expect(registry).toContainText('npmjs')
+  await expect(registry).toContainText('自定义')
+  // 作用范围写明是应用级设置：用户要知道改的不是单个实例的私有字段。
+  await expect(dialog).toContainText('应用级设置')
+
+  // 自定义档只切出 URL 输入框，不改当前值。
+  await registry.selectOption('custom')
+  await expect(win.getByTestId('edit-registry-url')).toBeVisible()
+  // 切到 npmjs 预设：输入框收回。
+  await registry.selectOption('https://registry.npmjs.org')
+  await expect(win.getByTestId('edit-registry-url')).toHaveCount(0)
+
+  await win.getByTestId('edit-save').click()
+  await expect(dialog).toBeHidden()
+  const saved = JSON.parse(await readFile(join(DATA_DIR, 'settings.json'), 'utf8')) as {
+    npmRegistry: string
+  }
+  expect(saved.npmRegistry).toBe('https://registry.npmjs.org')
+
+  // 重开回读：仍选中 npmjs 档；改回跟随系统后再次落盘。
+  await win.getByTestId('edit-btn').click()
+  await expect(win.getByTestId('edit-registry')).toHaveValue('https://registry.npmjs.org')
+  await win.getByTestId('edit-registry').selectOption('system')
+  await win.getByTestId('edit-save').click()
+  await expect(dialog).toBeHidden()
+  const restored = JSON.parse(await readFile(join(DATA_DIR, 'settings.json'), 'utf8')) as {
+    npmRegistry: string
+  }
+  expect(restored.npmRegistry).toBe('')
+})

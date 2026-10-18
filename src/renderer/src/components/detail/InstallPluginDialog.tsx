@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import type { PluginInstallPlan, PluginRegistryOption } from '@shared/contracts'
 import type { Translator } from '@shared/i18n'
-import { DEFAULT_PLUGIN_REGISTRY } from '@shared/settings'
+import { pluginRegistryFromUrl } from '@shared/settings'
 import { Icon } from '../../lib/icons'
 import { Modal } from '../Modal'
 import { InfoTip } from '../InfoTip'
@@ -41,9 +41,11 @@ export default function InstallPluginDialog(props: {
 }): ReactNode {
   const { t, instanceId, onClose, onInstallStart, onInstalled, onInstallFailed } = props
   const closeLabel = useAppStore((state) => state.t('common.close'))
+  const npmRegistry = useAppStore((state) => state.settings.npmRegistry)
 
   const [spec, setSpec] = useState('')
-  const [registry, setRegistry] = useState<PluginRegistryOption>(DEFAULT_PLUGIN_REGISTRY)
+  // 默认安装源跟随应用设置的镜像档位（打开对话框时读取；设置改动后重开生效）。
+  const [registry, setRegistry] = useState<PluginRegistryOption>(() => pluginRegistryFromUrl(npmRegistry))
   /** 已解析出的计划：非 null 即处于第二步；输入变更立即作废回第一步。 */
   const [plan, setPlan] = useState<PluginInstallPlan | null>(null)
   /** 解析与安装共用一把锁：进行中按钮禁用且不可关闭。 */

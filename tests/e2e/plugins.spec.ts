@@ -583,3 +583,45 @@ test('升级二次确认：弹窗给出目标版本，取消不执行、确认�
   expect(mutations.at(-1)?.args).toContain('--registry')
   expect(mutations.at(-1)?.args).toContain('https://registry.npmjs.org')
 })
+
+test('安装源默认档跟随应用镜像设置：设为 npmjs 后对话框默认 npmjs', async () => {
+  test.setTimeout(120_000)
+  // 应用级镜像设置为 npmjs（编辑实例对话框写的就是它），刷新让设置水合进渲染层。
+  const saved = await win.evaluate(() =>
+    window.dshHub.settings.update({ npmRegistry: 'https://registry.npmjs.org' })
+  )
+  expect(saved.ok).toBe(true)
+  await win.reload()
+  await expect(win.getByTestId('view-home').or(win.getByTestId('view-detail'))).toBeVisible({
+    timeout: 15_000
+  })
+  await openDetail()
+
+  // 安装第一步的默认档 = npmjs。
+  await win.getByTestId('plugins-install-btn').click()
+  await expect(win.getByTestId('install-plugin-dialog')).toBeVisible()
+  await expect(win.getByTestId('install-plugin-source')).toHaveValue('npmjs')
+  await win.getByTestId('install-plugin-cancel').click()
+  await expect(win.getByTestId('install-plugin-dialog')).toBeHidden()
+
+  // 升级确认的默认档 = npmjs（与 check 同口径），且解析出的徽标同档。
+  const upgrade = win.getByTestId('plugin-upgrade-demo-plugin')
+  if (!(await upgrade.isVisible())) {
+    await win.getByTestId('plugin-check-demo-plugin').click()
+  }
+  await expect(upgrade).toBeVisible({ timeout: 20_000 })
+  await upgrade.click()
+  const dialog = win.getByTestId('upgrade-confirm-dialog')
+  await expect(dialog).toBeVisible()
+  await expect(win.getByTestId('upgrade-confirm-source')).toHaveValue('npmjs')
+  await win.getByTestId('upgrade-confirm-cancel').click()
+  await expect(dialog).toBeHidden()
+
+  // 收尾：恢复默认镜像并刷新，避免影响其它用例。
+  const restored = await win.evaluate(() => window.dshHub.settings.update({ npmRegistry: '' }))
+  expect(restored.ok).toBe(true)
+  await win.reload()
+  await expect(win.getByTestId('view-home').or(win.getByTestId('view-detail'))).toBeVisible({
+    timeout: 15_000
+  })
+})

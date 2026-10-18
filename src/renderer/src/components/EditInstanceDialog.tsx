@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { isValidProfile, type InstanceRecord, type PatchInstanceInput } from '@shared/contracts'
 import { LAUNCHERS, type LocalLauncher } from '@shared/local-launch'
+import { REGISTRY_PRESETS, isAllowedNpmRegistry, registryPresetKey } from '@shared/settings'
 import { Icon } from '../lib/icons'
 import { useAppStore } from '../store'
 import { Modal } from './Modal'
@@ -25,6 +26,8 @@ export default function EditInstanceDialog({
   // 保存后重新读取记录，因为 ensureRecord 只在缓存缺失时读取。
   const reloadRecord = useAppStore((state) => state.reloadRecord)
   const toast = useAppStore((state) => state.toast)
+  const settings = useAppStore((state) => state.settings)
+  const updateSettings = useAppStore((state) => state.updateSettings)
 
   const [name, setName] = useState(record.name)
   const [notes, setNotes] = useState(record.notes ?? '')
@@ -41,6 +44,14 @@ export default function EditInstanceDialog({
   const [identityFile, setIdentityFile] = useState(record.transport === 'ssh' ? (record.identityFile ?? '') : '')
   const [endpointUrl, setEndpointUrl] = useState(record.transport === 'http' ? record.endpointUrl : '')
   const [busy, setBusy] = useState(false)
+  /**
+   * 安装镜像（应用级设置，非实例字段）：URL 态（'' = 跟随系统 npm 配置）+ 是否选中「自定义」档。
+   * 选中自定义只切出输入框，URL 保持原样，由输入框内容决定落盘值。
+   */
+  const [registryUrl, setRegistryUrl] = useState(settings.npmRegistry)
+  const [registryCustom, setRegistryCustom] = useState(
+    registryPresetKey(settings.npmRegistry) === 'custom'
+  )
 
   const save = async (): Promise<void> => {
     if (name.trim() === '') {
@@ -56,6 +67,23 @@ export default function EditInstanceDialog({
       if (profile.trim() !== '' && !isValidProfile(profile)) {
         toast('err', t('edit.failed'), t('edit.profileInvalid'))
         return
+      }
+      // 安装镜像是应用级设置：先校验并落盘，失败即中止（不动实例记录）。
+      const registry = registryUrl.trim()
+      if (registry !== '' && !isAllowedNpmRegistry(registry)) {
+        toast('err', t('edit.failed'), t('edit.registryInvalid'))
+        return
+      }
+      if (registry !== settings.npmRegistry) {
+        setBusy(true)
+        try {
+          await updateSettings({ npmRegistry: registry })
+        } catch (error) {
+          setBusy(false)
+          toast('err', t('edit.failed'), error instanceof Error ? error.message : undefined)
+          return
+        }
+        setBusy(false)
       }
       patch.port = port.trim() === '' ? null : Number(port.trim())
       patch.profile = profile.trim() === '' ? null : profile.trim()
@@ -202,6 +230,45 @@ export default function EditInstanceDialog({
             />
             <span>{t('edit.autoStartLabel')}</span>
           </label>
+          {/* 安装镜像是应用级设置（dsh 下载与插件默认源都跟它走），跨两列摆放并明示作用范围。 */}
+          <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <label htmlFor="edit-registry">{t('wizard.registryLabel')}</label>
+            <select
+              className="input"
+              id="edit-registry"
+              value={registryCustom ? 'custom' : registryPresetKey(registryUrl)}
+              onChange={(event) => {
+                const key = event.target.value
+                // 选「自定义」只切出输入框：URL 保持原样，由输入框编辑。
+                if (key === 'custom') {
+                  setRegistryCustom(true)
+                  return
+                }
+                setRegistryCustom(false)
+                setRegistryUrl(key === 'system' ? '' : key)
+              }}
+              data-testid="edit-registry"
+            >
+              <option value="system">{t('wizard.registrySystem')}</option>
+              {REGISTRY_PRESETS.map((preset) => (
+                <option key={preset.value} value={preset.value}>
+                  {t(preset.labelKey)}
+                </option>
+              ))}
+              <option value="custom">{t('wizard.registryCustom')}</option>
+            </select>
+            {registryCustom && (
+              <input
+                className="input num mt4"
+                id="edit-registry-url"
+                placeholder="https://registry.npmmirror.com"
+                value={registryUrl}
+                onChange={(event) => setRegistryUrl(event.target.value.trim())}
+                data-testid="edit-registry-url"
+              />
+            )}
+            <span className="hint">{t('wizard.registryHint')}</span>
+          </div>
         </div>
       )}
 

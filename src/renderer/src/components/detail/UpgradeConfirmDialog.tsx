@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { PluginInstallPlan, PluginRegistryOption } from '@shared/contracts'
 import type { Translator } from '@shared/i18n'
-import { DEFAULT_PLUGIN_REGISTRY } from '@shared/settings'
+import { pluginRegistryFromUrl } from '@shared/settings'
 import { Icon } from '../../lib/icons'
 import { Modal } from '../Modal'
 import { useAppStore } from '../../store'
@@ -38,8 +38,10 @@ export default function UpgradeConfirmDialog(props: {
 }): ReactNode {
   const { t, instanceId, name, version, onClose, onConfirm } = props
   const closeLabel = useAppStore((state) => state.t('common.close'))
+  const npmRegistry = useAppStore((state) => state.settings.npmRegistry)
 
-  const [registry, setRegistry] = useState<PluginRegistryOption>(DEFAULT_PLUGIN_REGISTRY)
+  // 默认安装源跟随应用设置的镜像档位：与 check 的默认源同口径（主进程同一设置推导）。
+  const [registry, setRegistry] = useState<PluginRegistryOption>(() => pluginRegistryFromUrl(npmRegistry))
   const [plan, setPlan] = useState<PluginInstallPlan | null>(null)
   const [resolving, setResolving] = useState(true)
   const [upgrading, setUpgrading] = useState(false)
