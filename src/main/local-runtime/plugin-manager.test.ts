@@ -1660,6 +1660,34 @@ describe('createPluginManager registry 口径', () => {
     const addCall = run.mock.calls.find(([, args]) => args.includes('add'))!
     expect(addCall[1].slice(-2)).toEqual(['--registry', 'https://registry.npmmirror.com'])
   })
+
+  it('upgrade：可改选安装源（npmjs 走 npmjs，npmmirror 与缺省同参）', async () => {
+    const byNpmjs = registryRun()
+    await createPluginManager(baseOptions(byNpmjs)).upgrade(
+      localInstance(),
+      '@xbzbing/dsh-git-panel',
+      '1.2.0',
+      { registry: 'npmjs' }
+    )
+    const npmjsAdd = byNpmjs.mock.calls.find(([, args]) => args.includes('add'))!
+    expect(npmjsAdd[1]).toContain('@xbzbing/dsh-git-panel@1.2.0')
+    expect(npmjsAdd[1].slice(-2)).toEqual(['--registry', 'https://registry.npmjs.org'])
+
+    // 显式 npmmirror 与缺省升级发同一条命令（缺省即默认档，无隐式差异）。
+    const explicit = registryRun()
+    await createPluginManager(baseOptions(explicit)).upgrade(
+      localInstance(),
+      '@xbzbing/dsh-git-panel',
+      '1.2.0',
+      { registry: 'npmmirror' }
+    )
+    const omitted = registryRun()
+    await createPluginManager(baseOptions(omitted)).upgrade(localInstance(), '@xbzbing/dsh-git-panel', '1.2.0')
+    const explicitAdd = explicit.mock.calls.find(([, args]) => args.includes('add'))!
+    const omittedAdd = omitted.mock.calls.find(([, args]) => args.includes('add'))!
+    expect(explicitAdd[1].slice(-2)).toEqual(['--registry', 'https://registry.npmmirror.com'])
+    expect(omittedAdd[1]).toEqual(explicitAdd[1])
+  })
 })
 
 describe('createPluginManager install：安装后启用', () => {

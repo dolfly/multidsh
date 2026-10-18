@@ -798,7 +798,7 @@ describe('registerIpc', () => {
     expect(Object.keys(result.value.updates)).toEqual(['p'])
   })
 
-  it('plugin:upgrade：显式版本经校验后转发', async () => {
+  it('plugin:upgrade：显式版本经校验后转发（缺省 options 也补空对象）', async () => {
     const created = (await invoke('instances:create', VALID_LOCAL)) as {
       ok: boolean
       value: { id: string }
@@ -811,8 +811,40 @@ describe('registerIpc', () => {
     expect(pluginManagerFake.upgrade).toHaveBeenCalledWith(
       expect.objectContaining({ id: created.value.id }),
       'dsh-free-search',
-      '0.4.40'
+      '0.4.40',
+      {}
     )
+  })
+
+  it('plugin:upgrade：安装源档位经校验后作为第 4 参转发', async () => {
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
+    if (!created.ok) throw new Error('创建失败')
+    const result = (await invoke('plugin:upgrade', created.value.id, 'dsh-free-search', '0.4.40', {
+      registry: 'npmjs'
+    })) as { ok: boolean }
+    expect(result.ok).toBe(true)
+    expect(pluginManagerFake.upgrade).toHaveBeenCalledWith(
+      expect.objectContaining({ id: created.value.id }),
+      'dsh-free-search',
+      '0.4.40',
+      { registry: 'npmjs' }
+    )
+  })
+
+  it('plugin:upgrade：非法安装源档位被拒，不到达命令层', async () => {
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
+    if (!created.ok) throw new Error('创建失败')
+    const result = (await invoke('plugin:upgrade', created.value.id, 'dsh-free-search', '0.4.40', {
+      registry: 'http://evil.example.com'
+    })) as { ok: boolean; code?: string }
+    expect(result).toMatchObject({ ok: false, code: 'invalid-input' })
+    expect(pluginManagerFake.upgrade).not.toHaveBeenCalled()
   })
 
   it('plugin:install：非法 spec 被拒（含 shell 元字符）', async () => {

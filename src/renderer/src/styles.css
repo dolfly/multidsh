@@ -323,6 +323,12 @@ h3,
   height: 11px;
   flex: none;
 }
+/* 版本演进（安装/升级确认区）：左旧右新 —— 旧版本走弱化的 meta 样式、目标版本保留徽标，
+   箭头只做连接与语义（升级/替换），不再配文字说明。 */
+.ver-arrow {
+  color: var(--muted);
+  padding: 0 6px;
+}
 .chip {
   display: inline-flex;
   align-items: center;

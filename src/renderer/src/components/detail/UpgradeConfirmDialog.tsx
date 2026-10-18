@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { PluginInstallPlan } from '@shared/contracts'
+import type { PluginInstallPlan, PluginRegistryOption } from '@shared/contracts'
 import type { Translator } from '@shared/i18n'
+import { DEFAULT_PLUGIN_REGISTRY } from '@shared/settings'
 import { Icon } from '../../lib/icons'
 import { Modal } from '../Modal'
 import { useAppStore } from '../../store'
 import InstallConfirmPanel from './InstallConfirmPanel'
+import { REGISTRY_CHOICES, registryLabel } from './registry-choices'
 
 const BRIDGE = window.dshHub
 
@@ -18,7 +20,9 @@ export interface UpgradeOutcome {
 /**
  * 升级二次确认：点「升级到 x.y.z」后先弹出，解析目标版本并展示与安装第二步同款的确认区。
  *
- * 只确认目标版本与风险，不改启用态（没有安装源选择与「安装后启用」勾选）；
+ * 安装源可在确认前改选：目标版本固定来自检查结果，换源只改变从哪里取该版本，改选即按新源重新解析；
+ * 解析与升级必须同源，选定的档位回传给执行方。
+ * 只确认目标版本与风险，不改启用态（没有「安装后启用」勾选）；
  * 真正的执行与收尾由调用方负责，失败时对话框保持打开并就地报错。
  */
 export default function UpgradeConfirmDialog(props: {
@@ -29,12 +33,13 @@ export default function UpgradeConfirmDialog(props: {
   /** 目标版本（来自检查结果；升级固定走显式版本分型）。 */
   version: string
   onClose: () => void
-  /** 执行升级（留痕、清检查标记、刷新列表与生效提示由调用方完成）。 */
-  onConfirm: () => Promise<UpgradeOutcome>
+  /** 执行升级（留痕、清检查标记、刷新列表与生效提示由调用方完成）；入参是本次选定的安装源。 */
+  onConfirm: (registry: PluginRegistryOption) => Promise<UpgradeOutcome>
 }): ReactNode {
   const { t, instanceId, name, version, onClose, onConfirm } = props
   const closeLabel = useAppStore((state) => state.t('common.close'))
 
+  const [registry, setRegistry] = useState<PluginRegistryOption>(DEFAULT_PLUGIN_REGISTRY)
   const [plan, setPlan] = useState<PluginInstallPlan | null>(null)
   const [resolving, setResolving] = useState(true)
   const [upgrading, setUpgrading] = useState(false)
@@ -48,7 +53,7 @@ export default function UpgradeConfirmDialog(props: {
     let cancelled = false
     setResolving(true)
     setResolveError(null)
-    void bridge.plugin.resolveInstall(instanceId, `${name}@${version}`).then((result) => {
+    void bridge.plugin.resolveInstall(instanceId, `${name}@${version}`, { registry }).then((result) => {
       if (cancelled) return
       setResolving(false)
       if (!result.ok) {
@@ -60,7 +65,18 @@ export default function UpgradeConfirmDialog(props: {
     return () => {
       cancelled = true
     }
-  }, [instanceId, name, version])
+  }, [instanceId, name, version, registry])
+
+  /** 改选安装源：当前计划对应旧源，先作废再按新源重新解析（风险勾选与旧的失败信息一并失效）。 */
+  const changeRegistry = (next: PluginRegistryOption): void => {
+    if (next === registry) return
+    setPlan(null)
+    setRiskAccepted(false)
+    setResolveError(null)
+    // 上一次升级的失败原因属于旧源/旧计划：换源后重新解析，不再显示，避免与新结果并存。
+    setUpgradeError(null)
+    setRegistry(next)
+  }
 
   const upgrade = async (): Promise<void> => {
     if (plan === null || upgrading) return
@@ -68,7 +84,7 @@ export default function UpgradeConfirmDialog(props: {
     if (plan.compatible === false && !riskAccepted) return
     setUpgrading(true)
     setUpgradeError(null)
-    const result = await onConfirm()
+    const result = await onConfirm(registry)
     setUpgrading(false)
     if (!result.ok) {
       setUpgradeError(result.message ?? '')
@@ -123,7 +139,26 @@ export default function UpgradeConfirmDialog(props: {
         </>
       }
     >
-      <div className="note n-warn" data-testid="upgrade-confirm-safety">
+      {/* 安装源在确认区之前选定：解析与升级必须同源，改选即按新源重新解析。 */}
+      <div className="field">
+        <label htmlFor="upgrade-plugin-registry">{t('detail.plugin.installSource')}</label>
+        <select
+          className="input"
+          id="upgrade-plugin-registry"
+          value={registry}
+          disabled={upgrading}
+          onChange={(event) => changeRegistry(event.target.value as PluginRegistryOption)}
+          data-testid="upgrade-confirm-source"
+        >
+          {REGISTRY_CHOICES.map((choice) => (
+            <option key={choice.value} value={choice.value}>
+              {t(choice.labelKey)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="note n-warn mt12" data-testid="upgrade-confirm-safety">
         <Icon name="alert" />
         <span>{t('detail.plugin.installSafety')}</span>
       </div>
@@ -142,6 +177,7 @@ export default function UpgradeConfirmDialog(props: {
             instanceId={instanceId}
             plan={plan}
             mode="upgrade"
+            registryLabel={registryLabel(t, registry)}
             riskAccepted={riskAccepted}
             onRiskChange={setRiskAccepted}
           />

@@ -718,7 +718,7 @@ export const PLUGIN_IPC = {
   resolveInstall: 'plugin:resolveInstall',
   /** 单个版本的更新内容与近 30 天下载量（安装确认与升级确认共用，懒加载）。 */
   packageInfo: 'plugin:packageInfo',
-  /** 升级到指定版本（显式版本，非 latest）。 */
+  /** 升级到指定版本（显式版本，非 latest；可从所选安装源取该版本）。 */
   upgrade: 'plugin:upgrade',
   /** 卸载插件。 */
   remove: 'plugin:remove',
@@ -767,10 +767,15 @@ export const PLUGIN_INSTALL_OPTIONS_SCHEMA = z.object({
 
 export type PluginInstallOptions = z.infer<typeof PLUGIN_INSTALL_OPTIONS_SCHEMA>
 
-/** 解析安装版本的可选参数（只需要安装源）。 */
-export const PLUGIN_RESOLVE_OPTIONS_SCHEMA = z.object({
+/**
+ * 只带安装源档位的可选参数：解析安装版本与升级都用它。
+ * 档位是枚举，URL 只在主进程映射（缺省 npmmirror）。
+ */
+export const PLUGIN_REGISTRY_OPTIONS_SCHEMA = z.object({
   registry: PLUGIN_REGISTRY_SCHEMA.optional()
 })
+
+export type PluginRegistryOptions = z.infer<typeof PLUGIN_REGISTRY_OPTIONS_SCHEMA>
 
 /** 安装 spec 的种类；github/file 不联网解析版本，只展示来源。 */
 export type PluginInstallKind = 'npm' | 'github' | 'file'

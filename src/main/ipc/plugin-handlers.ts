@@ -13,7 +13,7 @@ import {
   PLUGIN_INSTALL_OPTIONS_SCHEMA,
   PLUGIN_IPC,
   PLUGIN_NAME_SCHEMA,
-  PLUGIN_RESOLVE_OPTIONS_SCHEMA,
+  PLUGIN_REGISTRY_OPTIONS_SCHEMA,
   PLUGIN_SPEC_SCHEMA,
   type IpcResult,
   type LocalInstance,
@@ -89,7 +89,7 @@ export function registerPluginHandlers(store: InstanceStore, deps: PluginHandler
       wrap(async () => {
         const instance = await requireLocal(id)
         const pluginSpec = PLUGIN_SPEC_SCHEMA.parse(spec)
-        const parsedOptions = PLUGIN_RESOLVE_OPTIONS_SCHEMA.parse(options ?? {})
+        const parsedOptions = PLUGIN_REGISTRY_OPTIONS_SCHEMA.parse(options ?? {})
         if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
         return deps.pluginManager.resolveInstall(instance, pluginSpec, parsedOptions)
       })
@@ -126,13 +126,20 @@ export function registerPluginHandlers(store: InstanceStore, deps: PluginHandler
 
   ipcMain.handle(
     PLUGIN_IPC.upgrade,
-    (_event, id: unknown, name: unknown, version: unknown): Promise<IpcResult<PluginMutationResult>> =>
+    (
+      _event,
+      id: unknown,
+      name: unknown,
+      version: unknown,
+      options: unknown
+    ): Promise<IpcResult<PluginMutationResult>> =>
       wrap(async () => {
         const instance = await requireLocal(id)
         const pluginName = PLUGIN_NAME_SCHEMA.parse(name)
         const targetVersion = PLUGIN_VERSION_SCHEMA.parse(version)
+        const parsedOptions = PLUGIN_REGISTRY_OPTIONS_SCHEMA.parse(options ?? {})
         if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
-        return deps.pluginManager.upgrade(instance, pluginName, targetVersion)
+        return deps.pluginManager.upgrade(instance, pluginName, targetVersion, parsedOptions)
       })
   )
 

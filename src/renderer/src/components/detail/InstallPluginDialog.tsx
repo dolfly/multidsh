@@ -2,24 +2,15 @@ import { useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import type { PluginInstallPlan, PluginRegistryOption } from '@shared/contracts'
 import type { Translator } from '@shared/i18n'
-import type { MessageKey } from '@shared/i18n/messages'
-import { DEFAULT_PLUGIN_REGISTRY, REGISTRY_PRESETS } from '@shared/settings'
+import { DEFAULT_PLUGIN_REGISTRY } from '@shared/settings'
 import { Icon } from '../../lib/icons'
 import { Modal } from '../Modal'
 import { InfoTip } from '../InfoTip'
 import { useAppStore } from '../../store'
 import InstallConfirmPanel from './InstallConfirmPanel'
+import { REGISTRY_CHOICES, registryLabel } from './registry-choices'
 
 const BRIDGE = window.dshHub
-
-/**
- * 安装源两档与向导的 registry 预设一一对应（labelKey 是稳定契约）：
- * 档位以枚举传递，URL 只在主进程映射，这里只负责显示向导同款文案。
- */
-const REGISTRY_CHOICES = [
-  { value: 'npmmirror', labelKey: REGISTRY_PRESETS[0].labelKey },
-  { value: 'npmjs', labelKey: REGISTRY_PRESETS[1].labelKey }
-] as const satisfies readonly { value: PluginRegistryOption; labelKey: MessageKey }[]
 
 /** 安装成功交给卡片的确认结果：勾选值、安装源与主进程给出的生效口径。 */
 export interface InstallConfirmation {
@@ -247,10 +238,7 @@ export default function InstallPluginDialog(props: {
             instanceId={instanceId}
             plan={plan}
             mode="install"
-            registryLabel={t(
-              REGISTRY_CHOICES.find((choice) => choice.value === registry)?.labelKey ??
-                REGISTRY_CHOICES[0].labelKey
-            )}
+            registryLabel={registryLabel(t, registry)}
             riskAccepted={riskAccepted}
             onRiskChange={setRiskAccepted}
           />

@@ -104,12 +104,16 @@ const bridge: DshHubBridge = {
     resolveInstall: (
       id: string,
       spec: string,
-      options?: { enable?: boolean; registry?: PluginRegistryOption }
+      options?: { registry?: PluginRegistryOption }
     ) => ipcRenderer.invoke(PLUGIN_IPC.resolveInstall, id, spec, options),
     packageInfo: (id: string, name: string, version: string) =>
       ipcRenderer.invoke(PLUGIN_IPC.packageInfo, id, name, version),
-    upgrade: (id: string, name: string, version: string) =>
-      ipcRenderer.invoke(PLUGIN_IPC.upgrade, id, name, version),
+    upgrade: (
+      id: string,
+      name: string,
+      version: string,
+      options?: { registry?: PluginRegistryOption }
+    ) => ipcRenderer.invoke(PLUGIN_IPC.upgrade, id, name, version, options),
     remove: (id: string, name: string) => ipcRenderer.invoke(PLUGIN_IPC.remove, id, name),
     setEnabled: (id: string, name: string, enabled: boolean) =>
       ipcRenderer.invoke(PLUGIN_IPC.setEnabled, id, name, enabled),

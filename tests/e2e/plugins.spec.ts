@@ -454,6 +454,9 @@ test('安装两步：确定解析出版本、确认后才下发带 --registry �
   const versionRow = win.getByTestId('install-confirm-version')
   await expect(versionRow).toBeVisible({ timeout: 20_000 })
   await expect(versionRow).toContainText(LATEST_VERSION)
+  // 版本演进：左旧右新 —— 已装 1.0.0 在左、目标徽标在右，箭头本身说明替换。
+  await expect(versionRow).toContainText(INSTALLED_VERSION)
+  await expect(versionRow).toContainText('→')
   await expect(win.getByTestId('install-confirm-downloads')).toBeVisible()
   await expect(win.getByTestId('install-plugin-submit')).toContainText(LATEST_VERSION)
 
@@ -512,6 +515,8 @@ test('安装两步：确定解析出版本、确认后才下发带 --registry �
   await win.getByTestId('install-plugin-input').fill('demo-plugin@1.0.0')
   await win.getByTestId('install-plugin-submit').click()
   await expect(versionRow).toContainText('重装', { timeout: 20_000 })
+  // 同版本不走演进行：单徽标 + 重装说明，没有箭头。
+  await expect(versionRow).not.toContainText('→')
   await win.getByTestId('install-plugin-input').fill('demo-plugin@1.0.10')
   await expect(win.getByTestId('install-confirm-version')).toHaveCount(0)
   await win.getByTestId('install-plugin-cancel').click()
@@ -538,17 +543,35 @@ test('升级二次确认：弹窗给出目标版本，取消不执行、确认�
   // 与安装第二步同宽：同一套确认区不因入口不同而变窄。
   expect((await dialog.boundingBox())?.width ?? 0).toBeGreaterThan(500)
 
+  // 安装源可在确认前改选：默认国内镜像，徽标与选择器同档。
+  const source = win.getByTestId('upgrade-confirm-source')
+  await expect(source).toHaveValue('npmmirror')
+  await expect(dialog.locator('.card-head .badge').first()).toContainText('npmmirror')
+  // 版本演进：左旧右新（已装 1.0.0 → 目标 1.1.0）。
+  const versionRow = win.getByTestId('install-confirm-version')
+  await expect(versionRow).toContainText(INSTALLED_VERSION)
+  await expect(versionRow).toContainText('→')
+  await expect(versionRow).toContainText(LATEST_VERSION)
+
   // 取消：不产生任何改动。
   await win.getByTestId('upgrade-confirm-cancel').click()
   await expect(dialog).toBeHidden()
   expect((await readMutations()).length).toBe(before)
 
-  // 确认后才执行升级。
+  // 确认后才执行升级：改选安装源后按新源解析，add 必须带新源的 --registry。
   await upgrade.click()
   await expect(dialog).toBeVisible()
+  await win.getByTestId('upgrade-confirm-source').selectOption('npmjs')
+  // 改选即作废当前计划（确认区收回）→ 按 npmjs 重新解析出同一目标版本后确认区才回来。
+  await expect(versionRow).toBeHidden()
+  await expect(versionRow).toBeVisible({ timeout: 20_000 })
+  await expect(versionRow).toContainText(LATEST_VERSION)
+  await expect(dialog.locator('.card-head .badge').first()).toContainText('npmjs')
   await win.getByTestId('upgrade-confirm-submit').click()
   await expect(dialog).toBeHidden({ timeout: 60_000 })
   const mutations = await readMutations()
   expect(mutations.length).toBe(before + 1)
   expect(mutations.at(-1)?.args[0]).toBe(`demo-plugin@${LATEST_VERSION}`)
+  expect(mutations.at(-1)?.args).toContain('--registry')
+  expect(mutations.at(-1)?.args).toContain('https://registry.npmjs.org')
 })

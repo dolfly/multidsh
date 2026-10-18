@@ -25,6 +25,7 @@ import type {
   PluginMutationResult,
   PluginPackageInfo,
   PluginRegistryOption,
+  PluginRegistryOptions,
   PluginUpdateCheck,
   PluginVersionSource
 } from '@shared/contracts'
@@ -152,7 +153,16 @@ export interface PluginManager {
   ): Promise<PluginMutationResult>
   /** 某版本的更新内容（GitHub Release → CHANGELOG → 无）与近 30 天下载量；取不到不是错误。 */
   packageInfo(instance: LocalInstance, name: string, version: string): Promise<PluginPackageInfo>
-  upgrade(instance: LocalInstance, name: string, version: string): Promise<PluginMutationResult>
+  /**
+   * 升级到指定版本：默认与 check 同源（npmmirror），`options.registry` 可在升级确认
+   * 对话框改选安装源（选定后解析与安装同源）。
+   */
+  upgrade(
+    instance: LocalInstance,
+    name: string,
+    version: string,
+    options?: PluginRegistryOptions
+  ): Promise<PluginMutationResult>
   remove(instance: LocalInstance, name: string): Promise<PluginMutationResult>
   /** 读取该实例的持久化检查状态（含在飞检查），供渲染层挂载时恢复标记。 */
   checkState(instance: LocalInstance): Promise<PluginCheckSnapshot>
@@ -1130,11 +1140,12 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       }
     },
 
-    async upgrade(instance, name, version): Promise<PluginMutationResult> {
+    async upgrade(instance, name, version, options = {}): Promise<PluginMutationResult> {
+      const registry = options.registry ?? DEFAULT_PLUGIN_REGISTRY
       const resolved = await resolveDshEntry(instance)
       const hadHostSide = await hostSideOf(instance, name, resolved)
-      // 升级与 check 同源：固定按默认安装源追加 --registry。
-      await runPlugin(instance, ['add', `${name}@${version}`], resolved, DEFAULT_PLUGIN_REGISTRY)
+      // 升级默认与 check 同源（npmmirror）；用户可在升级确认对话框改选安装源。
+      await runPlugin(instance, ['add', `${name}@${version}`], resolved, registry)
       // 升级换了版本：清掉可升级标记，并同步落下新版本的发布时间快照（无需再次检查即可显示）。
       await syncCheckAfterUpgrade(instance, name, resolved)
       // 升级必然替换已装包 → 与 dsh 同口径：即使有 HMR 也要重启才能换掉已加载的模块代。

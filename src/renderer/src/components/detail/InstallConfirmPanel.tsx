@@ -20,7 +20,7 @@ export interface InstallConfirmPanelProps {
   plan: PluginInstallPlan
   /** install = 安装第二步；upgrade = 升级二次确认；两者只差分区标题。 */
   mode: 'install' | 'upgrade'
-  /** npm 来源的安装源档位文案；升级沿用固定默认源时可省略（徽标只写 npm registry）。 */
+  /** npm 来源的安装源档位文案（安装与升级都由调用方传入；省略则徽标只写 npm registry）。 */
   registryLabel?: string
   /** 不兼容风险勾选值；未勾选时调用方禁用主按钮。 */
   riskAccepted: boolean
@@ -72,12 +72,18 @@ export default function InstallConfirmPanel(props: InstallConfirmPanelProps): Re
       : plan.kind === 'github'
         ? t('detail.plugin.confirmSourceGithub')
         : t('detail.plugin.confirmSourceFile')
+  /**
+   * 版本演进行：左旧右新，箭头本身表达「升级/替换」，不再配文字说明。
+   * 未安装与同版本仍走单徽标 + 说明（未安装 / 版本已相符（重装））。
+   */
+  const installed = plan.installedVersion
+  const versionEvolution = installed !== null && targetVersion !== null && installed !== targetVersion
   const installedNote =
-    plan.installedVersion === null
+    installed === null
       ? t('detail.plugin.confirmUninstalled')
-      : plan.installedVersion === targetVersion
-        ? t('detail.plugin.confirmInstalledSame', { version: plan.installedVersion })
-        : t('detail.plugin.confirmInstalledReplace', { version: plan.installedVersion })
+      : installed === targetVersion
+        ? t('detail.plugin.confirmInstalledSame', { version: installed })
+        : null
   const compatVerdict =
     plan.compatible === true
       ? t('detail.plugin.confirmCompatOk')
@@ -116,8 +122,23 @@ export default function InstallConfirmPanel(props: InstallConfirmPanelProps): Re
       <dl className="kv">
         <dt>{t('detail.plugin.confirmVersion')}</dt>
         <dd data-testid="install-confirm-version">
-          <span className="badge num">{targetVersion ?? plan.installSpec}</span>{' '}
-          <span className="meta">{installedNote}</span>
+          {versionEvolution ? (
+            <>
+              <span className="meta num">{installed}</span>
+              <span className="ver-arrow">→</span>
+              <span className="badge num">{targetVersion ?? plan.installSpec}</span>
+            </>
+          ) : (
+            <>
+              <span className="badge num">{targetVersion ?? plan.installSpec}</span>
+              {installedNote !== null && (
+                <>
+                  {' '}
+                  <span className="meta">{installedNote}</span>
+                </>
+              )}
+            </>
+          )}
         </dd>
         <dt>{t('detail.plugin.field.published')}</dt>
         <dd className="num" data-testid="install-confirm-published">

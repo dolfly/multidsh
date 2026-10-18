@@ -532,10 +532,6 @@ export const MESSAGES = {
   'detail.plugin.confirmCompatOk': { zh: '满足', en: 'satisfied' },
   'detail.plugin.confirmCompatFail': { zh: '不满足', en: 'not satisfied' },
   'detail.plugin.confirmCompatUnknown': { zh: '无法判定', en: 'cannot be determined' },
-  'detail.plugin.confirmInstalledReplace': {
-    zh: '已装 {version}，安装后将替换',
-    en: 'Installed {version}; will be replaced'
-  },
   'detail.plugin.confirmInstalledSame': {
     zh: '已装 {version} · 版本已相符（重装）',
     en: 'Installed {version} · same version (reinstall)'

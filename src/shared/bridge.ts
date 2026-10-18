@@ -32,6 +32,7 @@ import type {
   PluginInstallPlan,
   PluginMutationResult,
   PluginPackageInfo,
+  PluginRegistryOptions,
   PluginCheckSnapshot,
   PluginEnableResult,
   PluginUpdateCheck,
@@ -178,12 +179,17 @@ export interface DshHubBridge {
     resolveInstall: (
       id: string,
       spec: string,
-      options?: PluginInstallOptions
+      options?: PluginRegistryOptions
     ) => Promise<IpcResult<PluginInstallPlan>>
     /** 单个版本的更新内容与近 30 天下载量（确认区懒加载；取不到不算错误）。 */
     packageInfo: (id: string, name: string, version: string) => Promise<IpcResult<PluginPackageInfo>>
-    /** 升级到指定版本（显式版本，非 latest）。 */
-    upgrade: (id: string, name: string, version: string) => Promise<IpcResult<PluginMutationResult>>
+    /** 升级到指定版本（显式版本，非 latest；可从所选安装源取该版本）。 */
+    upgrade: (
+      id: string,
+      name: string,
+      version: string,
+      options?: PluginRegistryOptions
+    ) => Promise<IpcResult<PluginMutationResult>>
     /** 卸载插件。 */
     remove: (id: string, name: string) => Promise<IpcResult<PluginMutationResult>>
     /** 启用/禁用插件（改 profile 加载清单，保留依赖；禁用后仍在列表可见）。 */

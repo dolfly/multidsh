@@ -4,6 +4,7 @@ import type {
   PluginAutoDisabled,
   PluginInfo,
   PluginInstallPlan,
+  PluginRegistryOption,
   PluginUpdateCheck
 } from '@shared/contracts'
 import type { Translator } from '@shared/i18n'
@@ -298,12 +299,17 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
   /**
    * 升级执行与收尾：留痕、清掉该插件的检查标记、刷新列表，最后按生效口径提示。
    * 失败把 message 交回二次确认对话框就地显示，对话框据此保持打开。
+   * `registry` 是二次确认里选定的安装源，与解析所用同源。
    */
-  const performUpgrade = async (name: string, version: string): Promise<UpgradeOutcome> => {
+  const performUpgrade = async (
+    name: string,
+    version: string,
+    registry: PluginRegistryOption
+  ): Promise<UpgradeOutcome> => {
     if (!BRIDGE) return { ok: false }
     setRowBusy(name, { upgrading: true })
     logActivity(t('detail.plugin.log.upgrading', { name, version }))
-    const result = await BRIDGE.plugin.upgrade(instanceId, name, version)
+    const result = await BRIDGE.plugin.upgrade(instanceId, name, version, { registry })
     setRowBusy(name, { upgrading: false })
     if (!result.ok) {
       logActivity(t('detail.plugin.log.upgradeFailed', { name, msg: result.message }))
@@ -525,7 +531,9 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
           name={upgradeTarget.name}
           version={upgradeTarget.version}
           onClose={() => setUpgradeTarget(null)}
-          onConfirm={() => performUpgrade(upgradeTarget.name, upgradeTarget.version)}
+          onConfirm={(registry) =>
+            performUpgrade(upgradeTarget.name, upgradeTarget.version, registry)
+          }
         />
       )}
 
