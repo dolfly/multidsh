@@ -3,8 +3,6 @@
  * 启动来源解析与 spawn 管线在 launch.ts；本模块保留就绪监视续体与进程回收。
  * 不 import Electron，状态只经 `onStatus` 向外发布，因此可脱离 Electron 单独测试。
  */
-import { existsSync, readdirSync } from 'node:fs'
-import { delimiter, dirname, join } from 'node:path'
 import { homedir } from 'node:os'
 import type {
   DshVersionProgressEvent,
@@ -18,13 +16,11 @@ import type { PortProbe } from './port-allocator'
 import type { InstallProgress } from './runtime-installer'
 import { InstanceStoreError, type InstanceStore } from '../registry/instance-store'
 import { isExternalRuntime, resolveSystemDshUsage } from './dsh-source-policy'
-import { searchNodeDirs } from './node-dirs'
 import { resolveLoginPathOnce } from './login-path'
 import { resolveShellEnvOnce } from './shell-env'
 import { diffEnvironment } from './env-diff'
 import { httpHealthProbe, retryProbe, type HealthProbe } from '../transport/probe'
 import { createStatusBus } from '../transport/status-bus'
-import { nodeModeExecutable } from '../node-mode'
 import {
   detachedSpawn,
   killProcessGroup,
@@ -33,6 +29,7 @@ import {
 } from '../transport/spawn'
 import type { Entry } from './entry'
 import { createLauncher, type LaunchOptions } from './launch'
+import { defaultNodeInvocation, resolveNodeFor } from './node-resolution'
 
 /** dsh 就绪输出：`dsh web: http://127.0.0.1:52300/?token=...` */
 const READY_PATTERN = /dsh\s+web:\s+(https?:\/\/\S+)/i
@@ -144,46 +141,6 @@ export interface AdoptTarget {
   patch: string | null
   /** 已验证的完整访问 URL；外部 dsh 开启 browser-auth 时包含用户提供的 token。 */
   url?: string
-}
-
-function defaultNodeInvocation(): { command: string; args: string[]; env: NodeJS.ProcessEnv } {
-  // macOS 用 Helper 二进制并带 ELECTRON_RUN_AS_NODE 退化为纯 Node 执行 dsh（避免 Dock 图标闪现；见 node-mode）。
-  // `--expose-internals` 是 dsh web profile 的硬性要求（cordis-plugin-hmr 需要），缺失时就绪后即崩
-
-  return {
-    command: nodeModeExecutable(),
-    args: ['--expose-internals'],
-    env: { ELECTRON_RUN_AS_NODE: '1' }
-  }
-}
-
-/**
- * 解析一个真实 node 可执行文件，供 hub 与本机启动器来源执行 dsh/dush/duush。
- *
- * dsh 的原生插件按运行时指纹校验：不在白名单的 Electron 版本启动即以 code=1 退出，
- * 因此**能用真实 node 时一律用真实 node**。查找顺序：脚本同目录（npm/pnpm 全局常放在一起）
- * → 常见安装落点（nvm/homebrew/pnpm 等；GUI 启动时进程 PATH 往往缺 node 目录）→ PATH。
- */
-function resolveNodeFor(scriptPath: string, home: string): string | null {
-  const nodeName = process.platform === 'win32' ? 'node.exe' : 'node'
-  const sameDir = join(dirname(scriptPath), nodeName)
-  if (existsSync(sameDir)) return sameDir
-  const listDir = (dir: string): string[] => {
-    try {
-      return readdirSync(dir)
-    } catch {
-      return []
-    }
-  }
-  const dirs = [
-    ...searchNodeDirs(home, listDir),
-    ...(process.env.PATH ?? '').split(delimiter).filter((dir) => dir !== '')
-  ]
-  for (const dir of [...new Set(dirs)]) {
-    const candidate = join(dir, nodeName)
-    if (existsSync(candidate)) return candidate
-  }
-  return null
 }
 
 export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeManager {
