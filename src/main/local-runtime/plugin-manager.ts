@@ -15,7 +15,6 @@ import { delimiter, dirname, join } from 'node:path'
 import { homedir } from 'node:os'
 import type {
   LocalInstance,
-  PluginCheckRecord,
   PluginCheckSnapshot,
   PluginEnableResult,
   PluginInfo,
@@ -40,14 +39,10 @@ import { mergeLoginPath, resolveLoginPathOnce } from './login-path'
 import { mergeShellEnv, resolveShellEnvOnce } from './shell-env'
 import { dshPeerRange, evaluateDshPeers, npmUrlFrom } from './peer-compatibility'
 import { createPluginStateStore } from './plugin-state'
-import type {
-  AutoDisabledPlugin,
-  PluginCheckState,
-  PluginPublishedSnapshot,
-  PluginStateStore
-} from './plugin-state'
+import type { AutoDisabledPlugin, PluginPublishedSnapshot, PluginStateStore } from './plugin-state'
 import { createRegistryMetadataReader } from './plugin-registry-meta'
 import { createDshEntryResolver } from './plugin-dsh-entry'
+import { createCheckStateWriter } from './plugin-check-state'
 import { createProfileBundleStore } from './profile-bundles'
 import { withBundledPnpmPath } from '../shell/bundled-pnpm'
 import { userLayerDisablesHmr } from './profile-hmr'
@@ -220,6 +215,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   const shellEnv = options.shellEnv ?? resolveShellEnvOnce
   const loginPath = options.loginPath ?? resolveLoginPathOnce
   const stateStore = options.stateStore ?? createPluginStateStore(options.dataRoot)
+  /** 检查状态落盘（合并逻辑见 plugin-check-state）。 */
+  const checkStateWriter = createCheckStateWriter(stateStore)
   const bundleStore = options.bundleStore ?? createProfileBundleStore()
   /** dsh 可执行入口解析（判据见 plugin-dsh-entry）。 */
   const resolveDshEntry = createDshEntryResolver({
@@ -297,69 +294,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       resolved
     )
     return { pluginVersion, dshVersion: resolved.version }
-  }
-
-  /** 状态落盘失败不影响本次检查/改动结果：只是重启后看不到标记。 */
-  async function writeState(instanceId: string, state: PluginCheckState): Promise<void> {
-    await stateStore.write(instanceId, state).catch((error: unknown) => {
-      console.error('[plugin] 写入插件检查状态失败：', error)
-    })
-  }
-
-  /**
-   * 把一次检查结果并入持久化状态：
-   * - 有新版则记下候选信息，已是最新则删掉该项（标记「直到用户再次检查或升级才变」由此保证）；
-   * - 取到已装版本的发布时间则写入版本快照（发布后不变，之后一直复用，下次检查再刷新）；
-   *   registry 未收录该版本时（published 为 null）保留原快照，显示端只在版本号一致时才读它。
-   */
-  async function persistCheck(
-    instanceId: string,
-    name: string,
-    record: PluginCheckRecord | null,
-    published: PluginPublishedSnapshot | null
-  ): Promise<void> {
-    const state = await stateStore.read(instanceId)
-    const updates = { ...state.updates }
-    if (record === null) delete updates[name]
-    else updates[name] = record
-    const snapshots = { ...state.published }
-    if (published !== null) snapshots[name] = published
-    await writeState(instanceId, {
-      ...state,
-      lastCheckedAt: new Date().toISOString(),
-      updates,
-      published: snapshots
-    })
-  }
-
-  /** 该插件的检查痕迹随升级/卸载失效：可升级标记与发布时间快照一并丢弃（不刷新「上次检查」时刻）。 */
-  async function dropCheck(instanceId: string, name: string): Promise<void> {
-    const state = await stateStore.read(instanceId)
-    const updates = { ...state.updates }
-    delete updates[name]
-    const snapshots = { ...state.published }
-    delete snapshots[name]
-    await writeState(instanceId, { ...state, updates, published: snapshots })
-  }
-
-  /**
-   * 升级完成后同步该插件的检查痕迹：清掉可升级标记（已装版本已是目标版本），并把新版本的
-   * 发布时间落成快照，无需用户再次检查即可显示发布时间。取不到发布时间（如离线）时清掉
-   * 旧版本的陈旧快照，由下次检查补齐（不刷新「上次检查」时刻）。
-   */
-  async function syncCheckAfterUpgrade(
-    instance: LocalInstance,
-    name: string,
-    resolved: { entry: string; version: string }
-  ): Promise<void> {
-    const published = await resolveInstalledPublished(instance, name, resolved).catch(() => null)
-    const state = await stateStore.read(instance.id)
-    const updates = { ...state.updates }
-    delete updates[name]
-    const snapshots = { ...state.published }
-    if (published !== null) snapshots[name] = published
-    else delete snapshots[name]
-    await writeState(instance.id, { ...state, updates, published: snapshots })
   }
 
   /**
@@ -745,7 +679,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         const publishedAt = typeof published === 'string' && published !== '' ? published : null
         // 落盘：有新版留下标记，已是最新清掉该项（标记只在再次检查或升级时变化）；
         // 发布时间按「已装版本」存快照，未收录该版本时保留原快照。
-        await persistCheck(
+        await checkStateWriter.persistCheck(
           instance.id,
           name,
           hasUpdate ? { current: current.version, latest, compatible, dshPeer, dshVersion } : null,
@@ -907,7 +841,9 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       // 升级默认与 check 同源（同一默认档位，随设置）；用户可在升级确认对话框改选安装源。
       await runPlugin(instance, ['add', `${name}@${version}`], resolved, registry)
       // 升级换了版本：清掉可升级标记，并同步落下新版本的发布时间快照（无需再次检查即可显示）。
-      await syncCheckAfterUpgrade(instance, name, resolved)
+      // 取不到发布时间（如离线）时返回 null，由 writer 清掉旧版本的陈旧快照，下次检查补齐。
+      const published = await resolveInstalledPublished(instance, name, resolved).catch(() => null)
+      await checkStateWriter.syncCheckAfterUpgrade(instance.id, name, published)
       // 与 dsh 同口径：升级（替换已装包）同样热生效——dsh-hmr 按磁盘身份换模块代，
       // 只看 HMR 是否可用，不因换版本而无条件要求重启。
       const after = await bundleStore.read(profileDir)
@@ -927,7 +863,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       const hasHostSide = await hostSideOf(instance, name, resolved)
       await runPlugin(instance, ['remove', name], resolved)
       // 卸载后该插件的检查痕迹（可升级标记、发布时间快照）不再有意义。
-      await dropCheck(instance.id, name)
+      await checkStateWriter.dropCheck(instance.id, name)
       // 卸载走 dsh 的默认规则：有 HMR 即热卸载，否则需重启。
       const hmr = await hmrAvailable(instance, profileDir, before?.bundles ?? null)
       return { hasHostSide, application: defaultApplication(hmr) }
