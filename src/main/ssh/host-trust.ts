@@ -272,7 +272,7 @@ export async function recordHostTrust(
   keys: HostKeyEntry[],
   mode: 'append' | 'replace'
 ): Promise<void> {
-  let existing = ''
+  let existing: string
   try {
     existing = await readFile(knownHostsPath, 'utf8')
   } catch {
