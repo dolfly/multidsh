@@ -387,7 +387,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     '`无法解析版本：插件 ${name} 未发布到 npm registry`'
   ),
   debt(
-    'src/main/local-runtime/plugin-manager.ts',
+    'src/main/local-runtime/plugin-dsh-entry.ts',
     "'未找到可用的 dsh：hub 隔离目录与 PATH 上都没有已安装的运行时'"
   ),
   debt(

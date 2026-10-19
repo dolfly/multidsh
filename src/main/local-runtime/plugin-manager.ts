@@ -32,9 +32,8 @@ import { DEFAULT_PLUGIN_REGISTRY, pluginRegistryUrl } from '@shared/settings'
 import { redactLine } from '@shared/redact'
 import { execFileResult } from './exec-file'
 import type { CommandResult, CommandRunner } from './exec-file'
-import type { InstalledRuntime, RuntimeInstaller } from './runtime-installer'
-import { planRuntimeSource, type PathProbe } from './runtime-source'
-import { followsSystemDsh } from './dsh-source-policy'
+import type { RuntimeInstaller } from './runtime-installer'
+import type { PathProbe } from './runtime-source'
 import { compareDshVersions } from './version-compare'
 import { InstanceStoreError } from '../registry/instance-store'
 import { mergeLoginPath, resolveLoginPathOnce } from './login-path'
@@ -48,6 +47,7 @@ import type {
   PluginStateStore
 } from './plugin-state'
 import { createRegistryMetadataReader } from './plugin-registry-meta'
+import { createDshEntryResolver } from './plugin-dsh-entry'
 import { createProfileBundleStore } from './profile-bundles'
 import { withBundledPnpmPath } from '../shell/bundled-pnpm'
 import { userLayerDisablesHmr } from './profile-hmr'
@@ -221,6 +221,11 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   const loginPath = options.loginPath ?? resolveLoginPathOnce
   const stateStore = options.stateStore ?? createPluginStateStore(options.dataRoot)
   const bundleStore = options.bundleStore ?? createProfileBundleStore()
+  /** dsh 可执行入口解析（判据见 plugin-dsh-entry）。 */
+  const resolveDshEntry = createDshEntryResolver({
+    installer: options.installer,
+    ...(options.pathProbe ? { pathProbe: options.pathProbe } : {})
+  })
   const packageInfoFetchers = options.packageInfoFetchers ?? createPackageInfoFetchers()
   /** 未显式指定安装源时的默认档位（由设置项注入；缺省国内镜像）。 */
   const defaultRegistry =
@@ -391,49 +396,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     const { home, profile } = homeAndProfile(instance)
     if (await userLayerDisablesHmr(profileDir, home)) return false
     return profileHasHmr(profile, bundles)
-  }
-
-  /**
-   * 解析插件命令要用的 dsh 入口及其版本。判据与启动路径共用 dsh-source-policy：
-   * 公共空间 + 自定义启动器（dush/duush）固定跟随系统 dsh（PATH 实测），其余走 planRuntimeSource。
-   *
-   * 版本必须与真正执行命令的副本一致：dsh 的插件安装闸按自身版本判定 peer，若检查阶段用注册表
-   * 版本、执行阶段却落到另一个 hub 副本，就会出现「检查说可升级、安装被 dsh 拒绝」。
-   */
-  async function resolveDshEntry(
-    instance: LocalInstance
-  ): Promise<{ entry: string; version: string }> {
-    const followSystemDsh = followsSystemDsh(instance.useDefaultSpace, instance.launcher)
-    const [installed, pathRuntime] = await Promise.all([
-      // 跟随系统 dsh 时 hub 副本不参与决策（与启动路径一致：不装副本、不理会固定版本）。
-      followSystemDsh
-        ? Promise.resolve([] as InstalledRuntime[])
-        : options.installer.listInstalled().catch(() => [] as InstalledRuntime[]),
-      options.pathProbe ? options.pathProbe.probe().catch(() => null) : Promise.resolve(null)
-    ])
-    const plan = followSystemDsh
-      ? pathRuntime === null
-        ? null
-        : { kind: 'path' as const, command: pathRuntime.command, version: pathRuntime.version }
-      : planRuntimeSource({
-          desiredVersion: instance.dshVersion,
-          hubInstalled: installed.map((item) => item.version),
-          pathRuntime
-        })
-    if (plan?.kind === 'path') return { entry: plan.command, version: plan.version }
-    if (plan?.kind === 'hub') {
-      const hit = installed.find((item) => item.version === plan.version)
-      if (hit) return { entry: hit.entry, version: hit.version }
-    }
-    // download（固定版本未安装）或系统 dsh 未探到：插件命令不触发运行时下载，
-    // 回落 hub 已装的最新副本（与实例的 hub 归属一致，判定宁可拦下不误放行），再回落 PATH 实测。
-    const newest = [...installed].sort((a, b) => compareDshVersions(a.version, b.version)).at(-1)
-    if (newest !== undefined) return { entry: newest.entry, version: newest.version }
-    if (pathRuntime !== null) return { entry: pathRuntime.command, version: pathRuntime.version }
-    throw new InstanceStoreError(
-      'invalid-state',
-      '未找到可用的 dsh：hub 隔离目录与 PATH 上都没有已安装的运行时'
-    )
   }
 
   /**
