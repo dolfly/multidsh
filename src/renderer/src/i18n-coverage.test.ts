@@ -1084,7 +1084,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   debt('src/main/local-runtime/plugin-manager.ts', "throw new Error('无法解析插件列表输出')"),
   debt('src/main/local-runtime/plugin-manager.ts', "throw new Error('无法解析插件版本信息输出')"),
   debt(
-    'src/main/local-runtime/plugin-manager.ts',
+    'src/main/local-runtime/plugin-view-meta.ts',
     "throw new InstanceStoreError('internal', '无法解析插件版本信息输出')"
   ),
   debt(
