@@ -1,10 +1,4 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync
-} from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -20,7 +14,6 @@ import { MESSAGES, MESSAGE_KEYS } from '@shared/i18n/messages'
  * - 非渲染层文案分为用户可见和内部诊断两类，清单必须与扫描结果一致。
  */
 
-
 import {
   collectSourceFiles,
   logArgumentRegions,
@@ -29,7 +22,6 @@ import {
   type SourceFile,
   type Violation
 } from './i18n-scan.testkit'
-
 
 // ───────────────────────── 规则数据 ─────────────────────────
 
@@ -287,14 +279,14 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     "if (!win || win.isDestroyed()) throw new Error('工作区主窗口不可用')"
   ),
   debt('src/main/local-runtime/local-runtime.ts', "detail: '实例已在运行，忽略重复接管'"),
-  debt('src/shared/contracts.ts', ".min(1, '配置档案不能为空')"),
-  debt('src/shared/contracts.ts', ".max(128, '配置档案最长 128 字符')"),
+  debt('src/shared/contracts-instance.ts', ".min(1, '配置档案不能为空')"),
+  debt('src/shared/contracts-instance.ts', ".max(128, '配置档案最长 128 字符')"),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     ".regex(PROFILE_PATTERN, '配置档案只能是相对路径，且不能以 - 开头')"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     "const DSH_VERSION_SCHEMA = z.string().trim().max(64).regex(DSH_VERSION_PATTERN, '版本号含非法字符')"
   ),
   debt('src/shared/contracts.ts', ".min(1, '插件标识不能为空')"),
@@ -308,7 +300,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     ".regex(/^(@[a-z0-9][\\w.-]*\\/)?[a-z0-9][\\w.-]*$/i, '插件名形态非法')"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     ".refine((value) => !value.split('/').includes('..'), '配置档案不能包含 ..')"
   ),
   debt(
@@ -733,54 +725,54 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   //    渠道:zod 的 message 经 `formatZodIssues`(contracts.ts:510-517)折叠成一条纯文本,
   //    塞进 IPC 错误信封 `message`(`register.ts` 的 invalid-input 分支)→ 渲染层 toast /
   //    迁移方式同 (a):改成稳定 code + 渲染层按 field/code 映射文案。
-  debt('src/shared/contracts.ts', ".number('端口必须是数字')"),
-  debt('src/shared/contracts.ts', ".int('端口必须是整数')"),
-  debt('src/shared/contracts.ts', ".min(1, '端口最小 1')"),
-  debt('src/shared/contracts.ts', ".max(65535, '端口最大 65535')"),
-  debt('src/shared/contracts.ts', ".min(1, 'SSH 主机不能为空')"),
-  debt('src/shared/contracts.ts', ".max(255, 'SSH 主机最长 255 字符')"),
+  debt('src/shared/contracts-instance.ts', ".number('端口必须是数字')"),
+  debt('src/shared/contracts-instance.ts', ".int('端口必须是整数')"),
+  debt('src/shared/contracts-instance.ts', ".min(1, '端口最小 1')"),
+  debt('src/shared/contracts-instance.ts', ".max(65535, '端口最大 65535')"),
+  debt('src/shared/contracts-instance.ts', ".min(1, 'SSH 主机不能为空')"),
+  debt('src/shared/contracts-instance.ts', ".max(255, 'SSH 主机最长 255 字符')"),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     ".regex(/^[A-Za-z0-9._\\-:[\\]]+$/, 'SSH 主机含非法字符（不允许空白 / 斜杠 / @）')"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     ".refine((value) => !value.startsWith('-'), 'SSH 主机不能以 - 开头')"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     ".refine(isValidSshHost, 'host[:port] 形态的端口必须在 1–65535，或主机名不含冒号')"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     "name: z.string().trim().min(1, '名称不能为空').max(64, '名称最长 64 字符'),"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     "notes: z.string().trim().max(2000, '备注最长 2000 字符').nullable().optional(),"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     "username: z.string().trim().min(1, 'SSH 用户名不能为空').max(128, 'SSH 用户名最长 128 字符'),"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     "'端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）'"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     "name: z.string().trim().min(1, '名称不能为空').max(64).optional(),"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     "username: z.string().trim().min(1, 'SSH 用户名不能为空').max(128),"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     ".refine((patch) => Object.keys(patch).length > 0, '补丁不能为空')"
   ),
   debt(
-    'src/shared/contracts.ts',
+    'src/shared/contracts-instance.ts',
     "schemaVersion: z.number('schemaVersion 必须是数字').int().min(1),"
   ),
 
