@@ -51,7 +51,9 @@ gh release create v<version> --draft --title "DSH Hub <version>" --notes-file do
 
 ```bash
 # 1) 构建未签名安装包并生成校验清单
-bash docs/local/build-win-local.sh          # 或在 Windows 上 pnpm dist:win
+# mac 交叉构建（electron-builder 自行下载 Windows 版 Electron）；Windows 上用 pnpm dist:win。
+# 完整逐步命令（含代理环境与校验收口）见 docs/release-runbook.md
+pnpm dist:win:local
 mkdir -p dist/upload && cp dist/DSH-Hub-Setup-<version>.exe dist/upload/
 node scripts/release/checksums.mjs dist/upload
 

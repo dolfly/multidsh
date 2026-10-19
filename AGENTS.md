@@ -8,6 +8,8 @@ DSH Hub Desktop 是用于管理多个 dsh 实例的 Electron 桌面应用，支�
 
 当前权威信息以代码、本文件与 `README.md` 为准。第一个 demo 阶段的早期设计/需求/实现计划/UI demo/设计 token 等文档已归档至 `docs/archive/`（见其 README），**不再作为实现依据**，仅供回溯历史背景。
 
+重大决策（改红线、改发布、改依赖、改测试策略）记录在 `docs/adr/`（索引见 `docs/adr/README.md`）：本文件只写规则本身，「为什么」与被否决的备选写进对应 ADR。新决策须随实现 PR 附 ADR；推翻旧决策时新增一篇并标注取代关系，不改写历史篇目。
+
 ## 技术栈
 
 - Electron 44、electron-vite 5、Vite 7、React 18、TypeScript 5.9
@@ -34,17 +36,17 @@ scripts/release/ 发布检查和校验和脚本
 ## 开发规则
 
 1. UI 的真实基线是当前 renderer 实现（`src/renderer`）；`docs/archive/dsh-hub-desktop.html` 仅为早期 demo，不作为依据。
-2. `src/shared`、registry、transport、auth、vault 和 audit 不得 import Electron。
-3. 不新增运行时依赖；确有必要时先说明原因和影响。
-4. 修改后至少运行相关测试；提交前运行 `pnpm typecheck`、`pnpm lint`、`pnpm test`，并至少运行一次 E2E。
+2. `src/shared`、registry、transport、auth、vault 和 audit 不得 import Electron（ESLint 分层规则守护；决策见 `docs/adr/0001-process-layering.md`）。
+3. 不新增运行时依赖；确有必要时先说明原因和影响（`dependencies` 恒为空由测试守护；见 `docs/adr/0002-zero-runtime-deps.md`）。
+4. 修改后至少运行相关测试；提交前运行 `pnpm typecheck`、`pnpm lint`、`pnpm format:check`、`pnpm test`，并至少运行一次 E2E。
 5. 修改认证协议时必须运行 `pnpm test:contract`。
 6. 注释和日志只说明当前代码的职责、约束、输入输出或失败原因。不得记录开发过程、任务编号、评审结论、反馈来源、历史实现或不可追溯的文档章节号。使用简洁、准确的常用术语；没有合适中文译法时保留 English。日志只输出排查当前故障所需的信息。
 7. 注册表、审计日志、普通日志和文档中不得写入密码、OTP、Cookie 或私钥内容。
 
 ## 接口与安全
 
-- IPC 统一返回 `{ok:true,value} | {ok:false,code,message}`；错误码为 `invalid-input`、`not-found`、`invalid-state`、`io-error` 或 `internal`。
-- 新 IPC 通道需要同步更新 `src/shared/contracts.ts`、`src/main/ipc/register.ts`、`src/shared/bridge.ts`、`src/preload/index.ts` 和测试。
+- IPC 统一返回 `{ok:true,value} | {ok:false,code,message}`；错误码为 `invalid-input`、`not-found`、`invalid-state`、`io-error` 或 `internal`（见 `docs/adr/0003-ipc-envelope-and-enum-registry.md`）。
+- 新 IPC 通道需要同步更新 `src/shared/contracts.ts`、`src/main/ipc/register.ts`、`src/shared/bridge.ts`、`src/preload/index.ts` 和测试；`src/main/ipc/ipc-channels.test.ts` 对账四面一致性，漏同步即红。
 - IPC 不得接受可被 renderer 用来执行任意路径、命令或其他危险操作的输入。由主进程自行确定目录和命令。
 - 实例类型为 `local`、`ssh`、`http`；传输类型不可通过 patch 修改。
 - SSH 采用 TOFU：首次读取主机指纹后由用户确认；已保存的指纹发生变化时拒绝连接，用户可显式删除本地指纹后重新确认。
@@ -65,6 +67,7 @@ scripts/release/ 发布检查和校验和脚本
 pnpm dev            # 启动开发模式
 pnpm typecheck      # Node、Web、E2E 类型检查
 pnpm lint           # ESLint
+pnpm format:check   # Prettier 格式校验（CI 强制；修复用 pnpm format）
 pnpm test           # Vitest
 pnpm build          # 构建 main、preload 和 renderer
 pnpm test:e2e       # Playwright Electron 测试
