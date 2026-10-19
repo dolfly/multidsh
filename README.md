@@ -136,11 +136,12 @@ pnpm dist:win:local    # Windows NSIS（x64），mac 交叉构建出测试包
 pnpm electron:prepare  # 按需下载 Electron 二进制（dist* 已内置，无需手动执行）
 pnpm release:checksums # 生成 SHA256SUMS.txt（windows-unsigned 发布随安装包上传）
 pnpm release:check     # 发布演练：校验发布说明与分发模式、资产清单自洽
+pnpm release:publish   # 半自动发布：推 tag → Draft → 资产核验；加 -- --publish 才正式发布
 ```
 
 Electron 44 起二进制按需下载：`pnpm install` 之后 `node_modules/electron/dist` 可能不存在，而打包配置的 `electronDist` 指向它，因此 `dist`、`dist:mac`、`dist:mac:zip`、`dist:win` 都会先执行 `pnpm electron:prepare`（已存在则立即跳过）。`dist:win:local` 在 mac 上交叉构建 Windows 包：`-c.electronDist=` 置空后 electron-builder 改为自行下载 win 版 Electron zip（缓存在 `~/Library/Caches/electron`，复用构建），不使用本机 dist；`dist:win` 在 mac 上直接执行会把 mac 版 Electron 打进 Windows 包，不要这样用。
 
-发布前运行 `CI=true pnpm release:check -- --pre`，确认发布说明的分发模式与资产清单自洽。演练按声明的模式（`source-only` 或 `windows-unsigned`）输出对应的人工收口步骤：建 Draft Release，人工确认资产后再 Publish；详见 [`docs/release-policy.md`](docs/release-policy.md)。macOS 二进制分发仍需先满足该文档中的签名、公证与验证门槛。
+发布前运行 `CI=true pnpm release:check -- --pre`，确认发布说明的分发模式与资产清单自洽。演练按声明的模式（`source-only` 或 `windows-unsigned`）输出对应的收口步骤：构建人工完成，推 tag、建 Draft 与上传资产由 `pnpm release:publish` 半自动执行并停在 Draft，人工确认资产后再 Publish；详见 [`docs/release-policy.md`](docs/release-policy.md)。macOS 二进制分发仍需先满足该文档中的签名、公证与验证门槛。
 
 > 无 TTY 环境跑 `pnpm <script>` 需带 `CI=true`（依赖检查在无 TTY 时会中止）。
 

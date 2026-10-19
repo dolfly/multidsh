@@ -31,7 +31,8 @@
     "dist:win": "pnpm electron:prepare && pnpm bundle:npm && pnpm bundle:pnpm && pnpm build && electron-builder --win --publish never",
     "dist:win:local": "pnpm bundle:npm && pnpm bundle:pnpm && pnpm build && electron-builder --win --x64 --publish never -c.electronDist=",
     "release:check": "node scripts/release/rehearse.mjs",
-    "release:checksums": "node scripts/release/checksums.mjs"
+    "release:checksums": "node scripts/release/checksums.mjs",
+    "release:publish": "node scripts/release/publish.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

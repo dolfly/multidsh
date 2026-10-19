@@ -5,7 +5,8 @@
  * 公开发布的分发模式由发布说明的「分发方式」小节声明（见 `docs/release-policy.md`）：
  * - `source-only`：只发布 tag、发布说明与 GitHub 自动生成的源码归档，不上传任何二进制资产。
  * - `windows-unsigned`：附带本地构建的未签名 Windows 安装包与 `SHA256SUMS.txt`。
- * 脚本只做离线校验，构建、推送 tag、创建/发布 Release 由人工完成。
+ * 脚本只做离线校验；构建仍人工完成，推 tag、创建 Draft、上传资产与发布由
+ * `pnpm release:publish`（scripts/release/publish.mjs）半自动执行——人工发起，非流水线。
  */
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -187,8 +188,8 @@ console.log(`\n=== 汇总：PASS ${passed} / SKIP ${skipped.length} / FAIL ${fai
 
 const distribution = notes?.distribution ?? 'source-only'
 if (distribution === 'windows-unsigned') {
-  console.log(`\n--- 人工收口步骤（windows-unsigned；脚本不代做）---`)
-  console.log('  1) 构建未签名 Windows 安装包并生成校验清单：')
+  console.log(`\n--- 收口步骤（windows-unsigned）---`)
+  console.log('  1) 构建未签名 Windows 安装包并生成校验清单（人工，脚本不代做）：')
   console.log(
     '       pnpm dist:win:local   # mac 交叉构建（electron-builder 自行下载 Windows 版 Electron）；或在 Windows 上 pnpm dist:win'
   )
@@ -196,14 +197,10 @@ if (distribution === 'windows-unsigned') {
   console.log(
     '       node scripts/release/checksums.mjs dist/upload   # 生成 dist/upload/SHA256SUMS.txt'
   )
-  console.log(`  2) git tag -a ${tag} -m "DSH Hub ${version}" && git push origin ${tag}`)
-  console.log(`  3) gh release create ${tag} --draft \\`)
-  console.log(`       --title "DSH Hub ${version}" \\`)
-  console.log(`       --notes-file ${releaseNotesPath} \\`)
-  console.log(`       dist/upload/DSH-Hub-Setup-${version}.exe dist/upload/SHA256SUMS.txt`)
-  console.log(
-    '  4) 在 GitHub 上确认 Draft Release 只含上述两个资产与源码归档，再点击 Publish release'
-  )
+  console.log('  2) pnpm release:publish')
+  console.log('       # 推 tag、建 Draft、上传资产、白名单核验（幂等，停在 Draft）')
+  console.log('  3) 在 GitHub 上确认 Draft Release 只含上述两个资产与源码归档，然后：')
+  console.log('       pnpm release:publish -- --publish   # 或直接在网页点 Publish release')
   console.log(
     '\n  只上传 Windows 安装包与 SHA256SUMS.txt：未签名安装包会触发 SmartScreen「未知发布者」提示；'
   )
@@ -211,14 +208,13 @@ if (distribution === 'windows-unsigned') {
     '  不上传 mac 二进制、latest-*.yml 或 .blockmap（mac 二进制须先完成签名与公证，见 docs/release-policy.md）。'
   )
 } else {
-  console.log(`\n--- 人工收口步骤（source-only；脚本不代做）---`)
-  console.log(`  1) git tag -a ${tag} -m "DSH Hub ${version}" && git push origin ${tag}`)
-  console.log(`  2) gh release create ${tag} --draft \\`)
-  console.log(`       --title "DSH Hub ${version}" \\`)
-  console.log(`       --notes-file ${releaseNotesPath}`)
+  console.log(`\n--- 收口步骤（source-only）---`)
+  console.log('  1) pnpm release:publish')
+  console.log('       # 推 tag、建 Draft（幂等，停在 Draft）')
   console.log(
-    '  3) 在 GitHub 上确认 Draft Release 只保留 Release Note 与自动生成的源码归档，再点击 Publish release'
+    '  2) 在 GitHub 上确认 Draft Release 只保留 Release Note 与自动生成的源码归档，然后：'
   )
+  console.log('       pnpm release:publish -- --publish   # 或直接在网页点 Publish release')
   console.log(
     '\n  不上传任何二进制资产：.exe、.app、.dmg、.zip、SHA256SUMS.txt、latest-*.yml 一律不上传。'
   )

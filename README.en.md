@@ -127,9 +127,10 @@ pnpm dist:mac          # Generate unsigned macOS .app, for local verification
 pnpm dist:win          # Windows NSIS (on Windows)
 pnpm release:checksums # Generate SHA256SUMS.txt (uploaded with the installer for windows-unsigned)
 pnpm release:check     # Release rehearsal; validates distribution mode and artifact list
+pnpm release:publish   # Semi-automated release: tag → draft → asset verify; add -- --publish to release
 ```
 
-Before a public release, run `CI=true pnpm release:check -- --pre` and confirm the release notes' distribution mode and artifact list are self-consistent. The rehearsal prints mode-specific closure steps (`source-only` or `windows-unsigned`): create a draft Release, confirm the assets, then Publish; see [`docs/release-policy.md`](docs/release-policy.md). macOS binary distribution still requires Apple Developer ID signing, notarization, clean-machine verification, and auditable update metadata checksums.
+Before a public release, run `CI=true pnpm release:check -- --pre` and confirm the release notes' distribution mode and artifact list are self-consistent. The rehearsal prints mode-specific closure steps (`source-only` or `windows-unsigned`): builds stay manual, while pushing the tag, creating the draft, and uploading assets run through `pnpm release:publish` (stops at draft); confirm the assets, then Publish; see [`docs/release-policy.md`](docs/release-policy.md). macOS binary distribution still requires Apple Developer ID signing, notarization, clean-machine verification, and auditable update metadata checksums.
 
 > In non-TTY environments, `pnpm <script>` requires `CI=true` (dependency checks abort without a TTY).
 

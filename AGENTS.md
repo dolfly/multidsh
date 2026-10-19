@@ -73,7 +73,7 @@ pnpm build          # 构建 main、preload 和 renderer
 pnpm test:e2e       # Playwright Electron 测试
 ```
 
-发布脚本均使用 `--publish never`，不会自动发布：
+打包脚本均使用 `--publish never`；`release:publish` 默认停在 Draft，须显式 `-- --publish` 才正式发布：
 
 ```bash
 pnpm dist:mac:zip
@@ -82,6 +82,7 @@ pnpm dist:win
 pnpm dist:win:local
 pnpm release:checksums
 pnpm release:check
+pnpm release:publish
 ```
 
 ## 环境

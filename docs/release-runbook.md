@@ -1,7 +1,7 @@
 # 发布 Runbook（windows-unsigned）
 
 > 本文是发布的**操作口径**：策略与门槛见 [release-policy.md](./release-policy.md)，
-> 机器校验见 `pnpm release:check`（离线演练，输出本文对应的人工步骤）。
+> 机器校验见 `pnpm release:check`（离线演练，输出本文对应的收口步骤）；发布执行见 §4 的 `pnpm release:publish`。
 > 每次发布按本文逐步执行；流程变化须回写本文，不留口头版本。
 > 最近一次完整走通：v0.1.5（2026-10-19）。
 
@@ -43,26 +43,39 @@ shasum -a 256 dist/DSH-Hub-Setup-<version>.exe       # 与 SHA256SUMS.txt 第一
 
 产物量级参考：v0.1.5 的 exe 为 109,745,019 字节（与 0.1.4 同量级；显著偏离要查因）。
 
-## 4. 推送与打标签
+## 4. 半自动发布（推 tag → Draft → 资产核验）
 
 ```bash
-git push origin main                                # 确认工作树干净、要发的提交都在 main 上
-git tag -a v<version> -m "DSH Hub <version>"
-git push origin v<version>
+pnpm release:publish                   # 幂等，可中断重跑
+pnpm release:publish -- --dry-run      # 预演：远端查询照常，变更动作只打印不执行
 ```
 
-标签必须打在 main 的发布提交上（Source code 归档才有源码语义）。
+脚本（`scripts/release/publish.mjs`）按序执行并逐步打印日志：
 
-## 5. 创建 Draft 并上传资产
+1. 发布说明校验：与 `package.json` 版本一致、可解析、无占位符；
+2. 本地资产校验：`windows-unsigned` 要求 `dist/upload/` 的安装包与 `SHA256SUMS.txt` 齐全，且实测 sha256 与清单一致；`source-only` 无资产；
+3. 前置确认：当前在 main、工作树干净、本地 main 与 origin/main 同步；
+4. 推 tag：本地缺失则建于 HEAD；远端缺失则推送，已存在必须与本地一致；
+5. 建 Draft 或更新已有 Draft（说明与资产幂等覆盖；已发布的 Release 直接拒绝）；
+6. 远端资产白名单核验：与「分发方式」声明的集合**精确一致**（多传少传都拒绝）。
+
+标签必须打在 main 的发布提交上（Source code 归档才有源码语义）——由第 3 步保证。
+脚本**不负责构建**（构建仍按 §3 人工执行），也不属于流水线：由人显式发起，策略依据见 `docs/adr/0008-semi-automated-publish.md`。
+
+脚本不可用时的等价人工命令（兜底）：
 
 ```bash
+git tag -a v<version> -m "DSH Hub <version>"
+git push origin v<version>
 gh release create v<version> --draft \
   --title "DSH Hub <version>" \
   --notes-file docs/releases/v<version>.md \
   dist/upload/DSH-Hub-Setup-<version>.exe dist/upload/SHA256SUMS.txt
 ```
 
-核验 Draft 资产（只允许这两个 + 自动源码归档）：
+## 5. 核验 Draft 并发布
+
+核验 Draft 资产（脚本第 6 步已核验；网页上再目视确认一次）：
 
 ```bash
 gh api "repos/xbzbing/dsh-hub-desktop/releases?per_page=5" \
@@ -71,9 +84,13 @@ gh api "repos/xbzbing/dsh-hub-desktop/releases?per_page=5" \
 
 禁止出现：mac 产物（`.dmg`/`.zip`/`.app`）、`latest-*.yml`、`.blockmap`（见 release-policy 资产白名单）。
 
-## 6. 发布并置为 Latest
+确认无误后发布，二选一：
 
-优先用网页上的 **Publish release** 按钮（自动迁移 "Latest" 徽标）。若用 API，必须带 `make_latest`：
+```bash
+pnpm release:publish -- --publish   # PATCH draft=false make_latest=true，脚本复核 Latest 指向本 tag
+```
+
+或优先用网页上的 **Publish release** 按钮（自动迁移 "Latest" 徽标）。若手动走 API，必须带 `make_latest`：
 
 ```bash
 gh api -X PATCH "repos/xbzbing/dsh-hub-desktop/releases/<id>" -F draft=false -F make_latest=true
@@ -86,17 +103,17 @@ gh release list --limit 4          # 新版本应带 Latest
 gh release view v<version> --json assets,url
 ```
 
-## 7. 幂等与失败恢复
+## 6. 幂等与失败恢复
 
 | 断点 | 处理 |
 | --- | --- |
 | 构建失败 | 直接重跑；`dist/` 可整体删除重建，不影响仓库 |
 | tag 已存在（同版本重发） | 作废 tag：`git tag -d v<version> && git push origin :refs/tags/v<version>`，回到 §4（**破坏性**，确认无人引用后才做） |
-| Draft 已存在、资产传错 | `gh release upload v<version> <file> --clobber` 覆盖；多余资产 `gh delete-asset` |
+| Draft 已存在、资产传错 | 重跑 `pnpm release:publish` 幂等覆盖（`--clobber`）；多余资产 `gh release delete-asset` |
 | 已 Publish 后发现致命问题 | 不要删 Release 重发同版本号；发 patch 版本 |
 | npm 工具链下载失败（NSIS/win-codesign） | `ELECTRON_GET_USE_PROXY=true HTTPS_PROXY=…` 重跑；已缓存的部分在 `~/Library/Caches/electron-builder/` |
 
-## 8. 发布后
+## 7. 发布后
 
 - 在 Release 页人工点开 exe 与 `SHA256SUMS.txt` 各下载一次，确认可下载、大小一致。
 - 若本版含行为变更，确认 README / 关键文档无过期表述。

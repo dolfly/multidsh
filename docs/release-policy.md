@@ -7,7 +7,7 @@
 - `source-only`：只有 Git tag、Release Note 和 GitHub 自动生成的 `Source code (zip)` / `Source code (tar.gz)`。
 - `windows-unsigned`：在 `source-only` 基础上，附带本地构建的 **未签名** Windows NSIS 安装包（`DSH-Hub-Setup-<版本>.exe`）与其校验清单 `SHA256SUMS.txt`。
 
-无论哪种模式，公开 Release **都不上传** macOS 二进制（`.app`、`.dmg`、`.zip`）、自动更新元数据（`latest-*.yml`）与差分中间产物（`.blockmap`）；`scripts/release/lib.mjs` 做形态白名单校验，发布说明声明越界资产会被 `pnpm test` 与 `pnpm release:check` 拒绝。仓库中不存在自动构建或上传二进制的发布流水线。
+无论哪种模式，公开 Release **都不上传** macOS 二进制（`.app`、`.dmg`、`.zip`）、自动更新元数据（`latest-*.yml`）与差分中间产物（`.blockmap`）；`scripts/release/lib.mjs` 做形态白名单校验，发布说明声明越界资产会被 `pnpm test` 与 `pnpm release:check` 拒绝。仓库中不存在自动构建或上传二进制的发布流水线：构建始终人工，推 tag、建 Draft、上传资产与发布由 `pnpm release:publish` 半自动执行——人工显式发起、逐步幂等、发布停点可控（决策依据见 `docs/adr/0008-semi-automated-publish.md`）。
 
 关于未签名 Windows 安装包：产物未经代码签名，Windows 首次运行会触发 SmartScreen「未知发布者」提示（点「更多信息 → 仍要运行」可继续）。发布说明必须明示这一点并提供 `SHA256SUMS.txt` 供手工校验完整性。
 
@@ -35,42 +35,20 @@ pnpm dist:win:local   # mac 上交叉构建 Windows 包
 CI=true pnpm release:check -- --pre
 ```
 
-演练按发布说明声明的分发模式输出对应的人工收口步骤。
-
-**source-only**：
+演练按发布说明声明的分发模式输出对应的收口步骤。构建完成后，推 tag、建 Draft、上传资产与核验由脚本半自动执行（构建本身不在脚本职责内，人工完成）：
 
 ```bash
-git tag -a v<version> -m "DSH Hub <version>"
-git push origin v<version>
-gh release create v<version> --draft --title "DSH Hub <version>" --notes-file docs/releases/v<version>.md
+pnpm release:publish                   # 幂等：停在 Draft 并完成资产白名单核验
+pnpm release:publish -- --dry-run      # 预演，不执行任何变更
 ```
 
-最后确认 Draft Release 只保留发布说明与自动生成的源码归档（无任何资产），再 Publish。
-
-**windows-unsigned**：
+确认 Draft 符合分发模式的资产清单后，二选一发布：
 
 ```bash
-# 1) 构建未签名安装包并生成校验清单
-# mac 交叉构建（electron-builder 自行下载 Windows 版 Electron）；Windows 上用 pnpm dist:win。
-# 完整逐步命令（含代理环境与校验收口）见 docs/release-runbook.md
-pnpm dist:win:local
-mkdir -p dist/upload && cp dist/DSH-Hub-Setup-<version>.exe dist/upload/
-node scripts/release/checksums.mjs dist/upload
-
-# 2) 打标签并推送
-git tag -a v<version> -m "DSH Hub <version>"
-git push origin v<version>
-
-# 3) 建 Draft 并上传两个资产
-gh release create v<version> --draft \
-  --title "DSH Hub <version>" \
-  --notes-file docs/releases/v<version>.md \
-  dist/upload/DSH-Hub-Setup-<version>.exe dist/upload/SHA256SUMS.txt
+pnpm release:publish -- --publish      # PATCH draft=false make_latest=true 并复核 Latest
 ```
 
-确认 Draft Release 只含安装包与 `SHA256SUMS.txt`（加源码归档），无 mac 产物、`latest-*.yml` 或 `.blockmap`，再 Publish。
-
-发布时优先使用网页上的 Publish 按钮：它会自动把 "Latest" 徽标移到新版本。若改用 API（`PATCH draft=false`）发布，GitHub **不会**自动迁移 Latest 徽标，必须同时带上 `make_latest="true"`，否则徽标会留在更早的版本上。
+或在网页点 **Publish release**（自动迁移 "Latest" 徽标）。手动走 API 时必须带 `make_latest="true"`，否则徽标会留在更早的版本上。逐步命令、人工兜底命令与失败恢复见 `docs/release-runbook.md`。
 
 ## 恢复 macOS 二进制发布的门槛
 

@@ -1,6 +1,6 @@
 # 0004. 发布策略：windows-unsigned、资产白名单、无自动发布流水线
 
-- 状态：已采纳
+- 状态：已采纳（决策 3 的「打 tag、建 Release 全部人工」口径已被 [0008](./0008-semi-automated-publish.md) 部分取代：改为人工发起的半自动脚本；其余决策继续有效）
 - 日期：2026-09（v0.1.2 source-only）；2026-10-09 起 windows-unsigned（v0.1.3）；全文见 `docs/release-policy.md`
 
 ## 背景
