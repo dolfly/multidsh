@@ -1,9 +1,8 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, rm } from 'node:fs/promises'
-import { resolve } from 'node:path'
-
 /**
  * 设置页说明图标：长说明收进问号气泡，hover 或键盘聚焦展开、点击不钉住；
  * 图标紧跟在文案之后（不在行尾）。同时守住两处结构：
@@ -11,7 +10,7 @@ import { resolve } from 'node:path'
  * 点 label 仍能切换勾选。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-settings-tip')
+const DATA_DIR = e2eDataDir('e2e-settings-tip')
 
 let app: ElectronApplication
 let win: Page
@@ -21,7 +20,7 @@ test.beforeAll(async () => {
   await mkdir(DATA_DIR, { recursive: true })
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 })

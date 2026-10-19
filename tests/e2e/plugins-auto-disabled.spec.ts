@@ -1,8 +1,9 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 
 /**
  * 「dsh 升级后首次启动自动禁用不兼容插件」的界面提示：主进程核对结果写在
@@ -10,7 +11,7 @@ import { join, resolve } from 'node:path'
  * 这里直接播种该状态文件，验证「主进程状态 → 界面提示条 → 可关闭」这条链路。
  */
 const VERSION = '0.1.7-rc.2'
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-plugins-auto-disabled')
+const DATA_DIR = e2eDataDir('e2e-plugins-auto-disabled')
 const ENTRY_DIR = join(
   DATA_DIR,
   'runtimes',
@@ -73,7 +74,7 @@ test.beforeAll(async () => {
 
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 

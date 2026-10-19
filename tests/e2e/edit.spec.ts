@@ -1,8 +1,9 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, readFile, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 
 /**
  * 实例详情和编辑流程的 E2E 验证：
@@ -12,9 +13,9 @@ import { join, resolve } from 'node:path'
  * 顺带产出详情页/编辑框截图(用户要求的目验材料)。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-edit')
+const DATA_DIR = e2eDataDir('e2e-edit')
 const REGISTRY_FILE = join(DATA_DIR, 'registry', 'instances.json')
-const SHOT_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-edit-shots')
+const SHOT_DIR = e2eDataDir('e2e-edit-shots')
 
 let app: ElectronApplication
 let win: Page
@@ -27,7 +28,7 @@ test.beforeAll(async () => {
   await mkdir(SHOT_DIR, { recursive: true })
   app = await electron.launch({
     args: launchArgs,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 

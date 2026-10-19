@@ -1,8 +1,9 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, readFile, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import type { CreateInstanceInput } from '@shared/contracts'
 import { REGISTRY_SCHEMA_VERSION } from '@shared/contracts'
 
@@ -11,7 +12,7 @@ import { REGISTRY_SCHEMA_VERSION } from '@shared/contracts'
  * 以真实 Electron 应用验证 IPC 边界(合法写入/非法拒绝)与落盘位置。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-registry')
+const DATA_DIR = e2eDataDir('e2e-registry')
 const REGISTRY_FILE = join(DATA_DIR, 'registry', 'instances.json')
 
 let app: ElectronApplication
@@ -24,7 +25,7 @@ test.beforeAll(async () => {
   await mkdir(DATA_DIR, { recursive: true })
   app = await electron.launch({
     args: launchArgs,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 })

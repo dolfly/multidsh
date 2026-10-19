@@ -11,6 +11,9 @@ delete process.env['ELECTRON_RENDERER_URL']
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // 只收 `*.spec.ts`：同目录下还有 Vitest 的守卫用例（`data-dir.test.ts`），
+  // 默认 testMatch 会把 `*.test.ts` 一并收集，用 Playwright 的 CJS 加载器跑 Vitest 导入会直接失败。
+  testMatch: '**/*.spec.ts',
   globalSetup: './tests/e2e/global-setup.ts',
   timeout: 30_000,
   expect: { timeout: 10_000 },

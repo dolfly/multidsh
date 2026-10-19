@@ -1,6 +1,7 @@
 import { mkdir, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { expect, test, _electron as electron } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 
 // 默认写进被 Git 忽略的 hub-data/，避免每次跑 E2E 都弄脏受版本控制的文档截图；
@@ -9,7 +10,7 @@ const SHOT_DIR =
   process.env.DOCS_SHOTS === '1'
     ? resolve(process.cwd(), 'docs', 'images')
     : resolve(process.cwd(), 'hub-data', 'e2e-shots')
-const DATA_DIR = resolve(process.cwd(), 'hub-data', 'e2e-screenshot')
+const DATA_DIR = e2eDataDir('e2e-screenshot')
 
 test('截图：首页 + 暗色主题 + 收起侧边栏', async () => {
   test.setTimeout(30_000)
@@ -21,7 +22,7 @@ test('截图：首页 + 暗色主题 + 收起侧边栏', async () => {
 
   const app = await electron.launch({
     args,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   const win = await app.firstWindow()
   await expect(win.getByTestId('app-shell')).toBeVisible({ timeout: 10_000 })

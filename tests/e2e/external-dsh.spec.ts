@@ -1,11 +1,12 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import { closeAboutWithEscape, expectAboutClosed, openAboutViaMenu } from './about-menu'
 import { backToOverview } from './overview'
 import type { ElectronApplication, Locator, Page } from '@playwright/test'
 import { mkdir, readFile, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 
 /**
  * 外部 dsh web 的 E2E 验证：
@@ -16,8 +17,8 @@ import { join, resolve } from 'node:path'
  * `dsh web --patch <file>`(探测器按命令行识别,不依赖真实 dsh 安装)。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-external')
-const SHOT_DIR = resolve(__dirname, '..', '..', 'hub-data', 'ui-polish-shots')
+const DATA_DIR = e2eDataDir('e2e-external')
+const SHOT_DIR = e2eDataDir('ui-polish-shots')
 
 let app: ElectronApplication
 let win: Page
@@ -93,7 +94,7 @@ test.beforeAll(async () => {
 
   app = await electron.launch({
     args: launchArgs,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
   await expect(win.getByTestId('app-shell')).toBeVisible()
@@ -228,7 +229,7 @@ test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，
   await app.close()
   app = await electron.launch({
     args: launchArgs,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
   await expect(win.getByTestId('app-shell')).toBeVisible()

@@ -1,8 +1,9 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 
 /**
  * 实例详情「插件管理」端到端验证：
@@ -19,7 +20,7 @@ import { join, resolve } from 'node:path'
  */
 
 const VERSION = '0.1.7-rc.2'
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-plugins')
+const DATA_DIR = e2eDataDir('e2e-plugins')
 const ENTRY_DIR = join(
   DATA_DIR,
   'runtimes',
@@ -159,7 +160,7 @@ test.beforeAll(async () => {
 
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 
@@ -285,7 +286,7 @@ test('检查升级（不兼容）：给警告不给升级按钮', async () => {
   await app.close()
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR, DSH_E2E_PLUGIN_INCOMPAT: '1' }
+    env: e2eEnv(DATA_DIR, { DSH_E2E_PLUGIN_INCOMPAT: '1' })
   })
   win = await app.firstWindow()
   await expect(win.getByTestId('view-home')).toBeVisible({ timeout: 15_000 })
@@ -328,7 +329,7 @@ test('一键检查：批量进行中锁定单行检查按钮，结束后解锁',
   await app.close()
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR, DSH_E2E_PLUGIN_VIEW_DELAY_MS: '1500' }
+    env: e2eEnv(DATA_DIR, { DSH_E2E_PLUGIN_VIEW_DELAY_MS: '1500' })
   })
   win = await app.firstWindow()
   await expect(win.getByTestId('view-home')).toBeVisible({ timeout: 15_000 })
