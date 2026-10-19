@@ -11,7 +11,7 @@
  * 不 import Electron：dsh 可执行入口的解析复用安装器（隔离目录）与 PATH 探测，与启动同一判据。
  */
 import { existsSync } from 'node:fs'
-import { delimiter, dirname, join, resolve as resolvePath } from 'node:path'
+import { delimiter, dirname, join } from 'node:path'
 import { homedir } from 'node:os'
 import type {
   LocalInstance,
@@ -39,7 +39,7 @@ import { compareDshVersions } from './version-compare'
 import { InstanceStoreError } from '../registry/instance-store'
 import { mergeLoginPath, resolveLoginPathOnce } from './login-path'
 import { mergeShellEnv, resolveShellEnvOnce } from './shell-env'
-import { dshPeerRange, evaluateDshPeers, githubUrlFrom, npmUrlFrom } from './peer-compatibility'
+import { dshPeerRange, evaluateDshPeers, npmUrlFrom } from './peer-compatibility'
 import { createPluginStateStore } from './plugin-state'
 import type {
   AutoDisabledPlugin,
@@ -73,14 +73,12 @@ import {
 } from './plugin-view-meta'
 import { defaultApplication, profileHasHmr } from './plugin-hmr'
 import {
-  authorName,
   defaultReadIcon,
   defaultReadLocale,
   defaultReadManifest,
-  installSourceOf,
-  svgDataUri
+  infoFromPath as assembleInfo
 } from './plugin-info'
-import type { PluginManifest, ProfileListEntry } from './plugin-info'
+import type { PluginLocale, PluginManifest, ProfileListEntry } from './plugin-info'
 import { nodeModeExecutable } from '../node-mode'
 
 /** HMR 判定与生效口径已抽出；此处再导出以保留既有导入路径。 */
@@ -90,8 +88,8 @@ export type { PluginApplication } from './plugin-hmr'
 /** 插件命令执行超时：pnpm 安装可能较慢，给足余量（与安装器同量级）。 */
 const PLUGIN_COMMAND_TIMEOUT_MS = 10 * 60_000
 
-/** 界面语言：与 app 的 Language 一致（system 已解析为 zh|en）。 */
-export type PluginLocale = 'zh' | 'en'
+/** 界面语言类型已随装配逻辑移到 plugin-info；此处再导出以保留既有导入路径。 */
+export type { PluginLocale } from './plugin-info'
 
 export interface PluginManagerOptions {
   installer: RuntimeInstaller
@@ -211,6 +209,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   const homeDir = options.homeDir ?? homedir
   const defaultProfile = options.profile ?? 'web'
   const resolveNode = options.resolveNode ?? defaultResolveNode
+  /** PluginInfo 装配：读取器按注入项组装，装配逻辑在 plugin-info。 */
+  const infoFromPath = assembleInfo.bind(null, { readManifest, readIcon, readLocale })
   const nodeInvocation = options.nodeInvocation ?? {
     command: nodeModeExecutable(),
     args: [],
@@ -518,63 +518,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   /** 与 check 同口径：全部 dsh peer 都满足运行时版本才算兼容。 */
   function peersCompatible(peers: Record<string, string>, dshVersion: string): boolean {
     return Object.keys(evaluateDshPeers(peers, dshVersion)).length === 0
-  }
-
-  /**
-   * 从 registry 元数据推导插件仓库地址（渲染层不传 URL）：`view <name>@<version> repository homepage`。
-   * 命令失败与解析失败都按「没有仓库」处理：确认区只需降级到 npm 包页，不需要错误。
-   */
-
-  /**
-   * 从安装路径读 package.json 装配 PluginInfo。
-   * 优先用 profile 顶层 node_modules/<name>（pnpm 布局下 scoped 包的可靠位置），
-   * 回退 list --json 给出的 entry.path（可能指向 .pnpm 虚拟 store，scoped 包读不到）。
-   * locale：读 <dir>/locale/<lang>.json 的 meta，本地化标题与简介覆盖 package.json 的英文原值。
-   */
-  function infoFromPath(
-    name: string,
-    entry: { from?: string; version?: string; resolved?: string; path?: string },
-    profileNodeModules: string,
-    locale: PluginLocale,
-    bundles: readonly string[] | null
-  ): PluginInfo {
-    const topLevelDir = join(profileNodeModules, ...name.split('/'))
-    const manifestDir =
-      readManifest(topLevelDir) !== null ? topLevelDir : (entry.path ?? topLevelDir)
-    const manifest = readManifest(manifestDir) ?? {}
-    const dsh = manifest.dsh ?? {}
-    const iconBase64 =
-      typeof manifest.icon === 'string' ? readIcon(resolvePath(manifestDir, manifest.icon)) : null
-    // locale/<lang>.json 的 meta：title 本地化插件名，description 本地化简介；缺失回落 package.json。
-    const localeMeta = readLocale(join(manifestDir, 'locale', `${locale}.json`))?.meta
-    const localizedTitle = localeMeta?.title?.trim() || null
-    const localizedDescription =
-      localeMeta?.description?.trim() || manifest.description?.trim() || null
-    return {
-      name,
-      version: entry.version ?? manifest.version ?? '—',
-      title: localizedTitle,
-      description: localizedDescription,
-      author: authorName(manifest.author),
-      license: manifest.license?.trim() || null,
-      npmUrl: npmUrlFrom(name),
-      githubUrl: githubUrlFrom(manifest.repository ?? manifest.homepage ?? null),
-      iconDataUri: svgDataUri(iconBase64),
-      dependencies: Object.keys(manifest.dependencies ?? {}),
-      dshPeer: dshPeerRange(manifest.peerDependencies),
-      nodeEngine: manifest.engines?.node ?? null,
-      hasHostSide: typeof dsh.bundle?.patch === 'string' && dsh.bundle.patch !== '',
-      hasClientSide: dsh.client !== undefined && dsh.client !== null,
-      installSource: installSourceOf(entry),
-      // 只有含 host 半（dsh.bundle.patch）的插件才由 bundles 决定加载与否；
-      // 纯 client 插件随宿主 bundle 加载，无法单独禁用 → null。
-      enabled:
-        typeof dsh.bundle?.patch === 'string' && dsh.bundle.patch !== ''
-          ? bundles === null || bundles.includes(name)
-          : null,
-      // 发布时间来自 registry，由 list() 用检查快照回填（这里只给出默认值）。
-      publishedAt: null
-    }
   }
 
   /** 判定一个包名当前是否含 host 半（改动后决定是否提醒重启）。 */
