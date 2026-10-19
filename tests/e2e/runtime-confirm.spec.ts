@@ -1,10 +1,11 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { accessSync, symlinkSync } from 'node:fs'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { delimiter, dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join } from 'node:path'
 
 /**
  * 运行时二次确认是 hub 风格的渲染层对话框（非系统原生对话框）：
@@ -12,8 +13,8 @@ import { delimiter, dirname, join, resolve } from 'node:path'
  * 向导创建后的自动启动会走到「需要下载 dsh」确认；断言对话框出现、文案归属、
  * 取消后出列且实例停在停止态（不会真的发起下载）。
  */
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-confirm')
-const SHOT_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-shots')
+const DATA_DIR = e2eDataDir('e2e-confirm')
+const SHOT_DIR = e2eDataDir('e2e-shots')
 
 let app: ElectronApplication
 let win: Page
@@ -59,16 +60,12 @@ test.beforeAll(async () => {
     pathValue = `${shimDir}:/usr/bin:/bin`
   }
 
-  // CI 的 DSH_HUB_E2E_DECLINE_DOWNLOAD=1 会让下载确认在主进程直接按「取消」应答，
-  // 本用例要的却是对话框停在页面上等 Playwright 点「取消」，故对该实例移除这个开关。
-  const env: NodeJS.ProcessEnv = { ...process.env }
-  delete env['DSH_HUB_E2E_DECLINE_DOWNLOAD']
-
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: {
-      ...env,
-      DSH_HUB_DATA_DIR: DATA_DIR,
+    env: e2eEnv(DATA_DIR, {
+      // CI 的 DSH_HUB_E2E_DECLINE_DOWNLOAD=1 会让下载确认在主进程直接按「取消」应答，
+      // 本用例要的却是对话框停在页面上等 Playwright 点「取消」，故对该实例撤掉这个开关。
+      DSH_HUB_E2E_DECLINE_DOWNLOAD: undefined,
       HOME: fakeHome,
       // win32 的 homedir() 读 USERPROFILE：不同时覆盖它，候选路径不会全部落空
       USERPROFILE: fakeHome,
@@ -76,7 +73,7 @@ test.beforeAll(async () => {
       SHELL: join(fakeHome, 'no-such-shell'),
       // 生效镜像必须随确认请求展示：用户要能看到下载的包从哪里来。
       DSH_HUB_NPM_REGISTRY: 'https://registry.npmjs.org'
-    }
+    })
   })
   win = await app.firstWindow()
 })

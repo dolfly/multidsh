@@ -1,15 +1,14 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, rm } from 'node:fs/promises'
-import { resolve } from 'node:path'
-
 /**
  * 应用冒烟：窗口渲染真实外壳、preload 白名单 API 形状、空数据目录展示空态、
  * 主进程版本信息可达。前置：`pnpm build`。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-smoke')
+const DATA_DIR = e2eDataDir('e2e-smoke')
 
 let app: ElectronApplication
 let win: Page
@@ -21,7 +20,7 @@ test.beforeAll(async () => {
   await mkdir(DATA_DIR, { recursive: true })
   app = await electron.launch({
     args: launchArgs,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 })

@@ -18,3 +18,4 @@
 | [0006](./0006-i18n-hardcode-scan.md) | i18n 硬编码文案由扫描测试守护 | 已采纳 |
 | [0007](./0007-e2e-dual-platform-and-hidden-mode.md) | E2E 双平台 + 隐藏模式与 keyring 处置 | 已采纳 |
 | [0008](./0008-semi-automated-publish.md) | 半自动发布脚本：人工发起、逐步幂等、停点可控 | 已采纳 |
+| [0009](./0009-e2e-data-dir-isolation.md) | E2E 数据目录隔离：只允许 `hub-data/`，静态守卫兜底 | 已采纳 |

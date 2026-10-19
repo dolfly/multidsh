@@ -1,9 +1,10 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 
 /**
  * 总览列表 50+ 实例的性能验证。
@@ -15,7 +16,7 @@ import { join, resolve } from 'node:path'
  * 预算用于防止明显卡顿或 O(n²) 行为，不作为微基准。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-perf')
+const DATA_DIR = e2eDataDir('e2e-perf')
 const REGISTRY_FILE = join(DATA_DIR, 'registry', 'instances.json')
 const COUNT = 60
 const RENDER_BUDGET_MS = 10_000
@@ -61,7 +62,7 @@ test.beforeAll(async () => {
   launchedAt = Date.now()
   app = await electron.launch({
     args: launchArgs,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 })

@@ -1,10 +1,11 @@
 import { createServer, type Server } from 'node:http'
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import { backToOverview } from './overview'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { inflateSync } from 'node:zlib'
 
 /**
@@ -132,8 +133,8 @@ function inspectTooltipCorners(png: Buffer): {
  *                       或 200 + Set-Cookie(无 OTP 变体,验证「可跳过」)
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-polish')
-const SHOT_DIR = resolve(__dirname, '..', '..', 'hub-data', 'ui-polish-shots')
+const DATA_DIR = e2eDataDir('e2e-polish')
+const SHOT_DIR = e2eDataDir('ui-polish-shots')
 
 let app: ElectronApplication
 let win: Page
@@ -258,7 +259,7 @@ test.beforeAll(async () => {
   await mkdir(SHOT_DIR, { recursive: true })
   app = await electron.launch({
     args: launchArgs,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
   await expect(win.getByTestId('app-shell')).toBeVisible()

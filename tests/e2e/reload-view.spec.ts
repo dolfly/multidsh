@@ -1,15 +1,14 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { rm } from 'node:fs/promises'
-import { resolve } from 'node:path'
-
 /**
  * Cmd+R（重载渲染层）后应停留在刷新前的页面：
  * 详情页刷新后仍是同一实例的详情页（数据重新拉取），总览刷新后仍是总览。
  * Playwright 的 win.reload() 与应用菜单 Reload 角色走同一条 webContents.reload()。
  */
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-reload-view')
+const DATA_DIR = e2eDataDir('e2e-reload-view')
 const INSTANCE_NAME = '刷新实例'
 
 let app: ElectronApplication
@@ -19,7 +18,7 @@ test.beforeAll(async () => {
   await rm(DATA_DIR, { recursive: true, force: true })
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 

@@ -42,6 +42,7 @@ scripts/release/ 发布检查和校验和脚本
 5. 修改认证协议时必须运行 `pnpm test:contract`。
 6. 注释和日志只说明当前代码的职责、约束、输入输出或失败原因。不得记录开发过程、任务编号、评审结论、反馈来源、历史实现或不可追溯的文档章节号。使用简洁、准确的常用术语；没有合适中文译法时保留 English。日志只输出排查当前故障所需的信息。
 7. 注册表、审计日志、普通日志和文档中不得写入密码、OTP、Cookie 或私钥内容。
+8. E2E 数据目录固定在仓库内 `hub-data/e2e-*`，由 `tests/e2e/data-dir.ts` 的 `e2eDataDir()` / `e2eEnv()` 注入 `DSH_HUB_DATA_DIR`（`tests/e2e/data-dir.test.ts` 静态守卫）。真实数据目录（macOS 为 `~/Library/Application Support/dsh-hub-desktop`）存着用户保存的实例、凭据与设置，**不得清理或写入**；怀疑残留污染时只删 `hub-data/` 下该 spec 自己的目录（决策见 `docs/adr/0009-e2e-data-dir-isolation.md`）。
 
 ## 接口与安全
 

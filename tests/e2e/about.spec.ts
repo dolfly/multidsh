@@ -1,4 +1,5 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import {
   closeAboutWithEscape,
@@ -19,8 +20,8 @@ import { join, resolve } from 'node:path'
  * 前置：`pnpm build`。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-about')
-const SHOT_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-about-shots')
+const DATA_DIR = e2eDataDir('e2e-about')
+const SHOT_DIR = e2eDataDir('e2e-about-shots')
 const expectedVersion = (
   JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf8')) as {
     version: string
@@ -36,7 +37,7 @@ test.beforeAll(async () => {
   await mkdir(SHOT_DIR, { recursive: true })
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 })

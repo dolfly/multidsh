@@ -1,9 +1,8 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, rm } from 'node:fs/promises'
-import { resolve } from 'node:path'
-
 /**
  * 高风险 UI 状态迁移的端到端守卫：
  * 1. 删除确认框打开时经 切换修饰键+数字 切换实例 —— 确认框必须随详情整体重挂载消失，
@@ -13,7 +12,7 @@ import { resolve } from 'node:path'
  * select 直达详情，不经过工作区加载，切换路径确定。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-detail-guard')
+const DATA_DIR = e2eDataDir('e2e-detail-guard')
 
 let app: ElectronApplication
 let win: Page
@@ -23,7 +22,7 @@ test.beforeAll(async () => {
   await mkdir(DATA_DIR, { recursive: true })
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 })
@@ -103,7 +102,7 @@ test('主题偏好跨重启持久化', async () => {
   await app.close()
   app = await electron.launch({
     args: buildLaunchArgs(),
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
   await expect(win.getByTestId('app-shell')).toBeVisible({ timeout: 15_000 })

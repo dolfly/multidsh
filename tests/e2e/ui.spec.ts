@@ -1,16 +1,15 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { mkdir, rm } from 'node:fs/promises'
-import { resolve } from 'node:path'
-
 /**
  * 渲染层端到端：空态、创建、列表、详情和删除。
  * 说明:本地分支创建后会自动触发启动,在受限/CI 环境里安装可能失败,但本用例
  * 只断言 UI 与注册表结果,启动结果由 status 事件另行覆盖(见 local-runtime 单测)。
  */
 
-const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-ui')
+const DATA_DIR = e2eDataDir('e2e-ui')
 
 let app: ElectronApplication
 let win: Page
@@ -22,7 +21,7 @@ test.beforeAll(async () => {
   await mkdir(DATA_DIR, { recursive: true })
   app = await electron.launch({
     args: launchArgs,
-    env: { ...process.env, DSH_HUB_DATA_DIR: DATA_DIR }
+    env: e2eEnv(DATA_DIR)
   })
   win = await app.firstWindow()
 })
