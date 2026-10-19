@@ -11,6 +11,7 @@ import type { InstanceStatusEvent, SshInstance } from '@shared/contracts'
 import { redactLine } from '@shared/redact'
 import type { PortProbe } from '../local-runtime/port-allocator'
 import { createReservedPorts } from './ssh-port-reserve'
+import { createLogRing } from '../log-ring'
 import {
   askpassSocketPath,
   ensureAskpassScripts,
@@ -50,7 +51,6 @@ import {
 
 /** 诊断用的日志环形缓冲行数与残片上限（与 local-runtime 同构） */
 const LOG_BUFFER_LINES = 40
-const LOG_BUFFER_MAX = 64 * 1024
 
 export interface SshTunnelOptions {
   /** 应用数据根：ControlPath / 私有 known_hosts 落在 `<dataRoot>/ssh/` */
@@ -166,28 +166,8 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
   const bus = createStatusBus(now, 'ssh-tunnel')
   const { emit, onStatus, statusOf } = bus
 
-  function pushLog(entry: TunnelEntry, chunk: unknown): void {
-    entry.buffer += String(chunk)
-    // 无换行残片上限（超长单行异常输出），只保留尾部防无界增长
-    if (entry.buffer.length > LOG_BUFFER_MAX) entry.buffer = entry.buffer.slice(-LOG_BUFFER_MAX)
-    let newlineIndex: number
-    while ((newlineIndex = entry.buffer.indexOf('\n')) !== -1) {
-      const line = entry.buffer.slice(0, newlineIndex).replace(/\r$/, '')
-      entry.buffer = entry.buffer.slice(newlineIndex + 1)
-      // 日志行进 detail/归因前统一脱敏：剥掉行内 URL 的查询串（防 ?token= 等意外泄漏）。
-      if (line.trim() !== '') entry.log.push(redactLine(line))
-    }
-    if (entry.log.length > LOG_BUFFER_LINES)
-      entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
-  }
-
-  function drainLogBuffer(entry: TunnelEntry): void {
-    const trailing = entry.buffer.trim()
-    if (trailing !== '') entry.log.push(redactLine(trailing))
-    entry.buffer = ''
-    if (entry.log.length > LOG_BUFFER_LINES)
-      entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
-  }
+  // 日志行进 detail/归因前统一脱敏：剥掉行内 URL 的查询串（防 ?token= 等意外泄漏）。
+  const logRing = createLogRing({ maxLines: LOG_BUFFER_LINES, transformLine: redactLine })
 
   async function resolveTargetOrFallback(instance: SshInstance): Promise<ResolvedSshTarget> {
     try {
@@ -431,8 +411,8 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
 
   function attachHandlers(child: SpawnedProcess, entry: TunnelEntry): void {
     const id = entry.id
-    child.stdout?.on('data', (chunk: unknown) => pushLog(entry, chunk))
-    child.stderr?.on('data', (chunk: unknown) => pushLog(entry, chunk))
+    child.stdout?.on('data', (chunk: unknown) => logRing.push(entry, chunk))
+    child.stderr?.on('data', (chunk: unknown) => logRing.push(entry, chunk))
 
     child.on('error', (error: Error) => {
       if (entries.get(id) !== entry || entry.child !== child) return
@@ -447,7 +427,7 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
       entry.child = null
       cancelReconnect(entry)
       if (entry.stopping) return // stop() 独占发布 stopped
-      drainLogBuffer(entry)
+      logRing.drain(entry)
       const attribution = entry.pendingReason ?? classifySshExit(code, entry.log.join('\n'))
       entry.pendingReason = null
       entry.ready = false

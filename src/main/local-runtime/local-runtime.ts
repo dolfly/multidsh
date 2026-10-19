@@ -15,6 +15,7 @@ import { isLoopbackHost } from '@shared/endpoint'
 import type { PortProbe } from './port-allocator'
 import type { InstallProgress } from './runtime-installer'
 import { InstanceStoreError, type InstanceStore } from '../registry/instance-store'
+import { createLogRing } from '../log-ring'
 import { isExternalRuntime, resolveSystemDshUsage } from './dsh-source-policy'
 import { resolveLoginPathOnce } from './login-path'
 import { resolveShellEnvOnce } from './shell-env'
@@ -36,9 +37,6 @@ const READY_PATTERN = /dsh\s+web:\s+(https?:\/\/\S+)/i
 
 /** 诊断用的日志环形缓冲行数 */
 const LOG_BUFFER_LINES = 80
-
-/** 未以换行结尾的残片上限:异常的超长单行只保留尾部,防止无界增长 */
-const LOG_BUFFER_MAX = 64 * 1024
 
 export interface LocalRuntimeOptions extends LaunchOptions {
   /** 实例注册表；升级编排完成后回写 dshVersion。 */
@@ -193,6 +191,8 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
     return next
   }
 
+  /** 日志环形缓冲：切行规则与 SSH 隧道共用（见 main/log-ring）。 */
+  const logRing = createLogRing({ maxLines: LOG_BUFFER_LINES })
   const bus = createStatusBus(now, 'local-runtime')
   const { emit, onStatus, statusOf } = bus
 
@@ -204,25 +204,6 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
         console.error('[local-runtime] 升级进度监听器抛错：', error)
       }
     }
-  }
-
-  function pushLog(entry: Entry, chunk: unknown): string[] {
-    entry.buffer += String(chunk)
-    // 无换行残片上限(超长单行异常输出),只保留尾部防无界增长
-    if (entry.buffer.length > LOG_BUFFER_MAX) entry.buffer = entry.buffer.slice(-LOG_BUFFER_MAX)
-    const lines: string[] = []
-    let newlineIndex: number
-    while ((newlineIndex = entry.buffer.indexOf('\n')) !== -1) {
-      const line = entry.buffer.slice(0, newlineIndex).replace(/\r$/, '')
-      entry.buffer = entry.buffer.slice(newlineIndex + 1)
-      if (line.trim() !== '') lines.push(line)
-    }
-    if (lines.length > 0) {
-      entry.log.push(...lines)
-      if (entry.log.length > LOG_BUFFER_LINES)
-        entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
-    }
-    return lines
   }
 
   function killTree(entry: Entry, signal: NodeJS.Signals): void {
@@ -320,7 +301,7 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
 
   function watchStdout(id: string, entry: Entry): void {
     const onChunk = (target: 'stdout' | 'stderr') => (chunk: unknown) => {
-      const lines = pushLog(entry, chunk)
+      const lines = logRing.push(entry, chunk)
       if (target === 'stderr') return
       for (const line of lines) {
         const match = READY_PATTERN.exec(line)
