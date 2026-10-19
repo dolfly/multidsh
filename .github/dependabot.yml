@@ -1,6 +1,7 @@
 # 依赖更新机器人：仅 devDependencies（本仓库 dependencies 恒为空，见 ADR-0002）。
-# Electron 升级影响打包链路与原生能力，单独人工评估，不自动开 PR。
-# vite / TypeScript / React 锁定当前大版本线（AGENTS 技术栈），只放行 patch/minor。
+# 应用仓库不追大版本：major 一律人工评估（PR #19 曾把 eslint 10 / vitest 5 / electron-vite 6
+# 一把梭，新 lint 规则 + 未验证的构建链变更同时进场，CI 无法定位单包责任）。
+# Electron 升级另影响打包链路与原生能力，完全关闭自动 PR。
 version: 2
 updates:
   - package-ecosystem: npm
@@ -12,16 +13,7 @@ updates:
       - dependency-type: development
     ignore:
       - dependency-name: electron
-      - dependency-name: vite
-        update-types:
-          - version-update:semver-major
-      - dependency-name: typescript
-        update-types:
-          - version-update:semver-major
-      - dependency-name: react
-        update-types:
-          - version-update:semver-major
-      - dependency-name: react-dom
+      - dependency-name: '*'
         update-types:
           - version-update:semver-major
     groups:
