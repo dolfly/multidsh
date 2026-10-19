@@ -12,6 +12,7 @@ import { redactLine } from '@shared/redact'
 import type { PortProbe } from '../local-runtime/port-allocator'
 import { createReservedPorts } from './ssh-port-reserve'
 import { createLogRing } from '../log-ring'
+import { createHostTrustGate } from '../ssh/ssh-trust-gate'
 import {
   askpassSocketPath,
   ensureAskpassScripts,
@@ -20,17 +21,11 @@ import {
 } from '../ssh/askpass'
 import {
   createHostTrustProbe,
-  evaluateHostTrust,
-  hostTargetLabel,
   knownHostsHostField,
   recordHostTrust,
-  toFingerprints,
-  resolveSshTarget,
-  type HostKeyEntry,
-  type HostKeyPrompt,
-  type HostTrustProbe,
-  type ResolvedSshTarget
+  resolveSshTarget
 } from '../ssh/host-trust'
+import type { HostKeyPrompt, HostTrustProbe, ResolvedSshTarget } from '../ssh/host-trust'
 import { classifySshExit, type SshExitAttribution } from './attribution'
 import { sshTunnelEndpoint } from './endpoint-resolver'
 import { httpHealthProbe, sleep, type HealthProbe } from './probe'
@@ -160,6 +155,13 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
   /** 本管理器已保留的本地端口（并发分配互斥，防两个隧道抢同一端口） */
   /** 本地端口保留与分配（串行链与释放路径见 ssh-port-reserve）。 */
   const ports = createReservedPorts({ ...(portProbe ? { portProbe } : {}) })
+  /** 主机指纹 TOFU 确认闸门（流程见 ssh-trust-gate）。 */
+  const hostTrust = createHostTrustGate({
+    dataRoot,
+    ...(confirmHostKey ? { confirmHostKey } : {}),
+    trustProbeFactory,
+    resolveTarget
+  })
   /** 重连时需要的实例最新配置；start 登记、stop/删除清理 */
   const latestInstances = new Map<string, SshInstance>()
 
@@ -168,66 +170,6 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
 
   // 日志行进 detail/归因前统一脱敏：剥掉行内 URL 的查询串（防 ?token= 等意外泄漏）。
   const logRing = createLogRing({ maxLines: LOG_BUFFER_LINES, transformLine: redactLine })
-
-  async function resolveTargetOrFallback(instance: SshInstance): Promise<ResolvedSshTarget> {
-    try {
-      return await resolveTarget(instance)
-    } catch {
-      // `ssh -G` 仅用于对齐别名的实际目标；不可用时仍可按实例输入继续连接并归因。
-      return { host: instance.host, port: instance.port }
-    }
-  }
-
-  async function ensureTrust(
-    instance: SshInstance,
-    emitWaiting: (detail: string) => void
-  ): Promise<boolean> {
-    const target = await resolveTargetOrFallback(instance)
-    const knownHostsPath = join(dataRoot, 'ssh', 'known_hosts')
-    const hostField = knownHostsHostField(target.host, target.port)
-    const probe = trustProbeFactory(target.host, target.port, knownHostsPath)
-    const trusted = await probe.readTrusted()
-    let scanned: HostKeyEntry[]
-    try {
-      scanned = await probe.scan()
-    } catch {
-      // keyscan 拿不到公钥(主机不可达/网络抖动):不做 TOFU 判定,放行交给 ssh 自己连接。
-      // 这是安全的 fail-open —— ssh 侧以 StrictHostKeyChecking=yes + 私有 UserKnownHostsFile
-      // 运行（见 ssh-args），未知主机在 ssh 层直接失败关闭，hub 放行不等于自动信任。
-      return true
-    }
-    // 同理，keyscan 返回空（远端未出示任何公钥）时也放行给 ssh 兜底判定。
-    if (scanned.length === 0) return true
-    const evaluation = evaluateHostTrust(trusted, scanned)
-    if (evaluation.verdict === 'trusted') return true
-    if (evaluation.verdict === 'changed') {
-      // 这里仍然把新旧指纹如实投给 UI 供人工核对(告警),但**任何回答都不放行**,旧公钥
-      // 一个字节都不改。想恢复只能在隧道外显式执行遗忘（forgetHostKey），下次连接重新 TOFU。
-      emitWaiting('服务器指纹已变化，已拒绝连接')
-      if (confirmHostKey) {
-        await confirmHostKey({
-          instanceId: instance.id,
-          target: hostTargetLabel(target.host, target.port),
-          verdict: 'changed',
-          fingerprints: toFingerprints(scanned),
-          previousFingerprints: toFingerprints(evaluation.mismatched)
-        })
-      }
-      return false
-    }
-    if (!confirmHostKey) return true // 未接线(单测)则直接放行
-    emitWaiting('等待确认服务器指纹')
-    const decision = await confirmHostKey({
-      instanceId: instance.id,
-      target: hostTargetLabel(target.host, target.port),
-      verdict: 'unknown',
-      fingerprints: toFingerprints(scanned),
-      previousFingerprints: []
-    })
-    if (decision !== 'trust') return false
-    await recordHostTrust(knownHostsPath, hostField, scanned, 'append')
-    return true
-  }
 
   async function startAskpassFor(entry: TunnelEntry): Promise<AskpassServer | null> {
     if (!askpass) return null
@@ -498,7 +440,9 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
         controlPath: join(socketsDirFor(dataRoot), `ctl-${controlSlug(instance)}`)
       }
       emit(id, 'starting', { detail: '校验服务器指纹' })
-      const trusted = await ensureTrust(instance, (detail) => emit(id, 'starting', { detail }))
+      const trusted = await hostTrust.ensureTrust(instance, (detail) =>
+        emit(id, 'starting', { detail })
+      )
       if (!trusted) {
         ports.release(localPort)
         emit(id, 'error', { detail: '服务器指纹未确认（或已变化），已拒绝连接' })
@@ -625,7 +569,7 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
      * 主进程侧唯一的调用方是显式的「忘记该主机指纹」动作,连接流程绝不调用它。
      */
     async forgetHostKey(instance) {
-      const target = await resolveTargetOrFallback(instance)
+      const target = await hostTrust.resolveTargetOrFallback(instance)
       await recordHostTrust(
         join(dataRoot, 'ssh', 'known_hosts'),
         knownHostsHostField(target.host, target.port),
