@@ -76,3 +76,17 @@ export async function closeAboutWithEscape(about: Page): Promise<void> {
   await expect(about.getByTestId('about-dialog')).toBeVisible()
   await about.keyboard.press('Escape').catch(() => undefined)
 }
+
+/**
+ * 点「关于」窗口的关闭按钮收起叠加窗口。click 的合成鼠标事件同步执行 window.close()，
+ * 紧随其后的 mouseup/收尾请求会打到已销毁的 webContents 而报 target closed —— 与
+ * closeAboutWithEscape 同一竞态，错误在此吞掉，关闭结果由 expectAboutClosed 断言。
+ */
+export async function closeAboutWithButton(about: Page): Promise<void> {
+  await expect(about.getByTestId('about-dialog')).toBeVisible()
+  await about
+    .getByTestId('about-dialog')
+    .getByRole('button', { name: /关闭|Close/ })
+    .click()
+    .catch(() => undefined)
+}
