@@ -126,7 +126,7 @@ export function createInstanceStore(options: InstanceStoreOptions): InstanceStor
     await mkdir(dir, { recursive: true })
     await removeStaleTmpFiles()
 
-    let raw: string | null = null
+    let raw: string | null
     try {
       raw = await readFile(filePath, 'utf8')
     } catch (error) {

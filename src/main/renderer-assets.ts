@@ -41,7 +41,7 @@ export function registerRendererAssets(options: {
 
   if (options.rendererDevUrl) return
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    let url: URL | null = null
+    let url: URL | null
     try {
       url = new URL(details.url)
     } catch {
