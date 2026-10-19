@@ -1,12 +1,41 @@
 import { rm } from 'node:fs/promises'
-import { afterEach } from 'vitest'
+import { afterEach, vi, type Mock } from 'vitest'
 import type { PluginManagerOptions } from './plugin-manager'
 import type { LocalInstance } from '@shared/contracts'
+import type { CommandResult, CommandRunner } from './exec-file'
 import type { PluginCheckState, PluginStateStore } from './plugin-state'
 import type { ProfileBundleStore, ProfileBundles } from './profile-bundles'
 
 /** 路径分隔符归一化，使断言在 win32（反斜杠）与 POSIX 上一致。 */
 export const toPosix = (path: string): string => path.replace(/\\/g, '/')
+
+/** 成功应答，stdout 缺省为空。 */
+export function okResult(stdout = ''): CommandResult {
+  return { code: 0, stdout, stderr: '' }
+}
+
+/** run 桩的一侧应答：stdout 字符串、完整 CommandResult，或按 args 决定的函数。 */
+export type StubAnswer =
+  string | CommandResult | ((args: string[]) => StubValue | Promise<StubValue>)
+
+/** 应答函数可返回的两种形态：stdout 字符串或完整 CommandResult。 */
+type StubValue = string | CommandResult
+
+/**
+ * 检查类用例最常见的子进程桩：`list` 应答 LIST_JSON，其余命令应答 `view`。
+ * 需要覆盖某侧时传字符串 / CommandResult / 按 args 决定的函数；
+ * 调用记录在 `run.mock.calls` 里，供命令拼装断言。
+ */
+export function fakeRun(view: StubAnswer = '', list: StubAnswer = LIST_JSON): Mock<CommandRunner> {
+  const answer = async (spec: StubAnswer, args: string[]): Promise<CommandResult> => {
+    const value = typeof spec === 'function' ? await spec(args) : spec
+    return typeof value === 'string' ? okResult(value) : value
+  }
+  return vi.fn<CommandRunner>(async (_command, args) => {
+    if (args.includes('list')) return answer(list, args)
+    return answer(view, args)
+  })
+}
 
 export const now = new Date().toISOString()
 

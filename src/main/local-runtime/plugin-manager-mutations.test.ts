@@ -1,25 +1,21 @@
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createPluginManager, profileHasHmr } from './plugin-manager'
-import type { CommandResult } from './exec-file'
 import type { ProfileBundleStore } from './profile-bundles'
 import {
-  LIST_JSON,
   baseOptions,
   fakeBundles,
+  fakeRun,
   localInstance,
+  okResult,
   tempRoots
 } from './plugin-manager.testkit'
 
 describe('createPluginManager mutations', () => {
   it('upgrade：显式版本 add name@version，返回 host 半', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun()
     const manager = createPluginManager(baseOptions(run))
     const result = await manager.upgrade(localInstance(), '@xbzbing/dsh-git-panel', '1.2.0')
     expect(result.hasHostSide).toBe(true)
@@ -28,11 +24,7 @@ describe('createPluginManager mutations', () => {
   })
 
   it('remove：卸载前判 host 半', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun()
     const manager = createPluginManager(baseOptions(run))
     const result = await manager.remove(localInstance(), '@xbzbing/dsh-git-panel')
     expect(result.hasHostSide).toBe(true)
@@ -51,11 +43,7 @@ describe('createPluginManager mutations', () => {
   })
 
   it('install（web/HMR）→ applied；替换已装包同样热生效（与 dsh 同口径，无重启特例）', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun()
     // 全新包名：before 里没有 new-plugin
     const fresh = createPluginManager({
       ...baseOptions(run),
@@ -80,11 +68,7 @@ describe('createPluginManager mutations', () => {
   })
 
   it('install：无 HMR 的 profile → 即使全新包名也需重启', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun()
     const manager = createPluginManager({
       ...baseOptions(run),
       bundleStore: fakeBundles({
@@ -97,11 +81,7 @@ describe('createPluginManager mutations', () => {
   })
 
   it('upgrade → 走默认规则：web/HMR 下 applied（替换已装包同样热生效），无 HMR 下 restart-required', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun()
     // web profile（默认）：dsh-hmr 热重载新模块代 → applied，不因换版本要求重启。
     const web = createPluginManager({ ...baseOptions(run) })
     const webResult = await web.upgrade(localInstance(), '@xbzbing/dsh-git-panel', '1.2.0')
@@ -124,11 +104,7 @@ describe('createPluginManager mutations', () => {
   })
 
   it('remove → 走默认规则：web/HMR 下 applied，无 HMR 下 restart-required', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun()
     const web = createPluginManager({
       ...baseOptions(run),
       bundleStore: fakeBundles({
@@ -161,11 +137,7 @@ describe('createPluginManager mutations', () => {
     await mkdir(profileDir, { recursive: true })
     await writeFile(join(profileDir, 'cordis.patch.yml'), '- id: hmr\n  disabled: true\n', 'utf8')
 
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun()
     const manager = createPluginManager({
       ...baseOptions(run),
       dataRoot,
@@ -180,11 +152,7 @@ describe('createPluginManager mutations', () => {
   })
 
   it('install：spec 原样透传给 add', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun()
     const manager = createPluginManager(baseOptions(run))
     await manager.install(localInstance(), 'github:owner/repo')
     const addCall = run.mock.calls.find(([, args]) => args.includes('add'))!
@@ -197,11 +165,9 @@ describe('createPluginManager install：安装后启用', () => {
 
   it('install(enable:false)：add 之后把真实包名移出加载清单；缺省不触碰清单', async () => {
     const order: string[] = []
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
+    const run = fakeRun((args) => {
       if (args.includes('add')) order.push('add')
-      return { code: 0, stdout: '', stderr: '' }
+      return okResult()
     })
     const bundles = fakeBundles({
       bundles: ['@deepseek-ai/dsh-base', GIT_PANEL],
@@ -251,11 +217,7 @@ describe('createPluginManager install：安装后启用', () => {
         }
       }
     ])
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: clientOnlyList, stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    const run = fakeRun('', clientOnlyList)
     const bundles = fakeBundles({ bundles: [], dependencies: ['client-only'] })
     const manager = createPluginManager({ ...baseOptions(run), bundleStore: bundles.store })
 

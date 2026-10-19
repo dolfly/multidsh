@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createPluginManager } from './plugin-manager'
-import type { CommandResult } from './exec-file'
-import { LIST_JSON, baseOptions, localInstance, fakeBundles } from './plugin-manager.testkit'
+import { baseOptions, fakeBundles, fakeRun, localInstance } from './plugin-manager.testkit'
 
 describe('createPluginManager.resolveInstall', () => {
   /** view 命令的目标（args: [entry, plugin, --profile, <profile>, view, <spec>, …]）。 */
@@ -11,11 +10,7 @@ describe('createPluginManager.resolveInstall', () => {
 
   /** 假 dsh：list 返回已装清单；view 按目标 spec 给出应答（裸名与 `name@版本` 形状不同）。 */
   function stubRun(view: (spec: string) => unknown) {
-    return vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: JSON.stringify(view(viewed(args)) ?? {}), stderr: '' }
-    })
+    return fakeRun((args) => JSON.stringify(view(viewed(args)) ?? {}))
   }
 
   /** 假 registry：dist-tags.latest 滞后（1.0.0），versions 不按版本序且含更新的 1.1.0。 */
@@ -115,11 +110,7 @@ describe('createPluginManager.resolveInstall', () => {
       peerDependencies: { '@deepseek-ai/dsh': '>=0.1.7-rc.2' },
       time: { '1.0.0': '2026-08-01T00:00:00.000Z', '1.1.0': '2026-09-20T00:00:00.000Z' }
     }
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: installedList, stderr: '' }
-      return { code: 0, stdout: JSON.stringify(versionMeta), stderr: '' }
-    })
+    const run = fakeRun(JSON.stringify(versionMeta), installedList)
     const manager = createPluginManager(baseOptions(run))
     const plan = await manager.resolveInstall(localInstance(), 'demo-plugin@1.0.0')
 
@@ -199,7 +190,7 @@ describe('createPluginManager.resolveInstall', () => {
   })
 
   it('github/file：不执行任何命令，只规范化展示来源', async () => {
-    const run = vi.fn(async (): Promise<CommandResult> => ({ code: 0, stdout: '', stderr: '' }))
+    const run = fakeRun()
     const manager = createPluginManager(baseOptions(run))
 
     await expect(
@@ -233,14 +224,10 @@ describe('createPluginManager.resolveInstall', () => {
   })
 
   it('插件未发布到 npm（404）→ not-found，文案说明未发布', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return {
-        code: 1,
-        stdout: '',
-        stderr: 'ERR_PNPM_FETCH_404 GET https://registry.npmjs.org/demo-plugin: Not Found - 404'
-      }
+    const run = fakeRun({
+      code: 1,
+      stdout: '',
+      stderr: 'ERR_PNPM_FETCH_404 GET https://registry.npmjs.org/demo-plugin: Not Found - 404'
     })
     const manager = createPluginManager(baseOptions(run))
     await expect(manager.resolveInstall(localInstance(), 'demo-plugin')).rejects.toMatchObject({
@@ -250,15 +237,11 @@ describe('createPluginManager.resolveInstall', () => {
   })
 
   it('显式版本不存在（404）→ not-found，文案点名该版本', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return {
-        code: 1,
-        stdout: '',
-        stderr:
-          'Command failed: pnpm view demo-plugin@9.9.9 peerDependencies time --json\nNot Found - 404'
-      }
+    const run = fakeRun({
+      code: 1,
+      stdout: '',
+      stderr:
+        'Command failed: pnpm view demo-plugin@9.9.9 peerDependencies time --json\nNot Found - 404'
     })
     const manager = createPluginManager(baseOptions(run))
     await expect(
@@ -270,11 +253,7 @@ describe('createPluginManager.resolveInstall', () => {
   })
 
   it('输出不可解析 → internal（拿不到版本就不给计划）', async () => {
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: 'not json', stderr: '' }
-    })
+    const run = fakeRun('not json')
     const manager = createPluginManager(baseOptions(run))
     await expect(manager.resolveInstall(localInstance(), 'demo-plugin')).rejects.toMatchObject({
       code: 'internal'
@@ -293,12 +272,7 @@ describe('createPluginManager registry 口径', () => {
 
   /** 假 dsh：list / view 都按固定应答返回；add 等改动命令返回空输出。 */
   function registryRun() {
-    return vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      if (args.includes('view')) return { code: 0, stdout: JSON.stringify(VIEW_META), stderr: '' }
-      return { code: 0, stdout: '', stderr: '' }
-    })
+    return fakeRun(JSON.stringify(VIEW_META))
   }
 
   it('resolveInstall：view 带所选 --registry（缺省 npmmirror，可切 npmjs）', async () => {

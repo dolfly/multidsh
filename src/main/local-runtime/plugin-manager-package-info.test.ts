@@ -1,8 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createPluginManager } from './plugin-manager'
-import type { CommandResult } from './exec-file'
 import type { PackageInfoFetchers } from './plugin-package-info'
-import { LIST_JSON, baseOptions, localInstance } from './plugin-manager.testkit'
+import { baseOptions, fakeRun, localInstance } from './plugin-manager.testkit'
 
 describe('createPluginManager.packageInfo', () => {
   const DOWNLOADS = { count: 4310, start: '2026-09-13', end: '2026-10-12' }
@@ -39,11 +38,7 @@ describe('createPluginManager.packageInfo', () => {
 
   /** 假 dsh：list 返回已装清单；view 返回 registry 元数据（repository/homepage）。 */
   function stubRun(viewMeta: unknown) {
-    return vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 0, stdout: JSON.stringify(viewMeta), stderr: '' }
-    })
+    return fakeRun(JSON.stringify(viewMeta))
   }
 
   it('有 github 仓库：仓库地址由 view 推导后交给取数器（渲染层不传 URL）', async () => {
@@ -88,11 +83,7 @@ describe('createPluginManager.packageInfo', () => {
 
   it('view 失败（离线 / 未发布）不是错误：下载量照常返回，更新内容降级为 none', async () => {
     const stub = stubPackageInfo()
-    const run = vi.fn(async (command: string, args: string[]): Promise<CommandResult> => {
-      void command
-      if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
-      return { code: 1, stdout: '', stderr: 'ERR_PNPM_FETCH_404 Not Found - 404' }
-    })
+    const run = fakeRun({ code: 1, stdout: '', stderr: 'ERR_PNPM_FETCH_404 Not Found - 404' })
     const manager = createPluginManager({ ...baseOptions(run), packageInfoFetchers: stub.fetchers })
     const info = await manager.packageInfo(localInstance(), 'demo-plugin', '1.1.0')
 
