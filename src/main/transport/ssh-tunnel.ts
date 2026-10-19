@@ -9,13 +9,8 @@ import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { InstanceStatusEvent, SshInstance } from '@shared/contracts'
 import { redactLine } from '@shared/redact'
-import {
-  DEFAULT_PORT_RANGE_END,
-  DEFAULT_PORT_RANGE_START,
-  findFreePort,
-  isPortFree
-} from '../local-runtime/port-allocator'
 import type { PortProbe } from '../local-runtime/port-allocator'
+import { createReservedPorts } from './ssh-port-reserve'
 import {
   askpassSocketPath,
   ensureAskpassScripts,
@@ -163,7 +158,8 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
   /** 排队期间被 stop 的实例：轮到它 spawn 前直接放弃 */
   const cancelRequested = new Set<string>()
   /** 本管理器已保留的本地端口（并发分配互斥，防两个隧道抢同一端口） */
-  const reservedPorts = new Set<number>()
+  /** 本地端口保留与分配（串行链与释放路径见 ssh-port-reserve）。 */
+  const ports = createReservedPorts({ ...(portProbe ? { portProbe } : {}) })
   /** 重连时需要的实例最新配置；start 登记、stop/删除清理 */
   const latestInstances = new Map<string, SshInstance>()
 
@@ -273,13 +269,6 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     return server
   }
 
-  /** 端口可用性 = 未被本管理器保留 + 可绑定（portProbe 可注入） */
-  async function isPortAvailable(port: number): Promise<boolean> {
-    if (reservedPorts.has(port)) return false
-    if (portProbe) return portProbe(port)
-    return isPortFree(port)
-  }
-
   /**
    * 释放条目占用的资源：从注册表移除、归还本地端口、关掉 askpass 服务。
    * `dropControlPath` 为真时一并删除本条目的 ControlPath（带 force，文件不存在不算错）。
@@ -289,55 +278,12 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     { dropControlPath }: { dropControlPath: boolean }
   ): void {
     entries.delete(entry.id)
-    reservedPorts.delete(entry.localPort)
+    ports.release(entry.localPort)
     if (dropControlPath) {
       void rm(entry.controlPath, { force: true }).catch(() => undefined)
     }
     if (entry.askpassServer) void entry.askpassServer.close().catch(() => undefined)
     entry.askpassServer = null
-  }
-
-  /** 本地端口分配串行链：保留集的 check-then-add 必须原子，并发分配不得抢到同一端口 */
-  let allocChain: Promise<unknown> = Promise.resolve()
-
-  /** 分配并保留本地端口：优先沿用实例已持久化的 localPort（被占则递增），区间外向 65535 递进 */
-  function allocLocalPort(instance: SshInstance): Promise<number> {
-    const next = allocChain.then(() => allocLocalPortInner(instance))
-    allocChain = next.catch(() => undefined)
-    return next
-  }
-
-  /**
-   * 换一个本地端口（forward 失败重连用）：先释放旧端口再在区间内找新端口。
-   * 必须与 allocLocalPort 走同一条 allocChain —— 否则 findFreePort 与 reservedPorts.add
-   * 之间的窗口里，另一实例的并发分配会把同一端口观察为空闲而双双保留（重复 -L 绑定）。
-   */
-  function reallocLocalPort(previous: number): Promise<number> {
-    const next = allocChain.then(async () => {
-      reservedPorts.delete(previous)
-      const port = await findFreePort({
-        start: DEFAULT_PORT_RANGE_START,
-        end: DEFAULT_PORT_RANGE_END,
-        probe: isPortAvailable
-      })
-      reservedPorts.add(port)
-      return port
-    })
-    allocChain = next.catch(() => undefined)
-    return next
-  }
-
-  async function allocLocalPortInner(instance: SshInstance): Promise<number> {
-    const preferred = instance.localPort
-    if (preferred !== null && (await isPortAvailable(preferred))) {
-      reservedPorts.add(preferred)
-      return preferred
-    }
-    const start = preferred ?? DEFAULT_PORT_RANGE_START
-    const end = start > DEFAULT_PORT_RANGE_END ? 65_535 : DEFAULT_PORT_RANGE_END
-    const port = await findFreePort({ start, end, probe: isPortAvailable })
-    reservedPorts.add(port)
-    return port
   }
 
   function spawnSsh(entry: TunnelEntry, instance: SshInstance): SpawnedProcess {
@@ -464,10 +410,10 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     if (entry.forwardFailed) {
       entry.forwardFailed = false
       try {
-        // 经 allocChain 串行：check-then-add 原子，不与并发分配抢同一端口。
-        const port = await reallocLocalPort(entry.localPort)
+        // realloc 走分配器的串行链：check-then-add 原子，不与并发分配抢同一端口。
+        const port = await ports.realloc(entry.localPort)
         if (entry.stopping) {
-          reservedPorts.delete(port)
+          ports.release(port)
           return
         }
         entry.localPort = port
@@ -533,10 +479,10 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     let allocatedPort: number | null = null
     try {
       emit(id, 'starting', { detail: '分配本地端口' })
-      const localPort = await allocLocalPort(instance)
+      const localPort = await ports.alloc(instance.localPort)
       allocatedPort = localPort
       if (cancelIfRequested()) {
-        reservedPorts.delete(localPort)
+        ports.release(localPort)
         emit(id, 'stopped', { detail: '已取消启动' })
         return
       }
@@ -544,7 +490,7 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
       await mkdir(join(dataRoot, 'ssh'), { recursive: true, mode: 0o700 })
       await ensureSocketsDir(dataRoot)
       if (cancelIfRequested()) {
-        reservedPorts.delete(localPort)
+        ports.release(localPort)
         emit(id, 'stopped', { detail: '已取消启动' })
         return
       }
@@ -574,12 +520,12 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
       emit(id, 'starting', { detail: '校验服务器指纹' })
       const trusted = await ensureTrust(instance, (detail) => emit(id, 'starting', { detail }))
       if (!trusted) {
-        reservedPorts.delete(localPort)
+        ports.release(localPort)
         emit(id, 'error', { detail: '服务器指纹未确认（或已变化），已拒绝连接' })
         return
       }
       if (cancelIfRequested()) {
-        reservedPorts.delete(localPort)
+        ports.release(localPort)
         emit(id, 'stopped', { detail: '已取消启动' })
         return
       }
@@ -609,7 +555,7 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
       entry.child = child
       await waitForReady(entry, child)
     } catch (error) {
-      if (allocatedPort !== null) reservedPorts.delete(allocatedPort)
+      if (allocatedPort !== null) ports.release(allocatedPort)
       emit(id, 'error', {
         detail: error instanceof Error ? error.message : String(error)
       })
