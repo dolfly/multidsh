@@ -1,6 +1,5 @@
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
-import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // electron 在 vitest node 环境不可加载——整体 mock 掉,只验证注册与边界行为
@@ -14,329 +13,92 @@ vi.mock('electron', () => ({
   }
 }))
 
-import { ipcMain } from 'electron'
 import type { InstanceStatusEvent } from '@shared/contracts'
-import type { LocalRuntimeManager } from '../local-runtime/local-runtime'
-import type { SshTunnelManager } from '../transport/ssh-tunnel'
-import type { HttpEndpointManager } from '../transport/http-endpoint'
 import { createInstanceStore } from '../registry/instance-store'
-import { emptyEnvironmentDiff } from '../local-runtime/env-diff'
 import { registerIpc } from './register'
+import {
+  TEST_BASE,
+  setupRegister,
+  teardownRegister,
+  type AuthFake,
+  type HttpFake,
+  type InstallerFake,
+  type PluginManagerFake,
+  type PromptBrokerFake,
+  type RegisterHarness,
+  type RuntimeFake,
+  type TunnelsFake
+} from './register.testkit'
 
-type Listener = (...args: unknown[]) => unknown
+type MockFn = ReturnType<typeof vi.fn>
 
-const TEST_BASE = join(process.cwd(), 'hub-data', 'test-tmp')
-
+let harness: RegisterHarness
 let dir: string
-let handlers: Map<string, Listener>
-let runtimeFake: {
-  onStatus: ReturnType<typeof vi.fn>
-  onUpgradeProgress: ReturnType<typeof vi.fn>
-  statusOf: ReturnType<typeof vi.fn>
-  urlOf: ReturnType<typeof vi.fn>
-  runningIds: ReturnType<typeof vi.fn>
-  start: ReturnType<typeof vi.fn>
-  stop: ReturnType<typeof vi.fn>
-  stopAll: ReturnType<typeof vi.fn>
-  refreshEnv: ReturnType<typeof vi.fn>
-  adopt: ReturnType<typeof vi.fn>
-  upgradeInstance: ReturnType<typeof vi.fn>
-}
-let tunnelsFake: {
-  onStatus: ReturnType<typeof vi.fn>
-  statusOf: ReturnType<typeof vi.fn>
-  runningIds: ReturnType<typeof vi.fn>
-  start: ReturnType<typeof vi.fn>
-  stop: ReturnType<typeof vi.fn>
-  stopAll: ReturnType<typeof vi.fn>
-  forgetHostKey: ReturnType<typeof vi.fn>
-}
-let openInstanceView: ReturnType<typeof vi.fn>
-let openExternalUrl: ReturnType<typeof vi.fn>
-let instanceViewUrlFake: ReturnType<typeof vi.fn>
-let externalDshScannerFake: { scan: ReturnType<typeof vi.fn> }
-let httpFake: {
-  onStatus: ReturnType<typeof vi.fn>
-  statusOf: ReturnType<typeof vi.fn>
-  runningIds: ReturnType<typeof vi.fn>
-  start: ReturnType<typeof vi.fn>
-  stop: ReturnType<typeof vi.fn>
-  stopAll: ReturnType<typeof vi.fn>
-}
-let authFake: {
-  probe: ReturnType<typeof vi.fn>
-  login: ReturnType<typeof vi.fn>
-  logout: ReturnType<typeof vi.fn>
-  stateOf: ReturnType<typeof vi.fn>
-  forget: ReturnType<typeof vi.fn>
-  beginLogout: ReturnType<typeof vi.fn>
-  endLogout: ReturnType<typeof vi.fn>
-  isLoggingOut: ReturnType<typeof vi.fn>
-  client: ReturnType<typeof vi.fn>
-  sessionCookie: ReturnType<typeof vi.fn>
-  clientIds: ReturnType<typeof vi.fn>
-}
-let clearPartitionSession: ReturnType<typeof vi.fn>
-let closeInstanceView: ReturnType<typeof vi.fn>
-let reloadInstanceView: ReturnType<typeof vi.fn>
-let showInstanceTooltip: ReturnType<typeof vi.fn>
-let hideInstanceTooltip: ReturnType<typeof vi.fn>
-let vaultFake: Record<string, ReturnType<typeof vi.fn>>
-let auditSpy: (entry: { instanceId?: string | null; event: string; result?: string }) => void
-let settingsFake: Record<string, ReturnType<typeof vi.fn>>
-let onSettingsChanged: ReturnType<typeof vi.fn>
-let promptBrokerFake: {
-  requestHostKey: ReturnType<typeof vi.fn>
-  requestAskpass: ReturnType<typeof vi.fn>
-  replyHostKey: ReturnType<typeof vi.fn>
-  replyAskpass: ReturnType<typeof vi.fn>
-  replyConfirm: ReturnType<typeof vi.fn>
-  listConfirms: ReturnType<typeof vi.fn>
-  cancelAll: ReturnType<typeof vi.fn>
-}
+let handlers: RegisterHarness['handlers']
+let invoke: RegisterHarness['invoke']
+let ipcDeps: RegisterHarness['ipcDeps']
+let runtimeFake: RuntimeFake
+let tunnelsFake: TunnelsFake
+let httpFake: HttpFake
+let authFake: AuthFake
+let vaultFake: Record<string, MockFn>
+let settingsFake: Record<string, MockFn>
+let installerFake: InstallerFake
+let pluginManagerFake: PluginManagerFake
+let promptBrokerFake: PromptBrokerFake
+let externalDshScannerFake: RegisterHarness['externalDshScannerFake']
+let verifyExternalAccess: MockFn
+let listLocalSpaces: MockFn
+let trashLocalSpace: MockFn
+let instanceViewUrlFake: MockFn
+let openInstanceView: MockFn
+let openExternalUrl: MockFn
+let onSettingsChanged: MockFn
+let auditSpy: RegisterHarness['auditSpy']
+let clearPartitionSession: MockFn
+let closeInstanceView: MockFn
+let reloadInstanceView: MockFn
+let showInstanceTooltip: MockFn
+let hideInstanceTooltip: MockFn
 let currentStatus: InstanceStatusEvent | null
-let verifyExternalAccess: ReturnType<typeof vi.fn>
-let listLocalSpaces: ReturnType<typeof vi.fn>
-let trashLocalSpace: ReturnType<typeof vi.fn>
-let installerFake: {
-  listAvailableVersions: ReturnType<typeof vi.fn>
-  resolveDefaultVersion: ReturnType<typeof vi.fn>
-  resolveLatestVersion: ReturnType<typeof vi.fn>
-  listInstalled: ReturnType<typeof vi.fn>
-  isInstalled: ReturnType<typeof vi.fn>
-  install: ReturnType<typeof vi.fn>
-  ensureInstalled: ReturnType<typeof vi.fn>
-  resolveEntry: ReturnType<typeof vi.fn>
-  hasIncompleteInstall: ReturnType<typeof vi.fn>
-  resolveGlobalPrefix: ReturnType<typeof vi.fn>
-  installGlobal: ReturnType<typeof vi.fn>
-  dispose: ReturnType<typeof vi.fn>
-}
-let pluginManagerFake: {
-  list: ReturnType<typeof vi.fn>
-  check: ReturnType<typeof vi.fn>
-  checkState: ReturnType<typeof vi.fn>
-  install: ReturnType<typeof vi.fn>
-  resolveInstall: ReturnType<typeof vi.fn>
-  packageInfo: ReturnType<typeof vi.fn>
-  upgrade: ReturnType<typeof vi.fn>
-  remove: ReturnType<typeof vi.fn>
-  setEnabled: ReturnType<typeof vi.fn>
-}
-let ipcDeps: Parameters<typeof registerIpc>[1]
 
 beforeEach(async () => {
-  await mkdir(TEST_BASE, { recursive: true })
-  dir = await mkdtemp(join(TEST_BASE, 'ipc-'))
-  handlers = new Map()
-  vi.mocked(ipcMain.handle).mockImplementation((channel, listener) => {
-    handlers.set(channel as string, listener as Listener)
-    return undefined as never
-  })
   currentStatus = null
-  verifyExternalAccess = vi.fn(async () => true)
-  listLocalSpaces = vi.fn(async () => [])
-  trashLocalSpace = vi.fn(async () => undefined)
-  installerFake = {
-    listAvailableVersions: vi.fn(async () => ['0.1.4', '0.1.5']),
-    resolveDefaultVersion: vi.fn(async () => '0.1.5'),
-    resolveLatestVersion: vi.fn(async () => '0.1.5'),
-    listInstalled: vi.fn(async () => []),
-    isInstalled: vi.fn(async () => false),
-    install: vi.fn(async () => ({
-      version: '0.1.5',
-      dir: '/tmp/d',
-      entry: '/tmp/e',
-      installedAt: ''
-    })),
-    ensureInstalled: vi.fn(async () => ({
-      version: '0.1.5',
-      dir: '/tmp/d',
-      entry: '/tmp/e',
-      installedAt: ''
-    })),
-    resolveEntry: vi.fn((v: string) => `/tmp/${v}`),
-    hasIncompleteInstall: vi.fn(async () => false),
-    resolveGlobalPrefix: vi.fn(async () => '/usr/local'),
-    installGlobal: vi.fn(async () => undefined),
-    dispose: vi.fn(() => undefined)
-  }
-  runtimeFake = {
-    onStatus: vi.fn(() => () => undefined),
-    onUpgradeProgress: vi.fn(() => () => undefined),
-    statusOf: vi.fn(() => currentStatus),
-    urlOf: vi.fn(() => currentStatus?.url ?? null),
-    runningIds: vi.fn(() => []),
-    start: vi.fn(async () => undefined),
-    stop: vi.fn(async () => undefined),
-    stopAll: vi.fn(async () => undefined),
-    refreshEnv: vi.fn(async () => emptyEnvironmentDiff()),
-    adopt: vi.fn(async () => undefined),
-    upgradeInstance: vi.fn(async () => undefined)
-  }
-  tunnelsFake = {
-    onStatus: vi.fn(() => () => undefined),
-    statusOf: vi.fn(() => null),
-    runningIds: vi.fn(() => []),
-    start: vi.fn(async () => undefined),
-    stop: vi.fn(async () => undefined),
-    stopAll: vi.fn(async () => undefined),
-    forgetHostKey: vi.fn(async () => undefined)
-  }
-  httpFake = {
-    onStatus: vi.fn(() => () => undefined),
-    statusOf: vi.fn(() => null),
-    runningIds: vi.fn(() => []),
-    start: vi.fn(async () => undefined),
-    stop: vi.fn(async () => undefined),
-    stopAll: vi.fn(async () => undefined)
-  }
-  authFake = {
-    probe: vi.fn(async () => null),
-    login: vi.fn(async () => null),
-    logout: vi.fn(async () => null),
-    stateOf: vi.fn(() => null),
-    forget: vi.fn(),
-    beginLogout: vi.fn(),
-    endLogout: vi.fn(),
-    isLoggingOut: vi.fn(() => false),
-    client: vi.fn(async () => null),
-    sessionCookie: vi.fn(() => null),
-    clientIds: vi.fn(() => [])
-  }
-  clearPartitionSession = vi.fn(async () => undefined)
-  closeInstanceView = vi.fn()
-  reloadInstanceView = vi.fn(async () => undefined)
-  showInstanceTooltip = vi.fn(async () => undefined)
-  hideInstanceTooltip = vi.fn()
-  vaultFake = {
-    status: vi.fn(() => ({ available: true, degraded: false, instanceCount: 0 })),
-    getPolicy: vi.fn(() => ({ rememberPassword: false, rememberSession: false })),
-    setPolicy: vi.fn(async () => undefined),
-    rememberPassword: vi.fn(async () => undefined),
-    rememberExternalAccessToken: vi.fn(async () => undefined),
-    rememberSession: vi.fn(async () => undefined),
-    forgetPassword: vi.fn(async () => undefined),
-    forgetExternalAccessToken: vi.fn(async () => undefined),
-    forgetSession: vi.fn(async () => undefined),
-    forgetInstance: vi.fn(async () => undefined),
-    clearAll: vi.fn(async () => undefined),
-    hasPassword: vi.fn(() => false),
-    getPassword: vi.fn(() => null),
-    hasExternalAccessToken: vi.fn(() => false),
-    getExternalAccessToken: vi.fn(() => null),
-    hasSession: vi.fn(() => false),
-    getSession: vi.fn(() => null),
-    rememberedIds: vi.fn(() => []),
-    policyIds: vi.fn(() => [])
-  }
-  auditSpy = vi.fn() as unknown as typeof auditSpy
-  onSettingsChanged = vi.fn()
-  settingsFake = {
-    read: vi.fn(() => ({
-      language: 'zh',
-      theme: 'system',
-      tray: false,
-      autoStart: false,
-      notifications: true
-    })),
-    update: vi.fn(async (patch: Record<string, unknown>) => ({
-      language: 'zh',
-      theme: 'system',
-      tray: false,
-      autoStart: false,
-      notifications: true,
-      ...patch
-    })),
-    filePath: vi.fn(() => '/tmp/settings.json')
-  }
-  openInstanceView = vi.fn()
-  openExternalUrl = vi.fn(async () => undefined)
-  pluginManagerFake = {
-    list: vi.fn(async () => []),
-    check: vi.fn(async () => ({
-      name: 'p',
-      current: '1.0.0',
-      latest: '1.0.0',
-      hasUpdate: false,
-      compatible: true,
-      dshPeer: null,
-      dshVersion: null,
-      publishedAt: null
-    })),
-    checkState: vi.fn(async () => ({ lastCheckedAt: null, updates: {}, checking: [] })),
-    install: vi.fn(async () => ({ hasHostSide: false })),
-    resolveInstall: vi.fn(async () => ({
-      installSpec: 'demo-plugin@1.1.0',
-      input: 'demo-plugin',
-      kind: 'npm',
-      packageName: 'demo-plugin',
-      targetVersion: '1.1.0',
-      latestVersion: '1.1.0',
-      versionSource: 'resolved-latest',
-      publishedAt: null,
-      dshPeer: null,
-      dshVersion: null,
-      compatible: true,
-      installedVersion: null
-    })),
-    packageInfo: vi.fn(async () => ({
-      downloads: null,
-      releaseNotes: { text: null, source: 'none', pageUrl: null, truncated: false }
-    })),
-    upgrade: vi.fn(async () => ({ hasHostSide: false })),
-    remove: vi.fn(async () => ({ hasHostSide: false })),
-    setEnabled: vi.fn(async (instance, name, enabled) => ({ name, enabled }))
-  }
-  instanceViewUrlFake = vi.fn(() => null)
-  externalDshScannerFake = { scan: vi.fn(async () => []) }
-  promptBrokerFake = {
-    requestHostKey: vi.fn(async () => 'trust'),
-    requestAskpass: vi.fn(async () => null),
-    replyHostKey: vi.fn(() => true),
-    replyAskpass: vi.fn(() => true),
-    replyConfirm: vi.fn(() => true),
-    listConfirms: vi.fn(() => []),
-    cancelAll: vi.fn()
-  }
-  ipcDeps = {
-    runtime: runtimeFake as unknown as LocalRuntimeManager,
-    tunnels: tunnelsFake as unknown as SshTunnelManager,
-    http: httpFake as unknown as HttpEndpointManager,
-    auth: authFake as never,
-    externalDshScanner: externalDshScannerFake as never,
-    verifyExternalAccess: verifyExternalAccess as (url: string) => Promise<boolean>,
-    listLocalSpaces: listLocalSpaces as never,
-    trashLocalSpace: trashLocalSpace as never,
-    localHomePath: (record: { id: string }) => join(TEST_BASE, 'homes', record.id),
-    vault: vaultFake as never,
-    settings: settingsFake as never,
-    audit: auditSpy,
-    onSettingsChanged: onSettingsChanged as never,
-    clearPartitionSession: clearPartitionSession as never,
-    closeInstanceView: closeInstanceView as never,
-    reloadInstanceView: reloadInstanceView as never,
-    showInstanceTooltip: showInstanceTooltip as never,
-    hideInstanceTooltip: hideInstanceTooltip as never,
-    instanceViewUrl: instanceViewUrlFake as never,
-    promptBroker: promptBrokerFake as never,
-    openInstanceView: openInstanceView as never,
-    openExternalUrl: openExternalUrl as never,
-    installer: installerFake as never,
-    pluginManager: pluginManagerFake as never
-  }
-  registerIpc(createInstanceStore({ dir }), ipcDeps)
+  harness = await setupRegister(() => currentStatus)
+  ;({
+    dir,
+    handlers,
+    invoke,
+    ipcDeps,
+    runtimeFake,
+    tunnelsFake,
+    httpFake,
+    authFake,
+    vaultFake,
+    settingsFake,
+    installerFake,
+    pluginManagerFake,
+    promptBrokerFake,
+    externalDshScannerFake,
+    verifyExternalAccess,
+    listLocalSpaces,
+    trashLocalSpace,
+    instanceViewUrlFake,
+    openInstanceView,
+    openExternalUrl,
+    onSettingsChanged,
+    auditSpy,
+    clearPartitionSession,
+    closeInstanceView,
+    reloadInstanceView,
+    showInstanceTooltip,
+    hideInstanceTooltip
+  } = harness)
 })
 
 afterEach(async () => {
-  await rm(dir, { recursive: true, force: true })
+  await teardownRegister(harness)
 })
-
-function invoke(channel: string, ...args: unknown[]): unknown {
-  const listener = handlers.get(channel)
-  if (!listener) throw new Error(`通道未注册：${channel}`)
-  return listener({} as never, ...args)
-}
 
 const VALID_LOCAL = { transport: 'local', name: 'IPC 实例' }
 
