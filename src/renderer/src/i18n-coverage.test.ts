@@ -432,15 +432,15 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     "throw new Error('npm 不可用：系统 PATH 和常见安装位置均未找到 npm')"
   ),
   debt(
-    'src/main/local-runtime/runtime-installer.ts',
+    'src/main/local-runtime/npm-invocation.ts',
     'timeoutError = new Error(`npm 执行超时（${COMMAND_TIMEOUT_MS} ms），已终止`)'
   ),
   debt(
-    'src/main/local-runtime/runtime-installer.ts',
+    'src/main/local-runtime/npm-invocation.ts',
     "abortError = new Error('npm 执行已取消（应用退出）')"
   ),
   debt(
-    'src/main/local-runtime/runtime-installer.ts',
+    'src/main/local-runtime/npm-invocation.ts',
     'reject(new Error(`npm 执行被信号终止（${signal}）`))'
   ),
   debt('src/main/local-runtime/local-runtime.ts', "detail: '实例已在运行，忽略重复启动'"),
