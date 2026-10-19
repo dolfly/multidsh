@@ -15,6 +15,7 @@ export const REGISTRY_CHOICES = [
 /** 档位显示文案：确认区徽标与选择器共用；未知档位回落第一档（与选择器兜底一致）。 */
 export function registryLabel(t: Translator, option: PluginRegistryOption): string {
   return t(
-    REGISTRY_CHOICES.find((choice) => choice.value === option)?.labelKey ?? REGISTRY_CHOICES[0].labelKey
+    REGISTRY_CHOICES.find((choice) => choice.value === option)?.labelKey ??
+      REGISTRY_CHOICES[0].labelKey
   )
 }

@@ -17,7 +17,13 @@ import {
   type GatewayResult
 } from './gateway-client'
 import { createCookieJar, type CookieJar } from './cookie-jar'
-import { canSubmit, eventFromFailure, initialState, type AuthState, transition } from './gateway-state'
+import {
+  canSubmit,
+  eventFromFailure,
+  initialState,
+  type AuthState,
+  transition
+} from './gateway-state'
 import type { HttpAuthDetection } from '@shared/contracts'
 import { detectAuthMode } from './detect'
 
@@ -108,7 +114,6 @@ export function createAuthClient(options: AuthClientOptions): AuthClient {
       if (gateway.hasSession()) {
         const settings = await gateway.settings()
         if (settings.ok) {
-
           // OTP 验证,不检查 onboarding,所以「会话有效但欠引导改密」时 settings 仍返回
 
           // 因此这里再做一次**带 Cookie 的页面探测**,让页面门禁的证据优先于 settings 200。
@@ -216,4 +221,3 @@ async function detectEndpoint(
     cookie
   })
 }
-

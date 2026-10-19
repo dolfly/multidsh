@@ -11,7 +11,15 @@ import { join, resolve } from 'node:path'
  */
 const VERSION = '0.1.7-rc.2'
 const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-plugins-auto-disabled')
-const ENTRY_DIR = join(DATA_DIR, 'runtimes', `dsh-${VERSION}`, 'node_modules', '@deepseek-ai', 'dsh', 'lib')
+const ENTRY_DIR = join(
+  DATA_DIR,
+  'runtimes',
+  `dsh-${VERSION}`,
+  'node_modules',
+  '@deepseek-ai',
+  'dsh',
+  'lib'
+)
 
 let app: ElectronApplication
 let win: Page

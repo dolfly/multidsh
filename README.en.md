@@ -33,23 +33,23 @@ Privacy policy: [PRIVACY.md](PRIVACY.md) — this app collects no personal data,
 - **Plugin Management**: List installed plugins for the instance's environment in the detail page (icon / name / version / npm / GitHub / install source), with install, check-for-update, and uninstall. Update checks evaluate both the dsh main package and sub-package peers for compatibility, warning instead of upgrading when incompatible; plugins with host-side code prompt an instance restart after changes; metadata is localized to the UI language
 - **Tray / Notifications / Auto-start**: Configurable
 
-| | |
-|:---:|:---:|
-| ![Light Theme](docs/images/home-overview.png) | ![Instance Detail](docs/images/instance-details.png) |
-| *Instance Overview* | *Instance Detail · Plugin Management* |
+|                                                   |                                                         |
+| :-----------------------------------------------: | :-----------------------------------------------------: |
+|   ![Light Theme](docs/images/home-overview.png)   |  ![Instance Detail](docs/images/instance-details.png)   |
+|                _Instance Overview_                |          _Instance Detail · Plugin Management_          |
 | ![Instance Detail](docs/images/instance-show.png) | ![Collapsed Sidebar](docs/images/sidebar-collapsed.png) |
-| *Instance Detail Page* | *Collapsed Sidebar · Icon Mode* |
+|              _Instance Detail Page_               |             _Collapsed Sidebar · Icon Mode_             |
 
 ## Tech Stack
 
-| Layer | Choice |
-|-------|--------|
-| Desktop Framework | Electron 43 + electron-vite 5 + Vite 7 |
-| UI | React 18 + zustand + hand-written CSS (OKLch light/dark themes) |
-| Language | TypeScript 5.9 (strict + `noUncheckedIndexedAccess`) |
-| Validation | zod 4.6.5 (sole runtime dependency) |
-| Testing | Vitest 4 (unit) · Playwright `_electron` (E2E) · Contract tests (against real gateway) |
-| Toolchain | ESLint 9 flat + Prettier 3 · pnpm 11 · Node 22 |
+| Layer             | Choice                                                                                 |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| Desktop Framework | Electron 43 + electron-vite 5 + Vite 7                                                 |
+| UI                | React 18 + zustand + hand-written CSS (OKLch light/dark themes)                        |
+| Language          | TypeScript 5.9 (strict + `noUncheckedIndexedAccess`)                                   |
+| Validation        | zod 4.6.5 (sole runtime dependency)                                                    |
+| Testing           | Vitest 4 (unit) · Playwright `_electron` (E2E) · Contract tests (against real gateway) |
+| Toolchain         | ESLint 9 flat + Prettier 3 · pnpm 11 · Node 22                                         |
 
 > Vite 8 / TypeScript 7 / React 19 are intentionally avoided (per version line review — do not upgrade).
 
@@ -105,14 +105,14 @@ ELECTRON_CACHE=/tmp/electron-cache node node_modules/electron/install.js  # If p
 
 ## Common Commands
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Dev server + Electron window |
-| `pnpm typecheck` | Type check node + web + e2e projects |
-| `pnpm lint` | ESLint (flat config) |
-| `pnpm test` | Unit tests (vitest) |
-| `pnpm build` | Build all three targets (required before E2E) |
-| `pnpm test:e2e` | Playwright `_electron` tests |
+| Command              | Description                                                                                                          |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`           | Dev server + Electron window                                                                                         |
+| `pnpm typecheck`     | Type check node + web + e2e projects                                                                                 |
+| `pnpm lint`          | ESLint (flat config)                                                                                                 |
+| `pnpm test`          | Unit tests (vitest)                                                                                                  |
+| `pnpm build`         | Build all three targets (required before E2E)                                                                        |
+| `pnpm test:e2e`      | Playwright `_electron` tests                                                                                         |
 | `pnpm test:contract` | Auth contract tests against local dsh-auth-gateway source; requires `DSH_AUTH_GATEWAY_SRC=/path/to/dsh-auth-gateway` |
 
 **Testing notes**: E2E cases use an isolated temp directory via `DSH_HUB_DATA_DIR`; instances and credentials are synthetic data constructed in the test environment. CI failure artifacts include only Playwright error contexts, traces, UI screenshots, and audit logs; the credential vault file (`vault/credentials.json`) is never uploaded, even though its contents are ciphertext. If a future test must pre-seed vault data, it must use mock data constructed in the test environment and document its construction here.

@@ -50,7 +50,7 @@ export default function UrlDetect(props: { endpointUrl: string }): ReactNode {
             setDetection(result.value)
             setError(null)
             setErrorKey(null)
-      setErrorKey(null)
+            setErrorKey(null)
           } else {
             setDetection(null)
             setError(result.message)

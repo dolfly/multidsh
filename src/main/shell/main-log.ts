@@ -149,7 +149,10 @@ export function installMainLogging(options: MainLogOptions): MainLog {
     const message = redactLine(redactSecret(format(...args)))
     const line = `${new Date(now()).toISOString()} ${level} ${message}`
     tail = tail
-      .then(() => appendLine(line), () => appendLine(line))
+      .then(
+        () => appendLine(line),
+        () => appendLine(line)
+      )
       .catch(onError)
   }
 

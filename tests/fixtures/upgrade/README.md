@@ -14,12 +14,12 @@
 
 ## 清单
 
-| 文件 | 来源版本 | 内容 | 登记时间 |
-| --- | --- | --- | --- |
-| `registry-v1.json` | 0.1.0 | `<userData>/registry/instances.json`,`schemaVersion: 1`,三种 transport 各一条 | 2026-09-16 |
-| `registry-v1-legacy.json` | 0.1.x | `schemaVersion: 1`,含 v1 下合法、v2 收紧后会被拒的历史值:方括号非 IPv6 主机 `[build.example.internal]`、含空格的 `dshVersion "0.1.5 rc1"`、以及合法 IPv6 方括号 `[::1]`(迁移须保持不变) | 2026-09-27 |
-| `settings-v1.json` | 0.1.0 | `<userData>/settings.json`,五个偏好字段全为**非默认值**(才能发现「升级后字段被重置」) | 2026-09-16 |
-| `settings-future.json` | (假想更高版本) | 含未知字段 + 两个非法取值,验证前向兼容与逐字段收敛 | 2026-09-16 |
+| 文件                      | 来源版本       | 内容                                                                                                                                                                                    | 登记时间   |
+| ------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `registry-v1.json`        | 0.1.0          | `<userData>/registry/instances.json`,`schemaVersion: 1`,三种 transport 各一条                                                                                                           | 2026-09-16 |
+| `registry-v1-legacy.json` | 0.1.x          | `schemaVersion: 1`,含 v1 下合法、v2 收紧后会被拒的历史值:方括号非 IPv6 主机 `[build.example.internal]`、含空格的 `dshVersion "0.1.5 rc1"`、以及合法 IPv6 方括号 `[::1]`(迁移须保持不变) | 2026-09-27 |
+| `settings-v1.json`        | 0.1.0          | `<userData>/settings.json`,五个偏好字段全为**非默认值**(才能发现「升级后字段被重置」)                                                                                                   | 2026-09-16 |
+| `settings-future.json`    | (假想更高版本) | 含未知字段 + 两个非法取值,验证前向兼容与逐字段收敛                                                                                                                                      | 2026-09-16 |
 
 ## 为什么 `settings-v1.json` 的每个值都必须是「非默认值」
 

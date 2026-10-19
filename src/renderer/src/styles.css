@@ -44,8 +44,8 @@
   --shadow-win: 0 26px 64px rgb(0 0 0 / 0.16), 0 4px 14px rgb(0 0 0 / 0.08);
 
   /* ---- 字体 ---- */
-  --font-display: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
-    system-ui, sans-serif;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-body: var(--font-display);
   --font-mono: ui-monospace, 'SF Mono', Menlo, 'JetBrains Mono', monospace;
 
@@ -604,7 +604,8 @@ h3,
 }
 .select {
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
     linear-gradient(135deg, var(--muted) 50%, transparent 50%);
   background-position:
     calc(100% - 15px) 14px,
@@ -1621,7 +1622,9 @@ h3,
   opacity: 0;
   transform: translateY(-3px);
   pointer-events: none;
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 .warn-pill::before {
   content: '';
@@ -2221,7 +2224,9 @@ details.adv[open] {
   /* 关闭态轨道：在明暗两种主题下都与卡片底色有对比（--fg 混色而非 --hover）。 */
   background: color-mix(in oklch, var(--fg) 14%, var(--surface));
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 .switch:hover:not(:disabled) {
   border-color: var(--muted);

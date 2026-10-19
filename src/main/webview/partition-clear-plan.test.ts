@@ -10,7 +10,11 @@ const base = {
   updatedAt: '2026-09-15T00:00:00.000Z'
 }
 
-const http = { ...base, transport: 'http', endpointUrl: 'https://gw.example.com/dsh' } as unknown as InstanceRecord
+const http = {
+  ...base,
+  transport: 'http',
+  endpointUrl: 'https://gw.example.com/dsh'
+} as unknown as InstanceRecord
 const ssh = {
   ...base,
   transport: 'ssh',
@@ -21,7 +25,14 @@ const ssh = {
   localPort: 32222,
   identityFile: null
 } as unknown as InstanceRecord
-const local = { ...base, transport: 'local', dshVersion: null, port: null, profile: null, autoStart: false } as unknown as InstanceRecord
+const local = {
+  ...base,
+  transport: 'local',
+  dshVersion: null,
+  port: null,
+  profile: null,
+  autoStart: false
+} as unknown as InstanceRecord
 
 describe('planPartitionClear（装配层:清理链路）', () => {
   it('http:用持久化端点(与隧道无关)', () => {
@@ -63,7 +74,10 @@ describe('planPartitionClear（装配层:清理链路）', () => {
   })
 
   it('basePath 与注入侧一致(带路径实例)', () => {
-    const withPath = { ...http, endpointUrl: 'https://gw.example.com/team/dsh' } as unknown as InstanceRecord
+    const withPath = {
+      ...http,
+      endpointUrl: 'https://gw.example.com/team/dsh'
+    } as unknown as InstanceRecord
     expect(planPartitionClear(withPath, undefined)?.basePath).toBe('/team/dsh')
   })
 })

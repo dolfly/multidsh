@@ -21,15 +21,25 @@ export async function listLocalSpaces(dataRoot: string): Promise<LocalSpaceSnaps
   const homesRoot = `${resolve(homesDir)}${sep}`
   const spaces = await Promise.all(
     entries
-      .filter((entry) => entry.isDirectory() && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.name))
+      .filter(
+        (entry) =>
+          entry.isDirectory() &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.name)
+      )
       .map(async (entry) => {
         const path = resolve(homesDir, entry.name)
         if (!path.startsWith(homesRoot)) return null
         const stats = await directoryStats(path)
-        return { id: entry.name, sizeBytes: stats.sizeBytes, modifiedAt: stats.modifiedAt.toISOString() }
+        return {
+          id: entry.name,
+          sizeBytes: stats.sizeBytes,
+          modifiedAt: stats.modifiedAt.toISOString()
+        }
       })
   )
-  return spaces.filter((space): space is LocalSpaceSnapshot => space !== null).sort((a, b) => a.id.localeCompare(b.id))
+  return spaces
+    .filter((space): space is LocalSpaceSnapshot => space !== null)
+    .sort((a, b) => a.id.localeCompare(b.id))
 }
 
 export function localSpacePath(dataRoot: string, id: string): string {
@@ -65,7 +75,8 @@ async function directoryStats(path: string): Promise<{ sizeBytes: number; modifi
   try {
     entries = await readdir(path, { withFileTypes: true })
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { sizeBytes: 0, modifiedAt: info.mtime }
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT')
+      return { sizeBytes: 0, modifiedAt: info.mtime }
     throw error
   }
   const children = await Promise.all(

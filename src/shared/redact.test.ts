@@ -17,7 +17,9 @@ describe('redactUrl（凭据脱敏）', () => {
   })
 
   it('https 与自定义端口同样处理', () => {
-    expect(redactUrl('https://gw.example.com:8443/dsh?token=sec')).toBe('https://gw.example.com:8443/dsh')
+    expect(redactUrl('https://gw.example.com:8443/dsh?token=sec')).toBe(
+      'https://gw.example.com:8443/dsh'
+    )
   })
 
   it('剥离 URL userinfo、查询串与锚点', () => {
@@ -44,7 +46,9 @@ describe('redactLine（日志行脱敏）', () => {
   })
 
   it('多 URL 行全部脱敏', () => {
-    expect(redactLine('a http://x/?token=1 b http://y/?token=2 c')).toBe('a http://x/ b http://y/ c')
+    expect(redactLine('a http://x/?token=1 b http://y/?token=2 c')).toBe(
+      'a http://x/ b http://y/ c'
+    )
   })
 
   it('不含 URL 的行原样返回', () => {
@@ -52,7 +56,9 @@ describe('redactLine（日志行脱敏）', () => {
   })
 
   it('URL 后紧跟标点也能正确截断（?token= 属于 URL 一部分）', () => {
-    expect(redactLine('就绪：http://127.0.0.1:52300/?token=abc。')).toBe('就绪：http://127.0.0.1:52300/。')
+    expect(redactLine('就绪：http://127.0.0.1:52300/?token=abc。')).toBe(
+      '就绪：http://127.0.0.1:52300/。'
+    )
   })
 })
 

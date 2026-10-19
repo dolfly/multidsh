@@ -1,6 +1,11 @@
 import { _electron as electron, expect, test } from '@playwright/test'
 import { buildLaunchArgs } from './launch-args'
-import { closeAboutWithEscape, expectAboutClosed, openAboutViaMenu, openAboutViaSettings } from './about-menu'
+import {
+  closeAboutWithEscape,
+  expectAboutClosed,
+  openAboutViaMenu,
+  openAboutViaSettings
+} from './about-menu'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
@@ -51,7 +56,11 @@ test('应用菜单的「关于」项打开叠加窗口,并展示版本与运行�
   await expect
     .poll(() => about.evaluate(() => getComputedStyle(document.body).backgroundColor))
     .toBe('rgba(0, 0, 0, 0)')
-  await expect.poll(() => about.evaluate(() => getComputedStyle(document.querySelector('.overlay')!).backdropFilter)).toBe('none')
+  await expect
+    .poll(() =>
+      about.evaluate(() => getComputedStyle(document.querySelector('.overlay')!).backdropFilter)
+    )
+    .toBe('none')
 
   // 组件版本必须与主进程实际运行的一致（Chromium 即前面升级到的 152 线）。
   const realChrome = await app.evaluate(() => process.versions.chrome)
@@ -62,7 +71,10 @@ test('应用菜单的「关于」项打开叠加窗口,并展示版本与运行�
   await about.screenshot({ path: join(SHOT_DIR, 'about-window.png'), animations: 'disabled' })
 
   // 关闭按钮收起的是整个叠加窗口
-  await about.getByTestId('about-dialog').getByRole('button', { name: /关闭|Close/ }).click()
+  await about
+    .getByTestId('about-dialog')
+    .getByRole('button', { name: /关闭|Close/ })
+    .click()
   await expectAboutClosed(app)
 })
 
@@ -70,7 +82,11 @@ test('面板叠加在宿主页面上且 Escape 可关闭（不跳回实例列表
   await expect(win.getByTestId('app-shell')).toBeVisible()
   // 播种一个实例并进入详情页，作为「当前页面」的锚点。
   const created = await win.evaluate(async () =>
-    window.dshHub.instances.create({ transport: 'local', name: '关于面板锚点实例', authMode: 'auto' })
+    window.dshHub.instances.create({
+      transport: 'local',
+      name: '关于面板锚点实例',
+      authMode: 'auto'
+    })
   )
   expect(created.ok).toBe(true)
   await win.reload()
@@ -136,7 +152,9 @@ test('数据列点击复制：就地反馈已复制，剪贴板拿到与展示�
   expect(copied).toBe(realChrome)
 
   // 反馈短暂停留后复位为可再次复制的状态。
-  await expect(cell.locator('button')).not.toHaveAttribute('data-copied', 'true', { timeout: 4_000 })
+  await expect(cell.locator('button')).not.toHaveAttribute('data-copied', 'true', {
+    timeout: 4_000
+  })
 
   await closeAboutWithEscape(about)
   await expectAboutClosed(app)

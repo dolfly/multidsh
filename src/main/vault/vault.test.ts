@@ -127,7 +127,7 @@ describe('vault（ 凭据存储策略）', () => {
     const first = createVault({ filePath, crypto: fakeCrypto() })
     await first.rememberExternalAccessToken('i1', 'external-token')
     expect(first.getExternalAccessToken('i1')).toBe('external-token')
-    expect((await readFile(filePath, 'utf8'))).not.toContain('external-token')
+    expect(await readFile(filePath, 'utf8')).not.toContain('external-token')
 
     const restarted = createVault({ filePath, crypto: fakeCrypto() })
     expect(restarted.getExternalAccessToken('i1')).toBe('external-token')
@@ -200,7 +200,9 @@ describe('vault（ 凭据存储策略）', () => {
     }
     expect(stillTampered.items['i1']?.password).toBe('garbage')
     await reopened.forgetPassword('i2')
-    const converged = JSON.parse(await readFile(filePath, 'utf8')) as { items: Record<string, unknown> }
+    const converged = JSON.parse(await readFile(filePath, 'utf8')) as {
+      items: Record<string, unknown>
+    }
     expect(converged.items).toEqual({})
   })
 
@@ -221,11 +223,10 @@ describe('vault（ 凭据存储策略）', () => {
     expect(other.rememberedIds()).toEqual([])
   })
 
-  it("JSON 损坏文件被隔离后下次写盘重建干净文件", async () => {
+  it('JSON 损坏文件被隔离后下次写盘重建干净文件', async () => {
     // 且 vault 永远起不来 —— 现在坏文件必须被改名隔离、随后由下一次 persist 重建
     await mkdir(join(dir, 'vault'), { recursive: true })
-    const corrupt =
-      '{"version":1,"items":{"i1":{"session":"enc:abc"}}}\n{"version":1,"items":{}}\n'
+    const corrupt = '{"version":1,"items":{"i1":{"session":"enc:abc"}}}\n{"version":1,"items":{}}\n'
     await writeFile(filePath, corrupt)
     const errors: unknown[] = []
     const vault = createVault({
@@ -255,7 +256,7 @@ describe('vault（ 凭据存储策略）', () => {
     expect(errors2).toHaveLength(0)
   })
 
-  it("并发 persist 保持最后一次写入", async () => {
+  it('并发 persist 保持最后一次写入', async () => {
     // 压测:同一 vault 上 20 个并发 remember/forget,全部 resolve 且终态可读回。
     const vault = await optIn()
     const rounds = Array.from({ length: 20 }, (_, i) => i)
@@ -368,7 +369,8 @@ describe('vault（ 凭据存储策略）', () => {
     expect(reopened.getSession('i1')).toBeNull()
     expect(errors).toHaveLength(1)
     // 关键断言:错误对象里不得出现解密后的内容
-    const serialized = String(errors[0]) + JSON.stringify(errors[0], Object.getOwnPropertyNames(errors[0]))
+    const serialized =
+      String(errors[0]) + JSON.stringify(errors[0], Object.getOwnPropertyNames(errors[0]))
     expect(serialized).not.toContain('sess-secret-not-json')
   })
 

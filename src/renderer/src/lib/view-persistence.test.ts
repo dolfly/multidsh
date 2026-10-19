@@ -29,9 +29,15 @@ describe('刷新后要恢复的视图', () => {
 
   it('缺失或损坏时回落到总览', () => {
     expect(readPersistedView(memoryStorage())).toEqual({ selection: null, settingsOpen: false })
-    expect(readPersistedView(memoryStorage('不是 JSON'))).toEqual({ selection: null, settingsOpen: false })
+    expect(readPersistedView(memoryStorage('不是 JSON'))).toEqual({
+      selection: null,
+      settingsOpen: false
+    })
     expect(readPersistedView(memoryStorage('[]'))).toEqual({ selection: null, settingsOpen: false })
-    expect(readPersistedView(memoryStorage('null'))).toEqual({ selection: null, settingsOpen: false })
+    expect(readPersistedView(memoryStorage('null'))).toEqual({
+      selection: null,
+      settingsOpen: false
+    })
     // 字段类型不对：选中丢弃，settingsOpen 只认真正的 true。
     expect(readPersistedView(memoryStorage('{"selection":7,"settingsOpen":"yes"}'))).toEqual({
       selection: null,
@@ -53,6 +59,8 @@ describe('刷新后要恢复的视图', () => {
       }
     }
     expect(readPersistedView(storage)).toEqual({ selection: null, settingsOpen: false })
-    expect(() => writePersistedView(storage, { selection: 'inst-1', settingsOpen: false })).not.toThrow()
+    expect(() =>
+      writePersistedView(storage, { selection: 'inst-1', settingsOpen: false })
+    ).not.toThrow()
   })
 })

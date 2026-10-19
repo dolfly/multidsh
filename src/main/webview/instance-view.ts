@@ -87,7 +87,10 @@ export function isSameOriginLoginRedirect(
  * BrowserAuth 成功后会消费启动 URL 的一次性 token，并回到同源同路径页面。
  * 当前页面可保留自己的查询参数或 hash；只要不再携带 token 即可安全复用同一实例视图。
  */
-export function isAuthenticatedTokenUrl(currentUrl: string | undefined, targetUrl: string): boolean {
+export function isAuthenticatedTokenUrl(
+  currentUrl: string | undefined,
+  targetUrl: string
+): boolean {
   if (!currentUrl) return false
   try {
     const current = new URL(currentUrl)
@@ -110,10 +113,7 @@ export function isAuthenticatedTokenUrl(currentUrl: string | undefined, targetUr
  * 调用方据此判断「本次打开会不会真的发生导航」——不会导航时既无需注入会话 Cookie，
  * 也不必为注入而等待认证探测。
  */
-export function shouldReuseLoadedView(
-  currentUrl: string | undefined,
-  targetUrl: string
-): boolean {
+export function shouldReuseLoadedView(currentUrl: string | undefined, targetUrl: string): boolean {
   return currentUrl === targetUrl || isAuthenticatedTokenUrl(currentUrl, targetUrl)
 }
 
@@ -151,8 +151,14 @@ export async function openInstanceView<W extends InstanceViewWindow>(
       // 原始 loadURL Promise 以 ERR_FAILED(-2) 拒绝,但窗口已经在同源认证页，
       // 不是连接或证书失败。仅在已实际观测到同源 /login 重定向时降级，避免吞掉
       // DNS、TLS、代理等真正的 ERR_FAILED。
-      if (code === 'ERR_FAILED' && isSameOriginLoginRedirect(redirectedTo, args.origin, args.basePath)) {
-        console.debug('[instance-view] 已重定向至同源登录页(正常),跳过:', redactUrl(redirectedTo ?? ''))
+      if (
+        code === 'ERR_FAILED' &&
+        isSameOriginLoginRedirect(redirectedTo, args.origin, args.basePath)
+      ) {
+        console.debug(
+          '[instance-view] 已重定向至同源登录页(正常),跳过:',
+          redactUrl(redirectedTo ?? '')
+        )
         return
       }
       onLoadError(error)

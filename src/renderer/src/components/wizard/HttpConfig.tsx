@@ -8,7 +8,9 @@ import type { WizardForm } from './types'
 export interface HttpConfigProps {
   t: Translator
   form: WizardForm
-  set: (key: Exclude<keyof WizardForm, 'useDefaultSpace'>) => (event: { target: { value: string } }) => void
+  set: (
+    key: Exclude<keyof WizardForm, 'useDefaultSpace'>
+  ) => (event: { target: { value: string } }) => void
 }
 
 /** HTTP 直连端点配置：URL 输入 + 明文告警 + 认证模式探测。 */

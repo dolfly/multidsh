@@ -21,9 +21,6 @@ export function effectivePolicy(
 }
 
 /** 是否可以在该快照下提交策略变更 */
-export function canSubmitPolicy(
-  status: VaultStatusSnapshot | null,
-  busy: boolean
-): boolean {
+export function canSubmitPolicy(status: VaultStatusSnapshot | null, busy: boolean): boolean {
   return policyReady(status) && !busy
 }

@@ -65,10 +65,15 @@ export async function startGatewayFixture(options = {}) {
   process.env.DSH_HOME = home
   // 固定 master key:OTP 相关路径需要稳定密钥(设计要求)
   if (!process.env.DSH_AUTH_GATEWAY_MASTER_KEY) {
-    process.env.DSH_AUTH_GATEWAY_MASTER_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+    process.env.DSH_AUTH_GATEWAY_MASTER_KEY =
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
   }
 
-  await setPassword(password, { minLength: minPasswordLength, requireMixedCase: false, requireSpecial: false })
+  await setPassword(password, {
+    minLength: minPasswordLength,
+    requireMixedCase: false,
+    requireSpecial: false
+  })
 
   // 可选:真正绑定一个 TOTP 密钥(否则网关的 #otpActive() 为 false,otpRequired 不生效)
   if (otpEnabled || otpRequired) {
@@ -82,7 +87,13 @@ export async function startGatewayFixture(options = {}) {
     upstreamHost: '127.0.0.1',
     upstreamPort: upstream.port,
     basePath,
-    policy: { minPasswordLength, requireMixedCase: false, requireSpecial: false, maxLoginFailures, lockMinutes },
+    policy: {
+      minPasswordLength,
+      requireMixedCase: false,
+      requireSpecial: false,
+      maxLoginFailures,
+      lockMinutes
+    },
     otp: { otpEnabled, otpRequired }
   })
   await gateway.start()

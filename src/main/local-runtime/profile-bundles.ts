@@ -33,7 +33,12 @@ export interface ProfileBundleStore {
    * `insertAt` 用于「重新启用时恢复到原索引」（越界则追加到末尾）。
    * @returns 变更后的加载清单。
    */
-  setEnabled(profileDir: string, name: string, enabled: boolean, insertAt?: number): Promise<string[]>
+  setEnabled(
+    profileDir: string,
+    name: string,
+    enabled: boolean,
+    insertAt?: number
+  ): Promise<string[]>
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -110,11 +115,14 @@ export function createProfileBundleStore(): ProfileBundleStore {
       try {
         const manifest: unknown = JSON.parse(await readFile(manifestPath(profileDir), 'utf8'))
         if (!isRecord(manifest)) return null
-        const profile = isRecord(manifest.dsh) && isRecord(manifest.dsh.profile) ? manifest.dsh.profile : {}
+        const profile =
+          isRecord(manifest.dsh) && isRecord(manifest.dsh.profile) ? manifest.dsh.profile : {}
         const bundles = Array.isArray(profile.bundles)
           ? profile.bundles.filter((item): item is string => typeof item === 'string')
           : []
-        const dependencies = isRecord(manifest.dependencies) ? Object.keys(manifest.dependencies) : []
+        const dependencies = isRecord(manifest.dependencies)
+          ? Object.keys(manifest.dependencies)
+          : []
         return { bundles, dependencies }
       } catch {
         return null
@@ -148,11 +156,17 @@ export function createProfileBundleStore(): ProfileBundleStore {
         } else if (current.includes(name)) {
           bundles = current
         } else {
-          const at = insertAt !== undefined && insertAt >= 0 && insertAt <= without.length ? insertAt : without.length
+          const at =
+            insertAt !== undefined && insertAt >= 0 && insertAt <= without.length
+              ? insertAt
+              : without.length
           bundles = [...without.slice(0, at), name, ...without.slice(at)]
         }
         // 无变化时不写：避免无谓地触碰文件（dsh 的 reconcile 同样如此）。
-        if (bundles.length === current.length && bundles.every((item, index) => item === current[index])) {
+        if (
+          bundles.length === current.length &&
+          bundles.every((item, index) => item === current[index])
+        ) {
           return current
         }
         manifest.dsh = { ...dsh, profile: { ...profile, bundles } }

@@ -63,7 +63,12 @@ export function createHubTray(options: CreateHubTrayOptions): Tray {
  * 调用时机不限于「实例数变化」:实例状态/数量变化后、以及**语言切换**后都要重建
  * (菜单文案与状态行都要跟随语言),见 `index.ts` 的两处调用点。
  */
-export function updateTrayStatus(tray: Tray, labels: HubTrayLabels, onShow: () => void, onQuit: () => void): void {
+export function updateTrayStatus(
+  tray: Tray,
+  labels: HubTrayLabels,
+  onShow: () => void,
+  onQuit: () => void
+): void {
   tray.setToolTip(labels.tooltip)
   tray.setContextMenu(
     Menu.buildFromTemplate([

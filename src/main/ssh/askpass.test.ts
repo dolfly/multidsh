@@ -59,7 +59,11 @@ describe.skipIf(!posixOnly)('askpass（口令通道）', () => {
   })
 
   it('包装脚本对含空格/单引号的路径做转义', () => {
-    const source = askpassWrapperSource('/Applications/DSH Hub/electron', [], "/tmp/it's/helper.cjs")
+    const source = askpassWrapperSource(
+      '/Applications/DSH Hub/electron',
+      [],
+      "/tmp/it's/helper.cjs"
+    )
     expect(source).toContain(`'/Applications/DSH Hub/electron'`)
     expect(source).toContain(`'/tmp/it'\\''s/helper.cjs'`)
   })
@@ -135,12 +139,13 @@ describe.skipIf(!posixOnly)('socket 残留自愈', () => {
     const socketPath = join(dir, 'restart.sock')
     const first = await startAskpassServer({ socketPath, onPrompt: async () => 'a' })
 
-    await expect(startAskpassServer({ socketPath, onPrompt: async () => 'b' })).resolves.toBeDefined()
+    await expect(
+      startAskpassServer({ socketPath, onPrompt: async () => 'b' })
+    ).resolves.toBeDefined()
     await first.close().catch(() => undefined)
   })
 
   it('Required-1 确定性拦截:resolve 后立即 stat 权限即 0600(fire-and-forget 当场抓获)', async () => {
-
     const socketPath = join(dir, 'mode-deterministic.sock')
     const server = await startAskpassServer({ socketPath, onPrompt: async () => 'x' })
     expect((await stat(socketPath)).mode & 0o777).toBe(0o600)

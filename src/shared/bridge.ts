@@ -110,7 +110,10 @@ export interface DshHubBridge {
     get: (id: string) => Promise<IpcResult<InstanceRecord | null>>
     create: (input: CreateInstanceInput) => Promise<IpcResult<InstanceRecord>>
     update: (id: string, patch: PatchInstanceInput) => Promise<IpcResult<InstanceRecord>>
-    remove: (id: string, options?: { trashSpace?: boolean }) => Promise<IpcResult<{ removed: boolean }>>
+    remove: (
+      id: string,
+      options?: { trashSpace?: boolean }
+    ) => Promise<IpcResult<{ removed: boolean }>>
     /** 按给定 ID 列表重排实例顺序；ID 必须与当前注册表完全一致。 */
     reorder: (orderedIds: string[]) => Promise<IpcResult<InstanceSummary[]>>
     /** 在系统文件管理器中打开本机实例的数据目录；仅本机实例，路径由主进程解析。 */
@@ -182,7 +185,11 @@ export interface DshHubBridge {
       options?: PluginRegistryOptions
     ) => Promise<IpcResult<PluginInstallPlan>>
     /** 单个版本的更新内容与近 30 天下载量（确认区懒加载；取不到不算错误）。 */
-    packageInfo: (id: string, name: string, version: string) => Promise<IpcResult<PluginPackageInfo>>
+    packageInfo: (
+      id: string,
+      name: string,
+      version: string
+    ) => Promise<IpcResult<PluginPackageInfo>>
     /** 升级到指定版本（显式版本，非 latest；可从所选安装源取该版本）。 */
     upgrade: (
       id: string,
@@ -193,7 +200,11 @@ export interface DshHubBridge {
     /** 卸载插件。 */
     remove: (id: string, name: string) => Promise<IpcResult<PluginMutationResult>>
     /** 启用/禁用插件（改 profile 加载清单，保留依赖；禁用后仍在列表可见）。 */
-    setEnabled: (id: string, name: string, enabled: boolean) => Promise<IpcResult<PluginEnableResult>>
+    setEnabled: (
+      id: string,
+      name: string,
+      enabled: boolean
+    ) => Promise<IpcResult<PluginEnableResult>>
     /** 在系统默认浏览器打开插件的 npm / GitHub 链接（仅 https 且经域名白名单）。 */
     openExternal: (url: string) => Promise<IpcResult<null>>
   }
@@ -231,7 +242,11 @@ export interface DshHubBridge {
   auth: {
     probe: (instanceId: string) => Promise<IpcResult<AuthStateSnapshot | null>>
     /** 提交密码（可同时带 OTP 完成单请求 2FA） */
-    login: (instanceId: string, password: string, otp?: string) => Promise<IpcResult<AuthStateSnapshot | null>>
+    login: (
+      instanceId: string,
+      password: string,
+      otp?: string
+    ) => Promise<IpcResult<AuthStateSnapshot | null>>
     /**
      * 使用保险库中保存的密码登录。**密码不跨 IPC**——
      * 主进程自行从 vault 读取；渲染层只传可选 OTP。未勾选「记住密码」或无已存

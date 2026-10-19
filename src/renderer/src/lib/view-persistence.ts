@@ -27,7 +27,8 @@ export function readPersistedView(storage: ViewStorage): PersistedView {
     const raw = storage.getItem(VIEW_KEY)
     if (raw === null) return { ...OVERVIEW }
     const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return { ...OVERVIEW }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+      return { ...OVERVIEW }
     const record = parsed as Record<string, unknown>
     const selection =
       typeof record.selection === 'string' && record.selection !== '' ? record.selection : null

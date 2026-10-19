@@ -72,7 +72,11 @@ afterEach(() => {
 
 describe('openInstanceWindow（实例窗口接线, 拦截外跳）', () => {
   it('会在 will-navigate 与 will-redirect 上拦截跨端口或外部跳转', () => {
-    const win = openInstanceWindow({ instanceId: `n-${++seq}`, title: 't', url: ORIGIN }) as unknown as TestWin
+    const win = openInstanceWindow({
+      instanceId: `n-${++seq}`,
+      title: 't',
+      url: ORIGIN
+    }) as unknown as TestWin
     for (const eventName of ['will-navigate', 'will-redirect']) {
       const navigate = win.webContents.handlers.get(eventName)
       expect(navigate).toBeDefined()
@@ -96,7 +100,11 @@ describe('openInstanceWindow（实例窗口接线, 拦截外跳）', () => {
   })
 
   it('弹窗一律拒绝', () => {
-    const win = openInstanceWindow({ instanceId: `w-${++seq}`, title: 't', url: ORIGIN }) as unknown as TestWin
+    const win = openInstanceWindow({
+      instanceId: `w-${++seq}`,
+      title: 't',
+      url: ORIGIN
+    }) as unknown as TestWin
     const handler = win.webContents.setWindowOpenHandler.mock.calls[0]?.[0] as () => {
       action: string
     }
@@ -104,7 +112,11 @@ describe('openInstanceWindow（实例窗口接线, 拦截外跳）', () => {
   })
 
   it('实例分区会话安装统一权限策略:纯音频采集与剪贴板写入放行,其余拒绝', () => {
-    const win = openInstanceWindow({ instanceId: `p-${++seq}`, title: 't', url: ORIGIN }) as unknown as TestWin
+    const win = openInstanceWindow({
+      instanceId: `p-${++seq}`,
+      title: 't',
+      url: ORIGIN
+    }) as unknown as TestWin
     const setPerm = win.webContents.session.setPermissionRequestHandler
     expect(setPerm).toHaveBeenCalledTimes(1)
     expect(win.webContents.session.setPermissionCheckHandler).toHaveBeenCalledTimes(1)
@@ -125,7 +137,11 @@ describe('openInstanceWindow（实例窗口接线, 拦截外跳）', () => {
 
   it('窗口加载失败经 .catch 处理(不产生未处理拒绝)', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    const win = openInstanceWindow({ instanceId: `l-${++seq}`, title: 't', url: ORIGIN }) as unknown as TestWin
+    const win = openInstanceWindow({
+      instanceId: `l-${++seq}`,
+      title: 't',
+      url: ORIGIN
+    }) as unknown as TestWin
     // 复用分支的第二次加载失败 → .catch 兜住并记录主进程日志
     win.webContents.loadURL.mockRejectedValueOnce(new Error('net::ERR_CONNECTION_REFUSED'))
     openInstanceWindow({ instanceId: `l-${seq}`, title: 't2', url: ORIGIN })
@@ -188,19 +204,31 @@ describe('openInstanceWindow（实例窗口接线, 拦截外跳）', () => {
   it('同实例复用窗口;close 后重新开窗', () => {
     const id = `r-${++seq}`
     const w1 = openInstanceWindow({ instanceId: id, title: 't', url: ORIGIN }) as unknown as TestWin
-    const w2 = openInstanceWindow({ instanceId: id, title: 't2', url: ORIGIN }) as unknown as TestWin
+    const w2 = openInstanceWindow({
+      instanceId: id,
+      title: 't2',
+      url: ORIGIN
+    }) as unknown as TestWin
     expect(w2).toBe(w1)
     expect(w2.setTitle).toHaveBeenCalledWith('t2')
 
     closeInstanceWindow(id)
     expect(w1.close).toHaveBeenCalledTimes(1)
 
-    const w3 = openInstanceWindow({ instanceId: id, title: 't3', url: ORIGIN }) as unknown as TestWin
+    const w3 = openInstanceWindow({
+      instanceId: id,
+      title: 't3',
+      url: ORIGIN
+    }) as unknown as TestWin
     expect(w3).not.toBe(w1)
 
     // 'closed' 事件回调同样负责清理 Map:触发后再开同 id → 又得新窗口
     w3.closedListener?.()
-    const w4 = openInstanceWindow({ instanceId: id, title: 't4', url: ORIGIN }) as unknown as TestWin
+    const w4 = openInstanceWindow({
+      instanceId: id,
+      title: 't4',
+      url: ORIGIN
+    }) as unknown as TestWin
     expect(w4).not.toBe(w3)
   })
 })

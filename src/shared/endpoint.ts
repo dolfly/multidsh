@@ -162,8 +162,7 @@ function normalizeScheme(input: string, raw: string): EndpointScheme {
 }
 
 export type ParseEndpointResult =
-  | { ok: true; endpoint: Endpoint }
-  | { ok: false; code: EndpointErrorCode; message: string }
+  { ok: true; endpoint: Endpoint } | { ok: false; code: EndpointErrorCode; message: string }
 
 /** 表单校验用的不抛异常版本。 */
 export function tryParseEndpoint(raw: string): ParseEndpointResult {
@@ -197,11 +196,7 @@ export function isCleartextEndpoint(endpointUrl: string): boolean {
  * 用于判断 http 传输是否指向本地、以及是否该提示「本机实例更适合用 local 传输」。
  */
 export function isLoopbackHost(host: string): boolean {
-  const h = host
-    .trim()
-    .toLowerCase()
-    .replace(/^\[/, '')
-    .replace(/\]$/, '')
+  const h = host.trim().toLowerCase().replace(/^\[/, '').replace(/\]$/, '')
   if (h === 'localhost' || h === '::1' || h.endsWith('.localhost')) return true
   // 127.0.0.0/8，含 `127.1` 这类省略写法
   return /^127(\.\d{1,3}){1,3}$/.test(h)

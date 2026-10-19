@@ -66,7 +66,10 @@ function satisfiesComparator(comparator: string, target: string): boolean {
   const rawVersion = stripV((opMatch?.[2] ?? token).trim())
 
   if (rawVersion.startsWith('^') || rawVersion.startsWith('~')) {
-    const { lower, upper } = caretTildeBounds(rawVersion[0] as '^' | '~', stripV(rawVersion.slice(1)))
+    const { lower, upper } = caretTildeBounds(
+      rawVersion[0] as '^' | '~',
+      stripV(rawVersion.slice(1))
+    )
     return compareDshVersions(target, lower) >= 0 && compareDshVersions(target, upper) < 0
   }
 
@@ -93,7 +96,10 @@ function satisfiesComparator(comparator: string, target: string): boolean {
  * `||` 分隔的任一子范围成立即成立；子范围内空格分隔的比较子句需全部成立（交集）。
  * 解析异常一律按「不满足」返回 false（宁可提示不兼容，也不误放行升级）。
  */
-export function satisfiesDshPeer(range: string | null | undefined, dshVersion: string | null | undefined): boolean {
+export function satisfiesDshPeer(
+  range: string | null | undefined,
+  dshVersion: string | null | undefined
+): boolean {
   if (range === null || range === undefined || range.trim() === '') return true
   if (dshVersion === null || dshVersion === undefined || dshVersion.trim() === '') return false
   const target = stripV(dshVersion.trim())

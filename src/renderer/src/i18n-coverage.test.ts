@@ -867,148 +867,458 @@ const readableSite = (key: string): string => key.replace('\u0000', ' :: ')
  */
 const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   // —— IPC 信封 message（渲染层 toast 直接展示 result.message） ——
-  debt('src/main/ipc/instance-handlers.ts', ".refine((v) => v === null || v.trim() !== '', '口令不能为空串')"),
-  debt('src/main/registry/instance-store.ts', "return new InstanceStoreError('not-found', `实例不存在：${id}`)"),
-  debt('src/main/ipc/settings-handlers.ts', "if (!deps.openDataDir) throw new DataDirOpenError('internal', '打开数据目录不可用')"),
-  debt('src/main/ipc/register.ts', "if (!deps.openHomepage) throw new HomepageOpenError('internal', '打开项目主页不可用')"),
-  debt('src/main/ipc/register.ts', "if (!deps.openAbout) throw new HomepageOpenError('internal', '打开关于面板不可用')"),
-  debt('src/main/shell/open-data-dir.ts', "if (dir === '') throw new DataDirOpenError('internal', '数据目录不可用')"),
-  debt('src/main/registry/instance-store.ts', "return new InstanceStoreError('io-error', `注册表 IO 失败：${message}`)"),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    ".refine((v) => v === null || v.trim() !== '', '口令不能为空串')"
+  ),
+  debt(
+    'src/main/registry/instance-store.ts',
+    "return new InstanceStoreError('not-found', `实例不存在：${id}`)"
+  ),
+  debt(
+    'src/main/ipc/settings-handlers.ts',
+    "if (!deps.openDataDir) throw new DataDirOpenError('internal', '打开数据目录不可用')"
+  ),
+  debt(
+    'src/main/ipc/register.ts',
+    "if (!deps.openHomepage) throw new HomepageOpenError('internal', '打开项目主页不可用')"
+  ),
+  debt(
+    'src/main/ipc/register.ts',
+    "if (!deps.openAbout) throw new HomepageOpenError('internal', '打开关于面板不可用')"
+  ),
+  debt(
+    'src/main/shell/open-data-dir.ts',
+    "if (dir === '') throw new DataDirOpenError('internal', '数据目录不可用')"
+  ),
+  debt(
+    'src/main/registry/instance-store.ts',
+    "return new InstanceStoreError('io-error', `注册表 IO 失败：${message}`)"
+  ),
   debt('src/main/ipc/ipc-utils.ts', "return fail('internal', '内部错误，请查看应用日志')"),
-  debt('src/main/ipc/instance-handlers.ts', "throw new InstanceStoreError('invalid-input', '只有 SSH 隧道实例才有主机指纹')"),
-  debt('src/main/ipc/instance-handlers.ts', "if (!deps.listLocalSpaces) throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')"),
-  debt('src/main/ipc/instance-handlers.ts', "if (!deps.trashLocalSpace) throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')"),
-  debt('src/main/ipc/instance-handlers.ts', "if (!space) throw new InstanceStoreError('not-found', '找不到该本机隔离空间')"),
-  debt('src/main/ipc/instance-handlers.ts', "if (space.inUse) throw new InstanceStoreError('invalid-state', '该隔离空间正被实例占用，无法删除')"),
-  debt('src/main/ipc/instance-handlers.ts', "throw new InstanceStoreError('invalid-input', '仅本机实例有本地目录')"),
-  debt('src/main/ipc/instance-handlers.ts', "if (!deps.openInstanceDir) throw new InstanceStoreError('invalid-state', '打开实例目录不可用')"),
-  debt('src/main/ipc/instance-handlers.ts', "if (!deps.openInstanceLogDir) throw new InstanceStoreError('invalid-state', '打开日志目录不可用')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-input', '未知的传输类型')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-state', '实例未在运行，无法在浏览器中打开')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-input', '只有本机实例和远程实例支持在浏览器中打开')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('internal', '在浏览器中打开不可用')"),
-  debt('src/main/registry/instance-store.ts', "throw new InstanceStoreError('invalid-input', `字段 ${key} 不适用于 ${current.transport} 实例`)"),
-  debt('src/main/registry/instance-store.ts', "throw new InstanceStoreError('invalid-input', '排序列表包含重复实例 ID')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-input', '只有本地实例才能接管本机 dsh web')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-input', '只有本机实例支持重启')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-state', '实例未在运行，无法重启')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-state', '外部接管的 dsh 进程归用户所有，不能由 hub 重启')"),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '只有 SSH 隧道实例才有主机指纹')"
+  ),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')"
+  ),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "if (!space) throw new InstanceStoreError('not-found', '找不到该本机隔离空间')"
+  ),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "throw new InstanceStoreError('invalid-state', '该隔离空间正被实例占用，无法删除')"
+  ),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '仅本机实例有本地目录')"
+  ),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "throw new InstanceStoreError('invalid-state', '打开实例目录不可用')"
+  ),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "throw new InstanceStoreError('invalid-state', '打开日志目录不可用')"
+  ),
+  debt(
+    'src/main/ipc/runtime-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '未知的传输类型')"
+  ),
+  debt(
+    'src/main/ipc/runtime-handlers.ts',
+    "throw new InstanceStoreError('invalid-state', '实例未在运行，无法在浏览器中打开')"
+  ),
+  debt(
+    'src/main/ipc/runtime-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '只有本机实例和远程实例支持在浏览器中打开')"
+  ),
+  debt(
+    'src/main/ipc/runtime-handlers.ts',
+    "throw new InstanceStoreError('internal', '在浏览器中打开不可用')"
+  ),
+  debt('src/main/registry/instance-store.ts', '`字段 ${key} 不适用于 ${current.transport} 实例`'),
+  debt(
+    'src/main/registry/instance-store.ts',
+    "throw new InstanceStoreError('invalid-input', '排序列表包含重复实例 ID')"
+  ),
+  debt(
+    'src/main/ipc/runtime-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '只有本地实例才能接管本机 dsh web')"
+  ),
+  debt(
+    'src/main/ipc/runtime-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '只有本机实例支持重启')"
+  ),
+  debt(
+    'src/main/ipc/runtime-handlers.ts',
+    "throw new InstanceStoreError('invalid-state', '实例未在运行，无法重启')"
+  ),
+  debt('src/main/ipc/runtime-handlers.ts', "'外部接管的 dsh 进程归用户所有，不能由 hub 重启'"),
   debt('src/main/ipc/errors.ts', "export const SCANNER_UNAVAILABLE = '本机进程探测能力不可用'"),
-  debt('src/main/ipc/errors.ts', "export const notFoundDshPid = (pid: number): string => `未找到 pid ${pid} 的 dsh web 进程`"),
-  debt('src/main/ipc/ipc-utils.ts', "if (/\\s/.test(access)) throw new InstanceStoreError('invalid-input', '访问 token 不能包含空白')"),
-  debt('src/main/ipc/errors.ts', "export const LISTEN_PORT_UNDETERMINED = '该进程的监听端口未能确定，无法接管'"),
-  debt('src/main/ipc/instance-handlers.ts', "if (record.transport !== 'local') throw new Error('本机实例创建结果无效')"),
-  debt('src/main/ipc/ipc-utils.ts', "throw new InstanceStoreError('invalid-input', '访问链接必须匹配已检测的本机 dsh 端口并包含 token')"),
-  debt('src/main/ipc/ipc-utils.ts', "throw new InstanceStoreError('invalid-input', '访问链接无法解析')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-state', '本机 dsh 已重启，请在实例详情中更新访问 token')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-state', '本机 dsh 的访问 token 已失效，请在实例详情中更新')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-state', '实例已在运行，不能接管其他本机 dsh web')"),
-  debt('src/main/ipc/runtime-handlers.ts', "if (!token) throw new InstanceStoreError('invalid-state', '本机 dsh 需要访问 token，请在实例详情中更新')"),
-  debt('src/main/ipc/runtime-handlers.ts', "throw new InstanceStoreError('invalid-state', '本机 dsh 需要访问 token，请在实例详情中更新')"),
-  debt('src/main/ipc/errors.ts', "export const EXTERNAL_ACCESS_TOKEN_INVALID = '访问 token 无效，请重新输入'"),
-  debt('src/main/workspace-host.ts', "if (!win || win.isDestroyed()) throw new Error('工作区主窗口不可用')"),
+  debt(
+    'src/main/ipc/errors.ts',
+    'export const notFoundDshPid = (pid: number): string => `未找到 pid ${pid} 的 dsh web 进程`'
+  ),
+  debt(
+    'src/main/ipc/ipc-utils.ts',
+    "if (/\\s/.test(access)) throw new InstanceStoreError('invalid-input', '访问 token 不能包含空白')"
+  ),
+  debt(
+    'src/main/ipc/errors.ts',
+    "export const LISTEN_PORT_UNDETERMINED = '该进程的监听端口未能确定，无法接管'"
+  ),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "if (record.transport !== 'local') throw new Error('本机实例创建结果无效')"
+  ),
+  debt('src/main/ipc/ipc-utils.ts', "'访问链接必须匹配已检测的本机 dsh 端口并包含 token'"),
+  debt(
+    'src/main/ipc/ipc-utils.ts',
+    "throw new InstanceStoreError('invalid-input', '访问链接无法解析')"
+  ),
+  debt('src/main/ipc/runtime-handlers.ts', "'本机 dsh 已重启，请在实例详情中更新访问 token'"),
+  debt('src/main/ipc/runtime-handlers.ts', "'本机 dsh 的访问 token 已失效，请在实例详情中更新'"),
+  debt(
+    'src/main/ipc/runtime-handlers.ts',
+    "throw new InstanceStoreError('invalid-state', '实例已在运行，不能接管其他本机 dsh web')"
+  ),
+  debt('src/main/ipc/runtime-handlers.ts', "'本机 dsh 需要访问 token，请在实例详情中更新'"),
+  debt(
+    'src/main/ipc/errors.ts',
+    "export const EXTERNAL_ACCESS_TOKEN_INVALID = '访问 token 无效，请重新输入'"
+  ),
+  debt(
+    'src/main/workspace-host.ts',
+    "if (!win || win.isDestroyed()) throw new Error('工作区主窗口不可用')"
+  ),
   debt('src/main/local-runtime/local-runtime.ts', "detail: '实例已在运行，忽略重复接管'"),
   debt('src/shared/contracts.ts', ".min(1, '配置档案不能为空')"),
   debt('src/shared/contracts.ts', ".max(128, '配置档案最长 128 字符')"),
-  debt('src/shared/contracts.ts', ".regex(PROFILE_PATTERN, '配置档案只能是相对路径，且不能以 - 开头')"),
-  debt('src/shared/contracts.ts', "const DSH_VERSION_SCHEMA = z.string().trim().max(64).regex(DSH_VERSION_PATTERN, '版本号含非法字符')"),
+  debt(
+    'src/shared/contracts.ts',
+    ".regex(PROFILE_PATTERN, '配置档案只能是相对路径，且不能以 - 开头')"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    "const DSH_VERSION_SCHEMA = z.string().trim().max(64).regex(DSH_VERSION_PATTERN, '版本号含非法字符')"
+  ),
   debt('src/shared/contracts.ts', ".min(1, '插件标识不能为空')"),
   debt('src/shared/contracts.ts', ".max(512, '插件标识过长')"),
-  debt('src/shared/contracts.ts', "}, '插件标识形态非法（仅支持 npm 名 / name@version / github: / file:）')"),
-  debt('src/shared/contracts.ts', ".regex(/^(@[a-z0-9][\\w.-]*\\/)?[a-z0-9][\\w.-]*$/i, '插件名形态非法')"),
-  debt('src/shared/contracts.ts', ".refine((value) => !value.split('/').includes('..'), '配置档案不能包含 ..')"),
-  debt('src/shared/settings.ts', ".refine((value) => value === '' || isAllowedNpmRegistry(value), '镜像地址必须是 https URL')"),
+  debt(
+    'src/shared/contracts.ts',
+    "}, '插件标识形态非法（仅支持 npm 名 / name@version / github: / file:）')"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    ".regex(/^(@[a-z0-9][\\w.-]*\\/)?[a-z0-9][\\w.-]*$/i, '插件名形态非法')"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    ".refine((value) => !value.split('/').includes('..'), '配置档案不能包含 ..')"
+  ),
+  debt(
+    'src/shared/settings.ts',
+    ".refine((value) => value === '' || isAllowedNpmRegistry(value), '镜像地址必须是 https URL')"
+  ),
 
-  debt('src/main/local-runtime/local-runtime.ts', "detail: `已接管本机运行的 dsh web（pid ${external.pid}${external.patch ? `，patch ${external.patch}` : ''}）`"),
-  debt('src/main/local-runtime/local-runtime.ts', "detail: `已断开接管（外部 dsh web 进程 pid ${entry.externalPid ?? '?'} 未终止）`"),
-  debt('src/main/ipc/auth-handlers.ts', "throw new InstanceStoreError('invalid-input', '未勾选「记住密码」，没有已保存的密码可用')"),
-  debt('src/main/ipc/auth-handlers.ts', "throw new InstanceStoreError('invalid-input', '保险库中没有该实例的已存密码')"),
-  debt('src/main/ipc/version-handlers.ts', "if (!deps.installer) throw new InstanceStoreError('internal', 'dsh 版本管理能力不可用')"),
-  debt('src/main/ipc/version-handlers.ts', "throw new InstanceStoreError('invalid-input', '该实例不支持升级')"),
-  debt('src/main/local-runtime/runtime-installer.ts', "onProgress?.({ phase: 'installing', version, detail: '校验安装结果' })"),
-  debt('src/main/local-runtime/runtime-installer.ts', "onProgress?.({ phase: 'installing', version, detail: '安装完成' })"),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    "detail: `已接管本机运行的 dsh web（pid ${external.pid}${external.patch ? `，patch ${external.patch}` : ''}）`"
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    "detail: `已断开接管（外部 dsh web 进程 pid ${entry.externalPid ?? '?'} 未终止）`"
+  ),
+  debt(
+    'src/main/ipc/auth-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '未勾选「记住密码」，没有已保存的密码可用')"
+  ),
+  debt(
+    'src/main/ipc/auth-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '保险库中没有该实例的已存密码')"
+  ),
+  debt(
+    'src/main/ipc/version-handlers.ts',
+    "if (!deps.installer) throw new InstanceStoreError('internal', 'dsh 版本管理能力不可用')"
+  ),
+  debt(
+    'src/main/ipc/version-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '该实例不支持升级')"
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    "onProgress?.({ phase: 'installing', version, detail: '校验安装结果' })"
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    "onProgress?.({ phase: 'installing', version, detail: '安装完成' })"
+  ),
 
   // —— 插件管理 IPC 信封 message（渲染层 toast 直接展示 result.message） ——
-  debt('src/main/ipc/plugin-handlers.ts', "const PLUGIN_VERSION_SCHEMA = z.string().trim().min(1).max(64).regex(DSH_VERSION_PATTERN, '版本号含非法字符')"),
-  debt('src/main/ipc/plugin-handlers.ts', "throw new InstanceStoreError('invalid-input', '仅本机实例支持插件管理')"),
-  debt('src/main/ipc/plugin-handlers.ts', "if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')"),
-  debt('src/main/ipc/plugin-handlers.ts', "throw new InstanceStoreError('invalid-input', '链接必须是 npmjs.com 或 github.com 的 https 地址')"),
-  debt('src/main/ipc/plugin-handlers.ts', "if (!deps.openExternalUrl) throw new InstanceStoreError('internal', '打开外链不可用')"),
-  debt('src/main/local-runtime/plugin-manager.ts', "if (!current) throw new Error(`插件未安装：${name}`)"),
-  debt('src/main/local-runtime/plugin-manager.ts', "`dsh plugin ${fullArgs.join(' ')} 失败（exit ${result.code}）：${tail || '无 stderr'}`"),
+  debt('src/main/ipc/plugin-handlers.ts', ".regex(DSH_VERSION_PATTERN, '版本号含非法字符')"),
+  debt(
+    'src/main/ipc/plugin-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '仅本机实例支持插件管理')"
+  ),
+  debt(
+    'src/main/ipc/plugin-handlers.ts',
+    "if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')"
+  ),
+  debt('src/main/ipc/plugin-handlers.ts', "'链接必须是 npmjs.com 或 github.com 的 https 地址'"),
+  debt(
+    'src/main/ipc/plugin-handlers.ts',
+    "if (!deps.openExternalUrl) throw new InstanceStoreError('internal', '打开外链不可用')"
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    'if (!current) throw new Error(`插件未安装：${name}`)'
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    "`dsh plugin ${fullArgs.join(' ')} 失败（exit ${result.code}）：${tail || '无 stderr'}`"
+  ),
   debt('src/main/local-runtime/plugin-manager.ts', "throw new Error('无法解析插件列表输出')"),
   debt('src/main/local-runtime/plugin-manager.ts', "throw new Error('无法解析插件版本信息输出')"),
-  debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('internal', '无法解析插件版本信息输出')"),
-  debt('src/main/local-runtime/plugin-manager.ts', "if (picked === null) throw new InstanceStoreError('internal', '无法解析插件版本信息输出')"),
-  debt('src/main/local-runtime/plugin-manager.ts', "if (isRegistryNotFound(error)) throw new InstanceStoreError('not-found', `版本不存在：${name}@${version}`)"),
-  debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('not-found', `registry 没有标签 ${requested}：${name}`)"),
-  debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('not-found', `无法解析版本：插件 ${name} 未发布到 npm registry`)"),
-  debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('invalid-state', '未找到可用的 dsh：hub 隔离目录与 PATH 上都没有已安装的运行时')"),
-  debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('not-found', `插件未安装：${name}`)"),
-  debt('src/main/local-runtime/plugin-manager.ts', "throw new InstanceStoreError('invalid-input', '该插件不含 host 半，无法单独禁用')"),
-  debt('src/main/local-runtime/plugin-manager.ts', "`无法检查更新：插件 ${name} 未发布到 npm registry（本地安装的包不在 registry 中）`"),
-  debt('src/main/local-runtime/profile-bundles.ts', "if (!isRecord(manifest)) throw new Error('profile package.json 结构异常，未做改动')"),
-  debt('src/main/local-runtime/profile-bundles.ts', "throw new Error('该实例的 profile 尚未初始化（缺少 package.json），请先启动一次实例')"),
-  debt('src/main/local-runtime/profile-bundles.ts', "throw new Error(`profile 正被 dsh 占用（${lockPath}），请稍后重试`)"),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    "throw new InstanceStoreError('internal', '无法解析插件版本信息输出')"
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    "if (picked === null) throw new InstanceStoreError('internal', '无法解析插件版本信息输出')"
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    "throw new InstanceStoreError('not-found', `版本不存在：${name}@${version}`)"
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    "throw new InstanceStoreError('not-found', `registry 没有标签 ${requested}：${name}`)"
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    '`无法解析版本：插件 ${name} 未发布到 npm registry`'
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    "'未找到可用的 dsh：hub 隔离目录与 PATH 上都没有已安装的运行时'"
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    "throw new InstanceStoreError('not-found', `插件未安装：${name}`)"
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    "throw new InstanceStoreError('invalid-input', '该插件不含 host 半，无法单独禁用')"
+  ),
+  debt(
+    'src/main/local-runtime/plugin-manager.ts',
+    '`无法检查更新：插件 ${name} 未发布到 npm registry（本地安装的包不在 registry 中）`'
+  ),
+  debt(
+    'src/main/local-runtime/profile-bundles.ts',
+    "if (!isRecord(manifest)) throw new Error('profile package.json 结构异常，未做改动')"
+  ),
+  debt(
+    'src/main/local-runtime/profile-bundles.ts',
+    "throw new Error('该实例的 profile 尚未初始化（缺少 package.json），请先启动一次实例')"
+  ),
+  debt(
+    'src/main/local-runtime/profile-bundles.ts',
+    'throw new Error(`profile 正被 dsh 占用（${lockPath}），请稍后重试`)'
+  ),
 
   // Runtime status messages displayed by App.tsx and DetailView.
-  debt('src/main/local-runtime/launch.ts', ": '分配端口并启动进程（端口区间不可用，改由 dsh 自动选择）'"),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    ": '分配端口并启动进程（端口区间不可用，改由 dsh 自动选择）'"
+  ),
   debt('src/main/transport/http-endpoint.ts', ": '按配置使用网关登录'"),
   debt('src/main/transport/http-endpoint.ts', "? '按配置跳过登录认证'"),
   debt('src/main/local-runtime/launch.ts', '? `分配端口并启动进程（端口 ${preferredPort}）`'),
-  debt('src/main/local-runtime/runtime-installer.ts', "`安装 ${DSH_PACKAGE_NAME}@${version} 失败（exit ${result.code}）：${tailLines(result.stderr, 20) || '无 stderr'}`"),
-  debt('src/main/local-runtime/runtime-installer.ts', "throw new Error('npm 不可用：系统 PATH 和常见安装位置均未找到 npm')"),
-  debt('src/main/local-runtime/runtime-installer.ts', "timeoutError = new Error(`npm 执行超时（${COMMAND_TIMEOUT_MS} ms），已终止`)"),
-  debt('src/main/local-runtime/runtime-installer.ts', "abortError = new Error('npm 执行已取消（应用退出）')"),
-  debt('src/main/local-runtime/runtime-installer.ts', "reject(new Error(`npm 执行被信号终止（${signal}）`))"),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    "`安装 ${DSH_PACKAGE_NAME}@${version} 失败（exit ${result.code}）：${tailLines(result.stderr, 20) || '无 stderr'}`"
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    "throw new Error('npm 不可用：系统 PATH 和常见安装位置均未找到 npm')"
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    'timeoutError = new Error(`npm 执行超时（${COMMAND_TIMEOUT_MS} ms），已终止`)'
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    "abortError = new Error('npm 执行已取消（应用退出）')"
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    'reject(new Error(`npm 执行被信号终止（${signal}）`))'
+  ),
   debt('src/main/local-runtime/local-runtime.ts', "detail: '实例已在运行，忽略重复启动'"),
   debt('src/main/local-runtime/launch.ts', "detail: '实例已在运行，忽略重复启动'"),
-  debt('src/main/local-runtime/launch.ts', "throw new Error(`未找到启动器 ${customLauncherName}（PATH 与常见安装位置均未探到）`)"),
-  debt('src/main/local-runtime/launch.ts', "throw new Error(`无法解析启动器脚本（${scriptPath}）`)"),
-  debt('src/main/local-runtime/local-runtime.ts', "throw new InstanceStoreError('invalid-state', '外部接管的 dsh 进程归用户所有，hub 不能代管升级')"),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    'throw new Error(`未找到启动器 ${customLauncherName}（PATH 与常见安装位置均未探到）`)'
+  ),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    'throw new Error(`无法解析启动器脚本（${scriptPath}）`)'
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    "'外部接管的 dsh 进程归用户所有，hub 不能代管升级'"
+  ),
   debt('src/main/transport/ssh-tunnel.ts', "detail: '隧道已在运行，忽略重复启动'"),
-  debt('src/main/transport/ssh-tunnel.ts', 'detail: `SSH 隧道已就绪（127.0.0.1:${entry.localPort} → ${entry.remoteLabel}）`'),
-  debt('src/main/transport/ssh-tunnel.ts', 'detail: `SSH 隧道断开（${attribution.message}）；${entry.backoffMs / 1000}s 后自动重连`'),
-  debt('src/main/local-runtime/launch.ts', "detail: `启动超时（${Math.round(readyTimeoutMs / 1000)}s）：未解析到就绪 URL${entry.log.length > 0 ? `；日志 ${logTail(entry)}` : ''}`"),
-  debt('src/main/local-runtime/runtime-installer.ts', 'detail: `安装 ${DSH_PACKAGE_NAME}@${version}`'),
-  debt('src/main/local-runtime/runtime-installer.ts', "const detail = `下载依赖 (${downloadedPaths.size})：${info.path}`"),
-  debt('src/main/local-runtime/local-runtime.ts', "detail: error instanceof Error ? `解析就绪地址失败：${error.message}` : '解析就绪地址失败'"),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    'detail: `SSH 隧道已就绪（127.0.0.1:${entry.localPort} → ${entry.remoteLabel}）`'
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    'detail: `SSH 隧道断开（${attribution.message}）；${entry.backoffMs / 1000}s 后自动重连`'
+  ),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    "detail: `启动超时（${Math.round(readyTimeoutMs / 1000)}s）：未解析到就绪 URL${entry.log.length > 0 ? `；日志 ${logTail(entry)}` : ''}`"
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    'detail: `安装 ${DSH_PACKAGE_NAME}@${version}`'
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    'const detail = `下载依赖 (${downloadedPaths.size})：${info.path}`'
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    "detail: error instanceof Error ? `解析就绪地址失败：${error.message}` : '解析就绪地址失败'"
+  ),
   debt('src/main/local-runtime/local-runtime.ts', "failReady(new Error('就绪 URL 无法解析'))"),
-  debt('src/main/local-runtime/local-runtime.ts', "failReady(new Error(`就绪 URL 主机非回环地址（${readyUrl.hostname}），已拒绝`))"),
-  debt('src/main/local-runtime/local-runtime.ts', 'detail: redactLine(`就绪 URL 无法访问（健康探测 ${healthProbeRetries} 次失败）：${url}`)'),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    'failReady(new Error(`就绪 URL 主机非回环地址（${readyUrl.hostname}），已拒绝`))'
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    'detail: redactLine(`就绪 URL 无法访问（健康探测 ${healthProbeRetries} 次失败）：${url}`)'
+  ),
   debt('src/main/local-runtime/local-runtime.ts', 'detail: `已在 ${entry.home} 启动（dsh web）`'),
   // Runtime source messages.
   debt('src/main/local-runtime/launch.ts', "emit(id, 'starting', { detail: '解析运行时来源' })"),
-  debt('src/main/local-runtime/launch.ts', "emit(id, 'starting', { version: target, detail: `需要下载 dsh ${target}，等待确认` })"),
-  debt('src/main/local-runtime/launch.ts', 'detail: `需要下载 dsh ${target}，未获确认，已取消启动（hub 与 PATH 上均无可用运行时）`'),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    "emit(id, 'starting', { version: target, detail: `需要下载 dsh ${target}，等待确认` })"
+  ),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    'detail: `需要下载 dsh ${target}，未获确认，已取消启动（hub 与 PATH 上均无可用运行时）`'
+  ),
   debt('src/main/local-runtime/launch.ts', '? `使用本机 dsh ${version} 启动`'),
-  debt('src/main/local-runtime/launch.ts', ': `准备 dsh ${version} 运行时（首次需要安装，可能较慢）`'),
-  debt('src/main/local-runtime/local-runtime.ts', "throw new Error('未找到系统默认 dsh（PATH 上没有可用的 dsh），无法升级')"),
-  debt('src/main/local-runtime/local-runtime.ts', 'throw new Error(`系统 dsh 不是 npm 全局安装（${system.command}），hub 无法代管升级`)'),
-  debt('src/main/local-runtime/runtime-installer.ts', 'onProgress?.({ phase: \'installing\', version, detail: `全局安装 ${DSH_PACKAGE_NAME}@${version}（${prefix}）` })'),
-  debt('src/main/local-runtime/runtime-installer.ts', 'throw new Error(`全局升级完成但未找到 dsh 入口：${entry}`)'),
-  debt('src/main/transport/ssh-tunnel.ts', 'detail: `建立 SSH 隧道（${localPort} → ${entry.remoteLabel}）`'),
-  debt('src/main/local-runtime/launch.ts', "detail: `进程意外退出（code=${code ?? 'null'} signal=${signal ?? 'null'}）${"),
-  debt('src/main/local-runtime/launch.ts', "entry.log.length > 0 ? `；日志 ${logTail(entry)}` : ''"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(entry.id, 'error', { detail: '远端 dsh 未就绪（就绪探测超时），即将自动重连' })"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(entry.id, 'starting', { detail: '等待输入 SSH 口令（不落盘）' })"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(entry.id, 'starting', { detail: `本地端口已重新分配为 ${port}` })"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(entry.id, 'starting', { detail: `第 ${entry.reconnectCount} 次自动重连（${entry.url}）` })"),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    ': `准备 dsh ${version} 运行时（首次需要安装，可能较慢）`'
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    "throw new Error('未找到系统默认 dsh（PATH 上没有可用的 dsh），无法升级')"
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    'throw new Error(`系统 dsh 不是 npm 全局安装（${system.command}），hub 无法代管升级`)'
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    'detail: `全局安装 ${DSH_PACKAGE_NAME}@${version}（${prefix}）`'
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    'throw new Error(`全局升级完成但未找到 dsh 入口：${entry}`)'
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    'detail: `建立 SSH 隧道（${localPort} → ${entry.remoteLabel}）`'
+  ),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    "detail: `进程意外退出（code=${code ?? 'null'} signal=${signal ?? 'null'}）${"
+  ),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    "entry.log.length > 0 ? `；日志 ${logTail(entry)}` : ''"
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(entry.id, 'error', { detail: '远端 dsh 未就绪（就绪探测超时），即将自动重连' })"
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(entry.id, 'starting', { detail: '等待输入 SSH 口令（不落盘）' })"
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(entry.id, 'starting', { detail: `本地端口已重新分配为 ${port}` })"
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(entry.id, 'starting', { detail: `第 ${entry.reconnectCount} 次自动重连（${entry.url}）` })"
+  ),
   debt('src/main/transport/ssh-tunnel.ts', "emit(entry.id, 'stopped', { detail: '实例已删除' })"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'error', { detail: '服务器指纹未确认（或已变化），已拒绝连接' })"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'error', { detail: `SSH 进程启动失败：${error.message}` })"),
-  debt('src/main/transport/http-endpoint.ts', "emit(id, 'error', { detail: `端点不可达：${url}（连接被拒或超时）`, url })"),
-  debt('src/main/local-runtime/launch.ts', "emit(id, 'error', { detail: `进程启动失败：${error.message}` })"),
-  debt('src/main/transport/http-endpoint.ts', "detail: running ? '实例已在运行，忽略重复启动' : (current?.detail ?? '正在校验端点')"),
-  debt('src/main/transport/http-endpoint.ts', "detail: running ? '实例已在运行，忽略重复启动' : (status?.detail ?? '正在校验端点')"),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(id, 'error', { detail: '服务器指纹未确认（或已变化），已拒绝连接' })"
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(id, 'error', { detail: `SSH 进程启动失败：${error.message}` })"
+  ),
+  debt(
+    'src/main/transport/http-endpoint.ts',
+    "emit(id, 'error', { detail: `端点不可达：${url}（连接被拒或超时）`, url })"
+  ),
+  debt(
+    'src/main/local-runtime/launch.ts',
+    "emit(id, 'error', { detail: `进程启动失败：${error.message}` })"
+  ),
+  debt(
+    'src/main/transport/http-endpoint.ts',
+    "detail: running ? '实例已在运行，忽略重复启动' : (current?.detail ?? '正在校验端点')"
+  ),
+  debt(
+    'src/main/transport/http-endpoint.ts',
+    "detail: running ? '实例已在运行，忽略重复启动' : (status?.detail ?? '正在校验端点')"
+  ),
   debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'starting', { detail: '分配本地端口' })"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'starting', { detail: '口令输入通道不可用，将尝试非交互认证（agent / 免密密钥）' })"),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(id, 'starting', { detail: '口令输入通道不可用，将尝试非交互认证（agent / 免密密钥）' })"
+  ),
   debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'starting', { detail: '校验服务器指纹' })"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'starting', { detail: '检测到隧道已中断，重新建立连接' })"),
-  debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'starting', { detail: '隧道正在启动，忽略重复启动' })"),
-  debt('src/main/transport/http-endpoint.ts', "emit(id, 'starting', { detail: `校验端点 ${url}` })"),
-  debt('src/main/transport/http-endpoint.ts', "emit(id, 'starting', { url, detail: '探测认证模式' })"),
-  debt('src/main/local-runtime/local-runtime.ts', "emit(id, 'stopped', { detail: '实例未在运行' })"),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(id, 'starting', { detail: '检测到隧道已中断，重新建立连接' })"
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "emit(id, 'starting', { detail: '隧道正在启动，忽略重复启动' })"
+  ),
+  debt(
+    'src/main/transport/http-endpoint.ts',
+    "emit(id, 'starting', { detail: `校验端点 ${url}` })"
+  ),
+  debt(
+    'src/main/transport/http-endpoint.ts',
+    "emit(id, 'starting', { url, detail: '探测认证模式' })"
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    "emit(id, 'stopped', { detail: '实例未在运行' })"
+  ),
   debt('src/main/transport/http-endpoint.ts', "emit(id, 'stopped', { detail: '实例未在运行' })"),
   debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'stopped', { detail: '实例未在运行' })"),
   debt('src/main/transport/http-endpoint.ts', "emit(id, 'stopped', { detail: '已停止' })"),
@@ -1016,27 +1326,57 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   debt('src/main/local-runtime/launch.ts', "emit(id, 'stopped', { detail: '已取消启动' })"),
   debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'stopped', { detail: '已取消启动' })"),
   debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'stopped', { detail: '隧道已停止' })"),
-  debt('src/main/local-runtime/local-runtime.ts', "emit(id, 'stopped', { detail: exited ? '已停止' : '已强制停止（SIGKILL）' })"),
+  debt(
+    'src/main/local-runtime/local-runtime.ts',
+    "emit(id, 'stopped', { detail: exited ? '已停止' : '已强制停止（SIGKILL）' })"
+  ),
   debt('src/main/transport/ssh-tunnel.ts', "emitWaiting('服务器指纹已变化，已拒绝连接')"),
   debt('src/main/transport/ssh-tunnel.ts', "emitWaiting('等待确认服务器指纹')"),
-  debt('src/main/transport/ssh-tunnel.ts', "entry.pendingReason = { kind: 'connect', message: '远端 dsh 未就绪' }"),
-  debt('src/main/transport/ssh-tunnel.ts', "if (secret !== null) emit(entry.id, 'starting', { detail: '已收到口令，继续建立隧道' })"),
-  debt('src/main/local-runtime/runtime-installer.ts', "if (versions.length === 0) throw new Error('registry 中没有可用的 dsh 版本')"),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "entry.pendingReason = { kind: 'connect', message: '远端 dsh 未就绪' }"
+  ),
+  debt(
+    'src/main/transport/ssh-tunnel.ts',
+    "if (secret !== null) emit(entry.id, 'starting', { detail: '已收到口令，继续建立隧道' })"
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    "if (versions.length === 0) throw new Error('registry 中没有可用的 dsh 版本')"
+  ),
   debt('src/main/transport/attribution.ts', "label: '主机名解析失败'"),
-  debt('src/main/transport/attribution.ts', "label: '服务器指纹未确认或被更改（请在实例详情重新确认指纹）'"),
+  debt(
+    'src/main/transport/attribution.ts',
+    "label: '服务器指纹未确认或被更改（请在实例详情重新确认指纹）'"
+  ),
   debt('src/main/transport/attribution.ts', "label: '端口转发失败（本地端口被占或远端拒绝监听）'"),
   debt('src/main/transport/attribution.ts', "label: '连接被拒绝或中断'"),
   debt('src/main/transport/attribution.ts', "label: '连接被远端关闭'"),
   debt('src/main/transport/attribution.ts', "label: '连接超时'"),
   debt('src/main/transport/attribution.ts', "label: '鉴权失败（口令 / 密钥 / 权限）'"),
-  debt('src/main/transport/attribution.ts', "message: `${feature.label}${detail ? `（${detail}）` : ''}`"),
-  debt('src/main/transport/attribution.ts', "message: `SSH 会话异常退出（code=${code ?? 'null'}）` + (evidence ? `；${evidence}` : '')"),
+  debt(
+    'src/main/transport/attribution.ts',
+    "message: `${feature.label}${detail ? `（${detail}）` : ''}`"
+  ),
+  debt(
+    'src/main/transport/attribution.ts',
+    "message: `SSH 会话异常退出（code=${code ?? 'null'}）` + (evidence ? `；${evidence}` : '')"
+  ),
   debt('src/main/transport/http-endpoint.ts', "return '无需登录认证，可直接访问'"),
   debt('src/main/transport/http-endpoint.ts', "return '检测到 dsh 内置浏览器认证（页面内自认证）'"),
   debt('src/main/transport/http-endpoint.ts', 'return `检测到登录认证（${detection.evidence}）`'),
-  debt('src/main/transport/attribution.ts', "return { kind: 'closed', message: 'SSH 进程正常退出（退出码 0）' }"),
-  debt('src/main/local-runtime/port-allocator.ts', 'throw new Error(`端口段 ${start}-${end} 内没有可用端口`)'),
-  debt('src/main/local-runtime/runtime-installer.ts', 'throw new Error(`读取可用版本失败：${result.stderr.trim() || `exit ${result.code}`}`)'),
+  debt(
+    'src/main/transport/attribution.ts',
+    "return { kind: 'closed', message: 'SSH 进程正常退出（退出码 0）' }"
+  ),
+  debt(
+    'src/main/local-runtime/port-allocator.ts',
+    'throw new Error(`端口段 ${start}-${end} 内没有可用端口`)'
+  ),
+  debt(
+    'src/main/local-runtime/runtime-installer.ts',
+    'throw new Error(`读取可用版本失败：${result.stderr.trim() || `exit ${result.code}`}`)'
+  ),
   debt('src/main/local-runtime/runtime-installer.ts', 'throw new Error(`非法版本号：${version}`)'),
 
   // —— 认证状态 message（AuthPanel 的 auth-message） ——
@@ -1046,12 +1386,18 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   debt('src/main/auth/gateway-client.ts', "'onboarding-required': '需要先设置新的登录密码',"),
   debt('src/main/auth/gateway-client.ts', "'otp-not-enabled': '该实例未启用动态验证码',"),
   debt('src/main/auth/gateway-client.ts', "'otp-required': '请输入动态验证码或备份码',"),
-  debt('src/main/auth/gateway-client.ts', "'otp-secret-missing': '实例的 OTP 配置异常，请联系管理员',"),
+  debt(
+    'src/main/auth/gateway-client.ts',
+    "'otp-secret-missing': '实例的 OTP 配置异常，请联系管理员',"
+  ),
   debt('src/main/auth/gateway-client.ts', "'invalid-json': '响应格式无效',"),
   debt('src/main/auth/gateway-client.ts', "'bad-request': '请求无效',"),
   debt('src/main/auth/gateway-client.ts', "network: '网络错误',"),
   debt('src/main/auth/gateway-client.ts', "unexpected: '服务返回了未知错误'"),
-  debt('src/main/auth/gateway-client.ts', 'return ERROR_MESSAGES[code] ?? `请求失败（HTTP ${status}）`'),
+  debt(
+    'src/main/auth/gateway-client.ts',
+    'return ERROR_MESSAGES[code] ?? `请求失败（HTTP ${status}）`'
+  ),
   debt('src/main/auth/gateway-client.ts', "message: '登录成功响应缺少会话 Cookie',"),
   debt('src/main/auth/gateway-client.ts', "'password-mismatch': '两次输入的密码不一致',"),
   debt('src/main/auth/gateway-client.ts', "'password-too-short': '密码太短',"),
@@ -1061,18 +1407,27 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   debt('src/main/auth/gateway-client.ts', "'too-many-attempts': '失败次数过多，账号已临时锁定',"),
   debt('src/main/auth/gateway-state.ts', "message: '该实例需要先设置新的登录密码'"),
   debt('src/main/auth/gateway-state.ts', "message: '账号或验证码错误'"),
-  debt('src/main/auth/gateway-client.ts', "message: error instanceof Error ? `网络错误：${error.message}` : '网络错误',"),
+  debt(
+    'src/main/auth/gateway-client.ts',
+    "message: error instanceof Error ? `网络错误：${error.message}` : '网络错误',"
+  ),
   debt('src/main/auth/gateway-client.ts', "unauthenticated: '登录状态已失效，请重新登录',"),
 
   // —— 探测 evidence（UrlDetect 直接展示 detection.evidence） ——
   debt('src/main/auth/detect.ts', "evidence: '401 + dsh 内置 BrowserAuth 提示（webview 自认证）',"),
   debt('src/main/auth/detect.ts', "evidence: '401（无识别特征）',"),
-  debt('src/main/auth/detect.ts', "evidence: `${status} → ${location || '(无 Location)'}（未识别的重定向）`,"),
+  debt(
+    'src/main/auth/detect.ts',
+    "evidence: `${status} → ${location || '(无 Location)'}（未识别的重定向）`,"
+  ),
   debt('src/main/auth/detect.ts', 'evidence: `${status} → ${location}（网关 onboarding 未完成）`,'),
   debt('src/main/auth/detect.ts', 'evidence: `${status} → ${location}（网关登录页重定向）`,'),
   debt('src/main/auth/detect.ts', 'evidence: `${status} → ${location}（网关要求二因素验证）`,'),
   debt('src/main/auth/detect.ts', 'evidence: `${status} 可直接访问（无需登录）`,'),
-  debt('src/main/auth/detect.ts', "evidence: `401 JSON${error ? ` error=${error}` : ''}（网关 API 直探）`,"),
+  debt(
+    'src/main/auth/detect.ts',
+    "evidence: `401 JSON${error ? ` error=${error}` : ''}（网关 API 直探）`,"
+  ),
   debt('src/main/auth/detect.ts', 'evidence: `连接失败：${message}`,'),
 
   // —— askpass 提示语（口令弹窗副标题 SshDialogs.tsx:203 直接渲染 prompt） ——
@@ -1087,32 +1442,92 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   //    渠道:zod 的 message 经 `formatZodIssues`(contracts.ts:510-517)折叠成一条纯文本,
   //    塞进 IPC 错误信封 `message`(`register.ts` 的 invalid-input 分支)→ 渲染层 toast /
   //    迁移方式同 (a):改成稳定 code + 渲染层按 field/code 映射文案。
-  debt('src/shared/contracts.ts', "const PORT_SCHEMA = z.number('端口必须是数字').int('端口必须是整数').min(1, '端口最小 1').max(65535, '端口最大 65535')"),
+  debt('src/shared/contracts.ts', ".number('端口必须是数字')"),
+  debt('src/shared/contracts.ts', ".int('端口必须是整数')"),
+  debt('src/shared/contracts.ts', ".min(1, '端口最小 1')"),
+  debt('src/shared/contracts.ts', ".max(65535, '端口最大 65535')"),
   debt('src/shared/contracts.ts', ".min(1, 'SSH 主机不能为空')"),
   debt('src/shared/contracts.ts', ".max(255, 'SSH 主机最长 255 字符')"),
-  debt('src/shared/contracts.ts', ".regex(/^[A-Za-z0-9._\\-:[\\]]+$/, 'SSH 主机含非法字符（不允许空白 / 斜杠 / @）')"),
-  debt('src/shared/contracts.ts', ".refine((value) => !value.startsWith('-'), 'SSH 主机不能以 - 开头')"),
-  debt('src/shared/contracts.ts', ".refine(isValidSshHost, 'host[:port] 形态的端口必须在 1–65535，或主机名不含冒号')"),
-  debt('src/shared/contracts.ts', "name: z.string().trim().min(1, '名称不能为空').max(64, '名称最长 64 字符'),"),
-  debt('src/shared/contracts.ts', "notes: z.string().trim().max(2000, '备注最长 2000 字符').nullable().optional(),"),
-  debt('src/shared/contracts.ts', "username: z.string().trim().min(1, 'SSH 用户名不能为空').max(128, 'SSH 用户名最长 128 字符'),"),
-  debt('src/shared/contracts.ts', ".refine((value) => tryParseEndpoint(value).ok, '端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）')"),
-  debt('src/shared/contracts.ts', "name: z.string().trim().min(1, '名称不能为空').max(64).optional(),"),
-  debt('src/shared/contracts.ts', "username: z.string().trim().min(1, 'SSH 用户名不能为空').max(128),"),
-  debt('src/shared/contracts.ts', ".refine((patch) => Object.keys(patch).length > 0, '补丁不能为空')"),
-  debt('src/shared/contracts.ts', "schemaVersion: z.number('schemaVersion 必须是数字').int().min(1),"),
+  debt(
+    'src/shared/contracts.ts',
+    ".regex(/^[A-Za-z0-9._\\-:[\\]]+$/, 'SSH 主机含非法字符（不允许空白 / 斜杠 / @）')"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    ".refine((value) => !value.startsWith('-'), 'SSH 主机不能以 - 开头')"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    ".refine(isValidSshHost, 'host[:port] 形态的端口必须在 1–65535，或主机名不含冒号')"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    "name: z.string().trim().min(1, '名称不能为空').max(64, '名称最长 64 字符'),"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    "notes: z.string().trim().max(2000, '备注最长 2000 字符').nullable().optional(),"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    "username: z.string().trim().min(1, 'SSH 用户名不能为空').max(128, 'SSH 用户名最长 128 字符'),"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    "'端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）'"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    "name: z.string().trim().min(1, '名称不能为空').max(64).optional(),"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    "username: z.string().trim().min(1, 'SSH 用户名不能为空').max(128),"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    ".refine((patch) => Object.keys(patch).length > 0, '补丁不能为空')"
+  ),
+  debt(
+    'src/shared/contracts.ts',
+    "schemaVersion: z.number('schemaVersion 必须是数字').int().min(1),"
+  ),
 
   //    渠道:`EndpointParseError.message` → `register.ts` wrap 的 invalid-input 信封 message
   //    → `Wizard.tsx:83/120` 与 `UrlDetect.tsx:65` 的 `setError(result.message)` **直接上屏**。
   //    迁移同样只需把静态文案换成 code。
-  debt('src/shared/endpoint.ts', "throw new EndpointParseError('empty', input, '端点地址不能为空')"),
-  debt('src/shared/endpoint.ts', "throw new EndpointParseError('missing-host', input, '端点地址缺少主机名')"),
-  debt('src/shared/endpoint.ts', "throw new EndpointParseError('malformed', input, '无法解析端点地址')"),
-  debt('src/shared/endpoint.ts', "throw new EndpointParseError('credentials-not-allowed', input, '端点地址不能内嵌用户名或密码')"),
-  debt('src/shared/endpoint.ts', "throw new EndpointParseError('query-not-supported', input, '端点地址不支持查询参数')"),
-  debt('src/shared/endpoint.ts', "throw new EndpointParseError('hash-not-supported', input, '端点地址不支持锚点')"),
-  debt('src/shared/endpoint.ts', "throw new EndpointParseError('invalid-port', input, '端口不合法')"),
-  debt('src/shared/endpoint.ts', "throw new EndpointParseError('unsupported-scheme', input, '仅支持 http / https 协议')")
+  debt(
+    'src/shared/endpoint.ts',
+    "throw new EndpointParseError('empty', input, '端点地址不能为空')"
+  ),
+  debt(
+    'src/shared/endpoint.ts',
+    "throw new EndpointParseError('missing-host', input, '端点地址缺少主机名')"
+  ),
+  debt(
+    'src/shared/endpoint.ts',
+    "throw new EndpointParseError('malformed', input, '无法解析端点地址')"
+  ),
+  debt(
+    'src/shared/endpoint.ts',
+    "throw new EndpointParseError('credentials-not-allowed', input, '端点地址不能内嵌用户名或密码')"
+  ),
+  debt(
+    'src/shared/endpoint.ts',
+    "throw new EndpointParseError('query-not-supported', input, '端点地址不支持查询参数')"
+  ),
+  debt(
+    'src/shared/endpoint.ts',
+    "throw new EndpointParseError('hash-not-supported', input, '端点地址不支持锚点')"
+  ),
+  debt(
+    'src/shared/endpoint.ts',
+    "throw new EndpointParseError('invalid-port', input, '端口不合法')"
+  ),
+  debt(
+    'src/shared/endpoint.ts',
+    "throw new EndpointParseError('unsupported-scheme', input, '仅支持 http / https 协议')"
+  )
 ]
 
 /**
@@ -1122,25 +1537,49 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
 const NON_RENDERER_COPY_DEBT_INTERNAL: readonly DebtEntry[] = [
   // —— askpass helper 脚本内容（写盘后由 ssh 子进程执行，脚本正文从不渲染）：脚本头注释、
   //    catch 分支注释、三处 stderr 日志，以及包装脚本 askpass.sh 里的 shell 注释 ——
-  debt('src/main/ssh/askpass.ts', "'# 由 DSH Hub 运行时写入：用自带 Node 执行 askpass helper（不依赖 PATH 中的 node）',"),
+  debt(
+    'src/main/ssh/askpass.ts',
+    "'# 由 DSH Hub 运行时写入：用自带 Node 执行 askpass helper（不依赖 PATH 中的 node）',"
+  ),
   debt('src/main/ssh/askpass.ts', '/* 落到取消分支 */'),
-  debt('src/main/ssh/askpass.ts', 'export const ASKPASS_HELPER_SOURCE = `// 由 DSH Hub 运行时写入；把 ssh 的口令提示转发给主进程，答案只经 stdout 回给 ssh。'),
-  debt('src/main/ssh/askpass.ts', "process.stderr.write('askpass: DSH_HUB_ASKPASS_SOCKET 未设置\\\\n')"),
+  debt(
+    'src/main/ssh/askpass.ts',
+    'export const ASKPASS_HELPER_SOURCE = `// 由 DSH Hub 运行时写入；把 ssh 的口令提示转发给主进程，答案只经 stdout 回给 ssh。'
+  ),
+  debt(
+    'src/main/ssh/askpass.ts',
+    "process.stderr.write('askpass: DSH_HUB_ASKPASS_SOCKET 未设置\\\\n')"
+  ),
   debt('src/main/ssh/askpass.ts', "process.stderr.write('askpass: 等待用户输入超时\\\\n')"),
-  debt('src/main/ssh/askpass.ts', "process.stderr.write('askpass: 通道失败 ' + error.message + '\\\\n')"),
+  debt(
+    'src/main/ssh/askpass.ts',
+    "process.stderr.write('askpass: 通道失败 ' + error.message + '\\\\n')"
+  ),
 
   // —— 注册表损坏隔离原因:只进 console.warn 与隔离文件名,不进任何 IPC/状态字段 ——
   debt('src/main/registry/instance-store.ts', "await quarantineCorruptFile('JSON 解析失败')"),
-  debt('src/main/registry/instance-store.ts', 'await quarantineCorruptFile(`schema 校验失败：${reason}`)'),
-  debt('src/main/registry/instance-store.ts', 'await quarantineCorruptFile(`schemaVersion=${from} 高于当前 ${REGISTRY_SCHEMA_VERSION}，拒绝降级`)'),
-  debt('src/main/registry/instance-store.ts', 'await quarantineCorruptFile(`缺少 schemaVersion ${v} → ${v + 1} 的迁移器`)'),
+  debt(
+    'src/main/registry/instance-store.ts',
+    'await quarantineCorruptFile(`schema 校验失败：${reason}`)'
+  ),
+  debt(
+    'src/main/registry/instance-store.ts',
+    '`schemaVersion=${from} 高于当前 ${REGISTRY_SCHEMA_VERSION}，拒绝降级`'
+  ),
+  debt(
+    'src/main/registry/instance-store.ts',
+    'await quarantineCorruptFile(`缺少 schemaVersion ${v} → ${v + 1} 的迁移器`)'
+  ),
 
   // —— 普通 Error(message 为中文):IPC 边界统一换成稳定码的固定文案(register.ts wrap 的 internal),明细只进主进程日志;或被调用方 catch 后只 console.error ——
   debt('src/main/ssh/key-preview.ts', "else reject(error ?? new Error('ssh -G 未返回任何配置'))"),
   debt('src/main/ssh/host-trust.ts', "else reject(error ?? new Error('ssh -G 未返回任何配置'))"),
   debt('src/main/vault/vault.ts', "if (password === '') throw new Error('空密码不写入 vault')"),
   debt('src/main/vault/vault.ts', "if (token === '') throw new Error('空访问 token 不写入 vault')"),
-  debt('src/main/vault/vault.ts', "if (session.value === '') throw new Error('空会话不写入 vault')"),
+  debt(
+    'src/main/vault/vault.ts',
+    "if (session.value === '') throw new Error('空会话不写入 vault')"
+  ),
   debt('src/main/vault/vault.ts', 'throw new Error(`未勾选「${field}」,拒绝写入 vault`)'),
 
   // —— vault 的 onError 回调:缺省实现是 console.error('[vault] 操作失败：', error),只进日志 ——
@@ -1148,20 +1587,32 @@ const NON_RENDERER_COPY_DEBT_INTERNAL: readonly DebtEntry[] = [
   debt('src/main/vault/vault.ts', "onError(new Error('vault 文件格式不符,已忽略'))"),
 
   // —— ssh-keyscan 失败被 ensureTrust 的 catch {} 吞掉(不判 TOFU、不显示),交给 ssh 自己连接并归因 ——
-  debt('src/main/ssh/host-trust.ts', "else reject(error ?? new Error('ssh-keyscan 未返回任何公钥'))"),
+  debt(
+    'src/main/ssh/host-trust.ts',
+    "else reject(error ?? new Error('ssh-keyscan 未返回任何公钥'))"
+  ),
 
   // —— 工厂参数断言(调用方传常量):纯程序员错误,不会出现在界面上 ——
-  debt('src/main/auth/backoff.ts', "if (!Number.isInteger(limit) || limit < 1) throw new Error('并发上限必须是正整数')"),
+  debt(
+    'src/main/auth/backoff.ts',
+    "if (!Number.isInteger(limit) || limit < 1) throw new Error('并发上限必须是正整数')"
+  ),
 
   // —— 当前**没有任何消费者**:backoff 的 reason 只写不读;auth-client 的 evidence 被两处 probe 调用方丢弃(register.ts:344 / index.ts:630),session-restored 分支 message 置 null ——
   debt('src/main/auth/auth-client.ts', "evidence: '已存会话有效（静默恢复）',"),
   debt('src/main/auth/backoff.ts', "reason = why ?? '请求过于频繁，已暂停自动重试'"),
 
   // —— redact.ts 的正则字符类含中文标点(。，；！？、):用于排除 URL 末尾标点,是正则语法不是界面文案 ——
-  debt('src/shared/redact.ts', "return line.replace(/https?:\\/\\/[^\\s,。，；！？、()]+/gi, (match) => redactUrl(match))"),
+  debt(
+    'src/shared/redact.ts',
+    'return line.replace(/https?:\\/\\/[^\\s,。，；！？、()]+/gi, (match) => redactUrl(match))'
+  ),
 
   // —— 实例排序校验错误:只在主进程 IPC 边界抛出,由 wrap() 转为固定码 ——
-  debt('src/main/ipc/instance-handlers.ts', "throw new InstanceStoreError('invalid-input', '排序列表必须是字符串数组')"),
+  debt(
+    'src/main/ipc/instance-handlers.ts',
+    "throw new InstanceStoreError('invalid-input', '排序列表必须是字符串数组')"
+  ),
   debt(
     'src/main/registry/instance-store.ts',
     '`排序列表长度(${orderedIds.length})与实例数量(${current.length})不一致`'
@@ -1172,8 +1623,14 @@ const NON_RENDERER_COPY_DEBT_INTERNAL: readonly DebtEntry[] = [
   ),
 
   // —— 顶层失败记录器:deps.log 由 index.ts 接到 console.error,只进主进程日志,不经任何 IPC/状态字段 ——
-  debt('src/main/shell/top-level-failure.ts', "deps.log(`[main] 未处理的 Promise 拒绝：${describeReason(reason)}`)"),
-  debt('src/main/shell/top-level-failure.ts', "deps.log(`[main] 未捕获的异常：${describeReason(error)}`)")
+  debt(
+    'src/main/shell/top-level-failure.ts',
+    'deps.log(`[main] 未处理的 Promise 拒绝：${describeReason(reason)}`)'
+  ),
+  debt(
+    'src/main/shell/top-level-failure.ts',
+    'deps.log(`[main] 未捕获的异常：${describeReason(error)}`)'
+  )
 ]
 
 /**
@@ -1219,10 +1676,15 @@ export function diffDebt(
   violations: readonly Violation[],
   registered: readonly DebtEntry[]
 ): { unregistered: string[]; stale: string[] } {
-  const observed = [...new Set(violations.map((violation) => siteKey(violation.path, violation.text)))]
+  const observed = [
+    ...new Set(violations.map((violation) => siteKey(violation.path, violation.text)))
+  ]
     .sort()
     .map(readableSite)
-  const pinned = registered.map(([file, text]) => siteKey(file, text)).sort().map(readableSite)
+  const pinned = registered
+    .map(([file, text]) => siteKey(file, text))
+    .sort()
+    .map(readableSite)
   const observedSet = new Set(observed)
   const pinnedSet = new Set(pinned)
   return {
@@ -1340,9 +1802,10 @@ describe('i18n 覆盖检查', () => {
         COPY_DEBT_HINT
       ].join('\n')
     ).toEqual({ unregistered: [], stale: [] })
-    expect(new Set(NON_RENDERER_COPY_DEBT.map(([file, text]) => siteKey(file, text))).size, '债务清单里不应有重复站点').toBe(
-      NON_RENDERER_COPY_DEBT.length
-    )
+    expect(
+      new Set(NON_RENDERER_COPY_DEBT.map(([file, text]) => siteKey(file, text))).size,
+      '债务清单里不应有重复站点'
+    ).toBe(NON_RENDERER_COPY_DEBT.length)
     expect(
       NON_RENDERER_COPY_DEBT.length,
       '债务清单不应是空的(否则等于没有扫描非渲染层)'
@@ -1381,20 +1844,30 @@ describe('i18n 覆盖检查', () => {
     const [registeredFile, registeredText] = registered ?? ['', '']
     expect(registeredFile, '已登记的站点应该钉在 shared/endpoint.ts').toBe('src/shared/endpoint.ts')
 
-    const duplicated = scanSources([{ path: 'src/main/zz-debt-dup.ts', text: `${registeredText}\n` }], {
-      logSinks: LOG_SINK_ENABLED
-    })
-    expect(duplicated.map((violation) => violation.text), '同一条文本确实被扫到了').toEqual([
-      registeredText
-    ])
-    expect(diffDebt([...base, ...duplicated], NON_RENDERER_COPY_DEBT), '搬进新文件必须报未登记').toEqual({
+    const duplicated = scanSources(
+      [{ path: 'src/main/zz-debt-dup.ts', text: `${registeredText}\n` }],
+      {
+        logSinks: LOG_SINK_ENABLED
+      }
+    )
+    expect(
+      duplicated.map((violation) => violation.text),
+      '同一条文本确实被扫到了'
+    ).toEqual([registeredText])
+    expect(
+      diffDebt([...base, ...duplicated], NON_RENDERER_COPY_DEBT),
+      '搬进新文件必须报未登记'
+    ).toEqual({
       unregistered: [`src/main/zz-debt-dup.ts :: ${registeredText}`],
       stale: []
     })
 
     // 同一文件中的相同文本共享一个站点标识，因为标识不包含行号。
     expect(
-      diffDebt([...base, ...scanSources([{ path: registeredFile, text: `${registeredText}\n` }])], NON_RENDERER_COPY_DEBT),
+      diffDebt(
+        [...base, ...scanSources([{ path: registeredFile, text: `${registeredText}\n` }])],
+        NON_RENDERER_COPY_DEBT
+      ),
       '同文件同文本不构成新站点(已知缺口,身份不含行号)'
     ).toEqual({ unregistered: [], stale: [] })
 
@@ -1445,7 +1918,9 @@ describe('i18n 覆盖检查', () => {
     const regexText = withRegex[0]?.text ?? ''
     expect(logArgumentRegions(regexText)).toEqual([[14, 43]])
     expect(regexText.length).toBeGreaterThan(43)
-    expect(scanSources(withRegex, { logSinks: true }).map((violation) => violation.line)).toEqual([2])
+    expect(scanSources(withRegex, { logSinks: true }).map((violation) => violation.line)).toEqual([
+      2
+    ])
   })
 
   it('模板字面量中的内容按文案检查，即使看起来像注释', () => {
@@ -1564,7 +2039,9 @@ describe('i18n 覆盖检查', () => {
         text: "const y = (a + b) / 2\nconst L = '普通括号之后的文案'\n"
       }
     ]
-    expect(scanSources(synthetic).map((violation) => `${violation.path}:${violation.line}`)).toEqual([
+    expect(
+      scanSources(synthetic).map((violation) => `${violation.path}:${violation.line}`)
+    ).toEqual([
       'e1-if.ts:1',
       'e1-while.ts:1',
       'e1-for.ts:1',
@@ -1596,7 +2073,10 @@ describe('i18n 覆盖检查', () => {
       { path: 'j5a.html', text: '<p>//中文文案J5a</p>\n' },
       { path: 'j5b.html', text: '<p>/*中文文案J5b*/</p>\n' },
       { path: 'j5c.html', text: '<p>https://例子.中国</p>\n' },
-      { path: 'j5d.html', text: '<!doctype html>\n<html>\n  <head>\n    <title>数据目录控制台</title>\n  </head>\n</html>\n' },
+      {
+        path: 'j5d.html',
+        text: '<!doctype html>\n<html>\n  <head>\n    <title>数据目录控制台</title>\n  </head>\n</html>\n'
+      },
       // 反向对照 1:JSX 注释仍是注释(AuthPanel.tsx 里真实存在的形态),不许报
       { path: 'ok-comment.tsx', text: 'const g = () => <div>{/* JSX 注释:中文 */}</div>\n' },
       // 反向对照 2:JSX **属性之间**的 `//` 注释仍是注释(Attributes 里的真实写法),不许报
@@ -1630,7 +2110,9 @@ describe('i18n 覆盖检查', () => {
         ].join('\n')
       }
     ]
-    expect(scanSources(synthetic).map((violation) => `${violation.path}:${violation.line}`)).toEqual([
+    expect(
+      scanSources(synthetic).map((violation) => `${violation.path}:${violation.line}`)
+    ).toEqual([
       'j1.tsx:1',
       'j2.tsx:1',
       'j3.tsx:1',
@@ -1644,7 +2126,10 @@ describe('i18n 覆盖检查', () => {
 
   it('注释剥离在畸形输入上仍然终止:未闭合的块注释 / HTML 注释 / 字符串都不会死循环', () => {
     const malformed: SourceFile[] = [
-      { path: 'open-block.ts', text: "/* 未闭合的块注释:中文\nconst a = 1\nconst b = '后续文案'\n" },
+      {
+        path: 'open-block.ts',
+        text: "/* 未闭合的块注释:中文\nconst a = 1\nconst b = '后续文案'\n"
+      },
       { path: 'open-html.html', text: '<!-- 未闭合的注释中文\n<p>after</p>\n' },
       { path: 'open-string.ts', text: "const s = '未闭合字符串\nconst t = '第二条'\n" },
       { path: 'open-regex.ts', text: 'const r = /未闭合的正则\nconst u = 1\n' },

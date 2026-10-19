@@ -32,17 +32,27 @@ export default function EditInstanceDialog({
   const [name, setName] = useState(record.name)
   const [notes, setNotes] = useState(record.notes ?? '')
   const [authMode, setAuthMode] = useState(record.authMode)
-  const [port, setPort] = useState(record.transport === 'local' ? (record.port ? String(record.port) : '') : '')
+  const [port, setPort] = useState(
+    record.transport === 'local' ? (record.port ? String(record.port) : '') : ''
+  )
   const [profile, setProfile] = useState(record.transport === 'local' ? (record.profile ?? '') : '')
   const [launcher, setLauncher] = useState<LocalLauncher>(
     record.transport === 'local' ? (record.launcher ?? 'dsh') : 'dsh'
   )
-  const [autoStart, setAutoStart] = useState(record.transport === 'local' ? record.autoStart : false)
+  const [autoStart, setAutoStart] = useState(
+    record.transport === 'local' ? record.autoStart : false
+  )
   const [host, setHost] = useState(record.transport === 'ssh' ? record.host : '')
   const [username, setUsername] = useState(record.transport === 'ssh' ? record.username : '')
-  const [remotePort, setRemotePort] = useState(record.transport === 'ssh' ? String(record.remotePort) : '')
-  const [identityFile, setIdentityFile] = useState(record.transport === 'ssh' ? (record.identityFile ?? '') : '')
-  const [endpointUrl, setEndpointUrl] = useState(record.transport === 'http' ? record.endpointUrl : '')
+  const [remotePort, setRemotePort] = useState(
+    record.transport === 'ssh' ? String(record.remotePort) : ''
+  )
+  const [identityFile, setIdentityFile] = useState(
+    record.transport === 'ssh' ? (record.identityFile ?? '') : ''
+  )
+  const [endpointUrl, setEndpointUrl] = useState(
+    record.transport === 'http' ? record.endpointUrl : ''
+  )
   const [busy, setBusy] = useState(false)
   /**
    * 安装镜像（应用级设置，非实例字段）：URL 态（'' = 跟随系统 npm 配置）+ 是否选中「自定义」档。
@@ -220,7 +230,11 @@ export default function EditInstanceDialog({
             </select>
             <span className="hint">{t('edit.launcherHint')}</span>
           </div>
-          <label className="row mt12" style={{ gap: 8, alignItems: 'center' }} htmlFor="edit-autostart">
+          <label
+            className="row mt12"
+            style={{ gap: 8, alignItems: 'center' }}
+            htmlFor="edit-autostart"
+          >
             <input
               type="checkbox"
               id="edit-autostart"

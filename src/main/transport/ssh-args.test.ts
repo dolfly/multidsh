@@ -34,7 +34,16 @@ describe('buildSshArgs（ 参数库）', () => {
     const lIndex = args.indexOf('-L')
     expect(args[lIndex + 1]).toBe('30123:127.0.0.1:3080')
     expect(args).toContain('-N')
-    const options = args.filter((arg) => arg === '-o' || arg.startsWith('ExitOnForward') || arg.startsWith('ServerAlive') || arg.startsWith('ConnectTimeout') || arg.startsWith('Control') || arg.startsWith('StrictHostKeyChecking') || arg.startsWith('UserKnownHostsFile'))
+    const options = args.filter(
+      (arg) =>
+        arg === '-o' ||
+        arg.startsWith('ExitOnForward') ||
+        arg.startsWith('ServerAlive') ||
+        arg.startsWith('ConnectTimeout') ||
+        arg.startsWith('Control') ||
+        arg.startsWith('StrictHostKeyChecking') ||
+        arg.startsWith('UserKnownHostsFile')
+    )
     const optionValues = options.join(' ')
     expect(optionValues).toContain('ExitOnForwardFailure=yes')
     expect(optionValues).toContain('ServerAliveInterval=15')

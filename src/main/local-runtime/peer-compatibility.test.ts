@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { dshPeerRange, evaluateDshPeers, githubUrlFrom, isDshPeerName, npmUrlFrom, satisfiesDshPeer } from './peer-compatibility'
+import {
+  dshPeerRange,
+  evaluateDshPeers,
+  githubUrlFrom,
+  isDshPeerName,
+  npmUrlFrom,
+  satisfiesDshPeer
+} from './peer-compatibility'
 
 describe('satisfiesDshPeer', () => {
   it('空/缺省范围视为无约束', () => {
@@ -117,7 +124,11 @@ describe('isDshPeerName', () => {
 
 describe('evaluateDshPeers', () => {
   it('全部满足 → 空对象（兼容）', () => {
-    const peers = { '@deepseek-ai/dsh': '>=0.1.7-rc.2', '@deepseek-ai/dsh-llm': '^0.1.7-rc.1', react: '^18' }
+    const peers = {
+      '@deepseek-ai/dsh': '>=0.1.7-rc.2',
+      '@deepseek-ai/dsh-llm': '^0.1.7-rc.1',
+      react: '^18'
+    }
     expect(evaluateDshPeers(peers, '0.1.7-rc.2')).toEqual({})
   })
 
@@ -156,7 +167,11 @@ describe('evaluateDshPeers', () => {
 
 describe('dshPeerRange', () => {
   it('主包已声明 → 取主包范围（优先于子包）', () => {
-    const peers = { '@deepseek-ai/dsh': '>=0.1.7-rc.2', '@deepseek-ai/dsh-llm': '^0.2.0-rc.1', react: '^18' }
+    const peers = {
+      '@deepseek-ai/dsh': '>=0.1.7-rc.2',
+      '@deepseek-ai/dsh-llm': '^0.2.0-rc.1',
+      react: '^18'
+    }
     expect(dshPeerRange(peers)).toBe('>=0.1.7-rc.2')
   })
 
@@ -188,9 +203,9 @@ describe('dshPeerRange', () => {
 
 describe('githubUrlFrom', () => {
   it('git+https 带 .git 后缀', () => {
-    expect(githubUrlFrom({ type: 'git', url: 'git+https://github.com/xbzbing/dsh-git-panel.git' })).toBe(
-      'https://github.com/xbzbing/dsh-git-panel'
-    )
+    expect(
+      githubUrlFrom({ type: 'git', url: 'git+https://github.com/xbzbing/dsh-git-panel.git' })
+    ).toBe('https://github.com/xbzbing/dsh-git-panel')
   })
 
   it('字符串形态', () => {
@@ -217,7 +232,9 @@ describe('githubUrlFrom', () => {
 
 describe('npmUrlFrom', () => {
   it('scoped 与 unscoped 包名', () => {
-    expect(npmUrlFrom('@xbzbing/dsh-git-panel')).toBe('https://www.npmjs.com/package/@xbzbing/dsh-git-panel')
+    expect(npmUrlFrom('@xbzbing/dsh-git-panel')).toBe(
+      'https://www.npmjs.com/package/@xbzbing/dsh-git-panel'
+    )
     expect(npmUrlFrom('dsh-free-search')).toBe('https://www.npmjs.com/package/dsh-free-search')
   })
 

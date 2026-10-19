@@ -89,8 +89,7 @@ export async function prepareInstanceView(
   options: ImportCookieOptions,
   load: () => Promise<void> | void
 ): Promise<boolean> {
-  const injected =
-    options.cookie.value === '' ? false : await importSessionCookie(setter, options)
+  const injected = options.cookie.value === '' ? false : await importSessionCookie(setter, options)
   await load()
   return injected
 }

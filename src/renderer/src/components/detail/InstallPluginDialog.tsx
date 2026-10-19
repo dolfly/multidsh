@@ -45,7 +45,9 @@ export default function InstallPluginDialog(props: {
 
   const [spec, setSpec] = useState('')
   // 默认安装源跟随应用设置的镜像档位（打开对话框时读取；设置改动后重开生效）。
-  const [registry, setRegistry] = useState<PluginRegistryOption>(() => pluginRegistryFromUrl(npmRegistry))
+  const [registry, setRegistry] = useState<PluginRegistryOption>(() =>
+    pluginRegistryFromUrl(npmRegistry)
+  )
   /** 已解析出的计划：非 null 即处于第二步；输入变更立即作废回第一步。 */
   const [plan, setPlan] = useState<PluginInstallPlan | null>(null)
   /** 解析与安装共用一把锁：进行中按钮禁用且不可关闭。 */

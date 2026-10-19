@@ -102,7 +102,8 @@ function parseState(raw: unknown): PluginCheckState {
   const bundleIndex: Record<string, number> = {}
   const indexSource = isRecord(raw.bundleIndex) ? raw.bundleIndex : {}
   for (const [name, value] of Object.entries(indexSource)) {
-    if (typeof value === 'number' && Number.isInteger(value) && value >= 0) bundleIndex[name] = value
+    if (typeof value === 'number' && Number.isInteger(value) && value >= 0)
+      bundleIndex[name] = value
   }
   const runtimeVersion = typeof raw.runtimeVersion === 'string' ? raw.runtimeVersion : null
   const autoDisabled: AutoDisabledPlugin[] = []

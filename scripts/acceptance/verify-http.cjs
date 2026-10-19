@@ -55,11 +55,25 @@ async function main() {
 
   // 1) 真实 dsh web(browser-auth 真值)
   const entry = resolveDshEntry()
-  dshProc = spawn(process.execPath, ['--expose-internals', entry, '--profile', 'web', '--host', '127.0.0.1', '--port', String(DSH_PORT), '--no-open'], {
-    env: { ...process.env, DSH_HOME: '/tmp/dsh-http-accept-home', DSH_HTTP_ACCEPT: '1' },
-    stdio: 'ignore',
-    detached: true
-  })
+  dshProc = spawn(
+    process.execPath,
+    [
+      '--expose-internals',
+      entry,
+      '--profile',
+      'web',
+      '--host',
+      '127.0.0.1',
+      '--port',
+      String(DSH_PORT),
+      '--no-open'
+    ],
+    {
+      env: { ...process.env, DSH_HOME: '/tmp/dsh-http-accept-home', DSH_HTTP_ACCEPT: '1' },
+      stdio: 'ignore',
+      detached: true
+    }
+  )
   dshProc.unref()
 
   // 2) 模拟网关(302 → /login + 401 JSON)与纯静态端点
@@ -112,13 +126,16 @@ async function main() {
 
   async function createAndStart(name, endpointUrl) {
     const created = await hub.evaluate(
-      ([n, url]) => window.dshHub.instances.create({ transport: 'http', name: n, endpointUrl: url }),
+      ([n, url]) =>
+        window.dshHub.instances.create({ transport: 'http', name: n, endpointUrl: url }),
       [name, endpointUrl]
     )
     if (!created.ok) throw new Error(`创建失败:${created.message}`)
     await hub.evaluate((id) => window.dshHub.runtime.start(id), created.value.id)
     const running = await waitFor(
-      async () => (await load()).filter((e) => e.id === created.value.id && e.status === 'running').pop() ?? null,
+      async () =>
+        (await load()).filter((e) => e.id === created.value.id && e.status === 'running').pop() ??
+        null,
       (v) => v,
       20000,
       `${name} running`
@@ -128,7 +145,8 @@ async function main() {
 
   // A) 模拟网关 → 应识别为「检测到登录认证」
   const gateway = await createAndStart('验证 · 模拟网关', `http://127.0.0.1:${GATEWAY_PORT}/`)
-  if (!gateway.detail.includes('检测到登录认证')) throw new Error(`网关探测结论异常:${gateway.detail}`)
+  if (!gateway.detail.includes('检测到登录认证'))
+    throw new Error(`网关探测结论异常:${gateway.detail}`)
   console.log(`[ok] 模拟网关探测:${gateway.detail}`)
 
   // B) 纯静态端点 → 无需登录
@@ -142,7 +160,10 @@ async function main() {
   console.log(`[ok] 真实 dsh 探测:${real.detail}`)
 
   // C2) 网关 API 401 JSON 路径 → 判为 gateway(api-401)
-  const api401 = await createAndStart('验证 · 网关 API', `http://127.0.0.1:${GATEWAY_PORT}/api/remote.mux`)
+  const api401 = await createAndStart(
+    '验证 · 网关 API',
+    `http://127.0.0.1:${GATEWAY_PORT}/api/remote.mux`
+  )
   if (!api401.detail.includes('401 JSON')) throw new Error(`401 JSON 探测结论异常:${api401.detail}`)
   console.log(`[ok] 网关 API 401 JSON:${api401.detail}`)
 
@@ -150,7 +171,11 @@ async function main() {
   const openResult = await hub.evaluate((id) => window.dshHub.runtime.openView(id), gateway.id)
   if (!openResult.ok) throw new Error(`http openView 失败:${JSON.stringify(openResult)}`)
   const winUrl = await waitFor(
-    async () => app.windows().map((w) => w.url()).find((u) => u.startsWith('http://127.0.0.1:31002')) ?? null,
+    async () =>
+      app
+        .windows()
+        .map((w) => w.url())
+        .find((u) => u.startsWith('http://127.0.0.1:31002')) ?? null,
     (v) => v,
     10000,
     'http 实例窗口'
@@ -159,11 +184,16 @@ async function main() {
 
   // E) 不可达端点 → error
   const created = await hub.evaluate(() =>
-    window.dshHub.instances.create({ transport: 'http', name: '验证 · 不可达', endpointUrl: 'http://127.0.0.1:1/' })
+    window.dshHub.instances.create({
+      transport: 'http',
+      name: '验证 · 不可达',
+      endpointUrl: 'http://127.0.0.1:1/'
+    })
   )
   await hub.evaluate((id) => window.dshHub.runtime.start(id), created.value.id)
   const failed = await waitFor(
-    async () => (await load()).filter((e) => e.id === created.value.id && e.status === 'error').pop() ?? null,
+    async () =>
+      (await load()).filter((e) => e.id === created.value.id && e.status === 'error').pop() ?? null,
     (v) => v,
     15000,
     '不可达端点 error'

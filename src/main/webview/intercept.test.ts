@@ -41,7 +41,9 @@ describe('intercept（ 302/401 判定）', () => {
   it('302 到未知 location / 缺 location 都不算信号', () => {
     expect(classifyAuthSignal(nav(302, '/assets/app.js'))).toBeNull()
     expect(classifyAuthSignal(nav(302, '/'))).toBeNull()
-    expect(classifyAuthSignal({ statusCode: 302, headers: {}, resourceType: 'mainFrame' })).toBeNull()
+    expect(
+      classifyAuthSignal({ statusCode: 302, headers: {}, resourceType: 'mainFrame' })
+    ).toBeNull()
   })
 
   it('子资源(xhr/script)的 302 不算信号 —— 只有主框架导航才代表被拦到登录页', () => {
@@ -83,7 +85,11 @@ describe('intercept（ 302/401 判定）', () => {
 
   it('头名大小写不敏感;数组头取首个', () => {
     expect(
-      classifyAuthSignal({ statusCode: 302, headers: { Location: ['/login'] }, resourceType: 'mainFrame' })
+      classifyAuthSignal({
+        statusCode: 302,
+        headers: { Location: ['/login'] },
+        resourceType: 'mainFrame'
+      })
     ).toBe('session-expired')
   })
 })

@@ -15,7 +15,10 @@ describe('classifySshExit（ 退出归因）', () => {
   })
 
   it('主机名解析失败 → resolve', () => {
-    const result = classifySshExit(255, 'ssh: Could not resolve hostname no-such-host: nodename nor servname provided')
+    const result = classifySshExit(
+      255,
+      'ssh: Could not resolve hostname no-such-host: nodename nor servname provided'
+    )
     expect(result.kind).toBe('resolve')
     expect(result.message).toContain('主机名解析失败')
   })
@@ -27,21 +30,27 @@ describe('classifySshExit（ 退出归因）', () => {
   })
 
   it('连接超时 → timeout', () => {
-    const result = classifySshExit(255, 'ssh: connect to host 10.0.0.1 port 22: Operation timed out')
+    const result = classifySshExit(
+      255,
+      'ssh: connect to host 10.0.0.1 port 22: Operation timed out'
+    )
     expect(result.kind).toBe('timeout')
   })
 
   it('端口转发失败 → forward', () => {
-    const result = classifySshExit(255, 'Warning: remote port forwarding failed for listen port 3080')
+    const result = classifySshExit(
+      255,
+      'Warning: remote port forwarding failed for listen port 3080'
+    )
     expect(result.kind).toBe('forward')
     expect(result.message).toContain('端口转发失败')
   })
 
   it('本地 -L 绑定失败 → forward（）', () => {
     expect(classifySshExit(255, 'Could not request local forwarding.').kind).toBe('forward')
-    expect(
-      classifySshExit(255, 'bind [127.0.0.1]:30000: Address already in use').kind
-    ).toBe('forward')
+    expect(classifySshExit(255, 'bind [127.0.0.1]:30000: Address already in use').kind).toBe(
+      'forward'
+    )
   })
 
   it('远端关闭 → closed', () => {

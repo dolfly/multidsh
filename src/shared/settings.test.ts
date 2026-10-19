@@ -96,7 +96,9 @@ describe('settings（非敏感偏好）', () => {
   })
 
   it('npm 镜像信任根:只接受 https,本地镜像放行回环 http', () => {
-    expect(SettingsSchema.safeParse({ npmRegistry: 'https://registry.npmmirror.com' }).success).toBe(true)
+    expect(
+      SettingsSchema.safeParse({ npmRegistry: 'https://registry.npmmirror.com' }).success
+    ).toBe(true)
     expect(SettingsSchema.safeParse({ npmRegistry: 'https://[::1]:4873/' }).success).toBe(true)
     expect(SettingsSchema.safeParse({ npmRegistry: 'http://127.0.0.1:4873' }).success).toBe(true)
     expect(SettingsSchema.safeParse({ npmRegistry: 'http://localhost:4873' }).success).toBe(true)
@@ -104,10 +106,14 @@ describe('settings（非敏感偏好）', () => {
 
     // registry 自证完整性且执行生命周期脚本,是整条下载链的信任根:
     // 其余协议与明文远程源一律拒绝。
-    expect(SettingsSchema.safeParse({ npmRegistry: 'file:///tmp/evil-registry' }).success).toBe(false)
+    expect(SettingsSchema.safeParse({ npmRegistry: 'file:///tmp/evil-registry' }).success).toBe(
+      false
+    )
     expect(SettingsSchema.safeParse({ npmRegistry: 'ftp://example.com/' }).success).toBe(false)
     expect(SettingsSchema.safeParse({ npmRegistry: 'javascript:alert(1)' }).success).toBe(false)
-    expect(SettingsSchema.safeParse({ npmRegistry: 'http://evil.example.com/' }).success).toBe(false)
+    expect(SettingsSchema.safeParse({ npmRegistry: 'http://evil.example.com/' }).success).toBe(
+      false
+    )
     expect(SettingsSchema.safeParse({ npmRegistry: 'not a url' }).success).toBe(false)
   })
 
@@ -121,7 +127,9 @@ describe('settings（非敏感偏好）', () => {
 
   it('sanitizeEnvRegistry:环境变量镜像走同一信任根,非法值丢弃', () => {
     // 合法值原样返回（去空白）
-    expect(sanitizeEnvRegistry('https://registry.npmmirror.com')).toBe('https://registry.npmmirror.com')
+    expect(sanitizeEnvRegistry('https://registry.npmmirror.com')).toBe(
+      'https://registry.npmmirror.com'
+    )
     expect(sanitizeEnvRegistry('  https://registry.npmjs.org  ')).toBe('https://registry.npmjs.org')
     expect(sanitizeEnvRegistry('http://127.0.0.1:4873')).toBe('http://127.0.0.1:4873')
     // 空/未设置 → undefined（回落系统 npm 配置）
@@ -148,7 +156,9 @@ describe('settings（非敏感偏好）', () => {
 
   it('registryPresetKey:空=system、预设 URL 取 URL、其余归 custom（向导与编辑共用）', () => {
     expect(registryPresetKey('')).toBe('system')
-    expect(registryPresetKey('https://registry.npmmirror.com')).toBe('https://registry.npmmirror.com')
+    expect(registryPresetKey('https://registry.npmmirror.com')).toBe(
+      'https://registry.npmmirror.com'
+    )
     expect(registryPresetKey('https://registry.npmjs.org')).toBe('https://registry.npmjs.org')
     expect(registryPresetKey('http://127.0.0.1:4873')).toBe('custom')
     expect(registryPresetKey('https://npm.example.com/')).toBe('custom')

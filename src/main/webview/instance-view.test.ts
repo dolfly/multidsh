@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createOncePerSession, isAuthenticatedTokenUrl, isSameOriginLoginRedirect, openInstanceView, shouldReuseLoadedView } from './instance-view'
+import {
+  createOncePerSession,
+  isAuthenticatedTokenUrl,
+  isSameOriginLoginRedirect,
+  openInstanceView,
+  shouldReuseLoadedView
+} from './instance-view'
 import type { InstanceViewWindow, OpenInstanceViewDeps } from './instance-view'
 
 const COOKIE = { name: 'dsh_auth', value: 'sess-token', expiresAt: null }
@@ -195,16 +201,32 @@ describe('openInstanceView（ 先注入再 loadURL 的顺序纪律）', () => {
 
 describe('认证重定向后的加载失败', () => {
   it('仅将同源 <basePath>/login 识别为认证重定向', () => {
-    expect(isSameOriginLoginRedirect('https://dsh.crazydb.com/login', 'https://dsh.crazydb.com', '/')).toBe(true)
-    expect(isSameOriginLoginRedirect('https://dsh.crazydb.com/login/', 'https://dsh.crazydb.com', '/')).toBe(true)
-    expect(isSameOriginLoginRedirect('https://evil.example.com/login', 'https://dsh.crazydb.com', '/')).toBe(false)
-    expect(isSameOriginLoginRedirect('https://dsh.crazydb.com/not-login', 'https://dsh.crazydb.com', '/')).toBe(false)
-    // 带 basePath 的实例：网关 302 到 <basePath>/login，根路径匹配会漏判
     expect(
-      isSameOriginLoginRedirect('https://dsh.crazydb.com/dsh/login', 'https://dsh.crazydb.com/dsh', '/dsh')
+      isSameOriginLoginRedirect('https://dsh.crazydb.com/login', 'https://dsh.crazydb.com', '/')
     ).toBe(true)
     expect(
-      isSameOriginLoginRedirect('https://dsh.crazydb.com/login', 'https://dsh.crazydb.com/dsh', '/dsh')
+      isSameOriginLoginRedirect('https://dsh.crazydb.com/login/', 'https://dsh.crazydb.com', '/')
+    ).toBe(true)
+    expect(
+      isSameOriginLoginRedirect('https://evil.example.com/login', 'https://dsh.crazydb.com', '/')
+    ).toBe(false)
+    expect(
+      isSameOriginLoginRedirect('https://dsh.crazydb.com/not-login', 'https://dsh.crazydb.com', '/')
+    ).toBe(false)
+    // 带 basePath 的实例：网关 302 到 <basePath>/login，根路径匹配会漏判
+    expect(
+      isSameOriginLoginRedirect(
+        'https://dsh.crazydb.com/dsh/login',
+        'https://dsh.crazydb.com/dsh',
+        '/dsh'
+      )
+    ).toBe(true)
+    expect(
+      isSameOriginLoginRedirect(
+        'https://dsh.crazydb.com/login',
+        'https://dsh.crazydb.com/dsh',
+        '/dsh'
+      )
     ).toBe(false)
   })
 

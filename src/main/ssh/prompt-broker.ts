@@ -29,9 +29,7 @@ export interface PromptBrokerOptions {
 
 export interface PromptBroker {
   /** TOFU 指纹确认（tunnel manager 注入用） */
-  requestHostKey(
-    request: Omit<HostKeyPromptPayload, 'requestId'>
-  ): Promise<HostKeyDecision>
+  requestHostKey(request: Omit<HostKeyPromptPayload, 'requestId'>): Promise<HostKeyDecision>
   /** SSH 口令输入（tunnel manager 注入用）；null = 取消 */
   requestAskpass(request: Omit<AskpassPromptPayload, 'requestId'>): Promise<string | null>
   /** 运行时二次确认（装配层的 confirmDownload / confirmSystemUpgrade 注入用）；false = 拒绝 */

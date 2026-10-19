@@ -40,7 +40,12 @@ function localInstance(overrides: Partial<LocalInstance> = {}): LocalInstance {
 function fakeInstaller(): PluginManagerOptions['installer'] {
   return {
     listInstalled: async () => [
-      { version: '0.1.7-rc.2', dir: '/runtimes/dsh-0.1.7-rc.2', entry: '/runtimes/dsh-0.1.7-rc.2/bin.js', installedAt: now }
+      {
+        version: '0.1.7-rc.2',
+        dir: '/runtimes/dsh-0.1.7-rc.2',
+        entry: '/runtimes/dsh-0.1.7-rc.2/bin.js',
+        installedAt: now
+      }
     ],
     listAvailableVersions: async () => [],
     resolveDefaultVersion: async () => '0.1.7-rc.2',
@@ -71,7 +76,10 @@ function fakeBundles(initial: { bundles: string[]; dependencies: string[] }): {
       const without = state.current.bundles.filter((item) => item !== name)
       if (!enabled) state.current.bundles = without
       else if (!state.current.bundles.includes(name)) {
-        const at = insertAt !== undefined && insertAt >= 0 && insertAt <= without.length ? insertAt : without.length
+        const at =
+          insertAt !== undefined && insertAt >= 0 && insertAt <= without.length
+            ? insertAt
+            : without.length
         state.current.bundles = [...without.slice(0, at), name, ...without.slice(at)]
       }
       return state.current.bundles
@@ -180,7 +188,11 @@ function baseOptions(run: PluginManagerOptions['run']): PluginManagerOptions {
 
 describe('createPluginManager.list', () => {
   it('解析列表并装配元数据（图标 data-uri / npm+github url / host 半 / 依赖）', async () => {
-    const run = vi.fn(async (): Promise<CommandResult> => ({ code: 0, stdout: LIST_JSON, stderr: '' }))
+    const run = vi.fn(async (): Promise<CommandResult> => ({
+      code: 0,
+      stdout: LIST_JSON,
+      stderr: ''
+    }))
     const manager = createPluginManager(baseOptions(run))
     const plugins = await manager.list(localInstance())
 
@@ -214,7 +226,11 @@ describe('createPluginManager.list', () => {
   })
 
   it('locale：读 locale/<lang>.json 的 meta 本地化 title/description', async () => {
-    const run = vi.fn(async (): Promise<CommandResult> => ({ code: 0, stdout: LIST_JSON, stderr: '' }))
+    const run = vi.fn(async (): Promise<CommandResult> => ({
+      code: 0,
+      stdout: LIST_JSON,
+      stderr: ''
+    }))
     const manager = createPluginManager({
       ...baseOptions(run),
       readLocale: (p) => {
@@ -246,7 +262,11 @@ describe('createPluginManager.list', () => {
 
   it('scoped 包元数据优先读 profile 顶层 node_modules（.pnpm 虚拟 store 里 scoped 子目录不存在）', async () => {
     const readDirs: string[] = []
-    const run = vi.fn(async (): Promise<CommandResult> => ({ code: 0, stdout: LIST_JSON, stderr: '' }))
+    const run = vi.fn(async (): Promise<CommandResult> => ({
+      code: 0,
+      stdout: LIST_JSON,
+      stderr: ''
+    }))
     const manager = createPluginManager({
       ...baseOptions(run),
       // 只有顶层 node_modules 路径能读到 manifest；list --json 的 .pnpm path 读不到（返回 null）。
@@ -270,15 +290,24 @@ describe('createPluginManager.list', () => {
 
   it('命令拼装：plugin --profile <p> list --json，DSH_HOME 为隔离空间路径', async () => {
     const calls: Array<{ args: string[]; env?: NodeJS.ProcessEnv }> = []
-    const run = vi.fn(async (command: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
-      void command
-      calls.push({ args, env: opts?.env })
-      return { code: 0, stdout: LIST_JSON, stderr: '' }
-    })
+    const run = vi.fn(
+      async (command: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
+        void command
+        calls.push({ args, env: opts?.env })
+        return { code: 0, stdout: LIST_JSON, stderr: '' }
+      }
+    )
     const manager = createPluginManager(baseOptions(run))
     await manager.list(localInstance({ id: 'abc', profile: 'tui' }))
 
-    expect(calls[0]!.args).toEqual(['/runtimes/dsh-0.1.7-rc.2/bin.js', 'plugin', '--profile', 'tui', 'list', '--json'])
+    expect(calls[0]!.args).toEqual([
+      '/runtimes/dsh-0.1.7-rc.2/bin.js',
+      'plugin',
+      '--profile',
+      'tui',
+      'list',
+      '--json'
+    ])
     // 路径断言归一化分隔符：断言的是目录布局，Windows 上 join 产出反斜杠。
     expect(toPosix(calls[0]!.env?.DSH_HOME ?? '')).toBe('/data/homes/abc')
     // pnpm v12 全局 shim 派发在 nvm+Windows 上会 shim integrity check failed，统一绕过。
@@ -287,12 +316,14 @@ describe('createPluginManager.list', () => {
 
   it('公共空间实例：DSH_HOME 为 <home>/.dsh', async () => {
     const calls: Array<{ env?: NodeJS.ProcessEnv }> = []
-    const run = vi.fn(async (command: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
-      void command
-      void args
-      calls.push({ env: opts?.env })
-      return { code: 0, stdout: LIST_JSON, stderr: '' }
-    })
+    const run = vi.fn(
+      async (command: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
+        void command
+        void args
+        calls.push({ env: opts?.env })
+        return { code: 0, stdout: LIST_JSON, stderr: '' }
+      }
+    )
     const manager = createPluginManager({ ...baseOptions(run), homeDir: () => '/Users/me' })
     await manager.list(localInstance({ useDefaultSpace: true }))
     expect(toPosix(calls[0]!.env?.DSH_HOME ?? '')).toBe('/Users/me/.dsh')
@@ -300,12 +331,14 @@ describe('createPluginManager.list', () => {
 
   it('提供 pnpmBinDir 时并入 PATH：Windows 前置、其余平台后置兜底', async () => {
     const calls: Array<{ env?: NodeJS.ProcessEnv }> = []
-    const run = vi.fn(async (command: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
-      void command
-      void args
-      calls.push({ env: opts?.env })
-      return { code: 0, stdout: LIST_JSON, stderr: '' }
-    })
+    const run = vi.fn(
+      async (command: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
+        void command
+        void args
+        calls.push({ env: opts?.env })
+        return { code: 0, stdout: LIST_JSON, stderr: '' }
+      }
+    )
     const manager = createPluginManager({ ...baseOptions(run), pnpmBinDir: '/opt/app/pnpm-bin' })
     await manager.list(localInstance())
     const segments = (calls[0]!.env?.PATH ?? '').split(delimiter)
@@ -322,7 +355,11 @@ describe('createPluginManager.list', () => {
   it('命令失败以 invalid-state 透出 dsh 的拒绝说明（不再收敛成内部错误）', async () => {
     const rejection =
       'dsh: installation rejected: Plugin dsh-better-sidebar@0.24.1 is incompatible with dsh 0.1.7-rc.2'
-    const run = vi.fn(async (): Promise<CommandResult> => ({ code: 1, stdout: '', stderr: rejection }))
+    const run = vi.fn(async (): Promise<CommandResult> => ({
+      code: 1,
+      stdout: '',
+      stderr: rejection
+    }))
     const manager = createPluginManager(baseOptions(run))
     await expect(manager.list(localInstance())).rejects.toBeInstanceOf(InstanceStoreError)
     await expect(manager.list(localInstance())).rejects.toMatchObject({
@@ -333,11 +370,13 @@ describe('createPluginManager.list', () => {
 
   it('公共空间 + 自定义启动器（duush）跟随系统 dsh：用 PATH 实测入口，不用 hub 副本', async () => {
     const calls: Array<{ args: string[]; env?: NodeJS.ProcessEnv }> = []
-    const run = vi.fn(async (command: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
-      void command
-      calls.push({ args, env: opts?.env })
-      return { code: 0, stdout: LIST_JSON, stderr: '' }
-    })
+    const run = vi.fn(
+      async (command: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
+        void command
+        calls.push({ args, env: opts?.env })
+        return { code: 0, stdout: LIST_JSON, stderr: '' }
+      }
+    )
     const manager = createPluginManager({
       ...baseOptions(run),
       homeDir: () => '/Users/me',
@@ -345,7 +384,9 @@ describe('createPluginManager.list', () => {
         probe: async () => ({ command: '/usr/local/bin/dsh', version: '0.2.0-rc.1' })
       }
     })
-    await manager.list(localInstance({ useDefaultSpace: true, launcher: 'duush', dshVersion: '0.1.7-rc.2' }))
+    await manager.list(
+      localInstance({ useDefaultSpace: true, launcher: 'duush', dshVersion: '0.1.7-rc.2' })
+    )
     // 入口取 PATH 上的系统 dsh，而不是 hub 已装的 0.1.7-rc.2 副本。
     expect(calls[0]!.args[0]).toBe('/usr/local/bin/dsh')
     expect(toPosix(calls[0]!.env?.DSH_HOME ?? '')).toBe('/Users/me/.dsh')
@@ -412,12 +453,20 @@ describe('createPluginManager.check', () => {
       void command
       if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
       // 已装 1.1.0 不在 time 里（本地 file: 安装 / 版本已下架）。
-      return { code: 0, stdout: JSON.stringify({ version: '1.2.0', time: { '1.2.0': 'x' } }), stderr: '' }
+      return {
+        code: 0,
+        stdout: JSON.stringify({ version: '1.2.0', time: { '1.2.0': 'x' } }),
+        stderr: ''
+      }
     })
     const stateStore = memoryStore()
     await stateStore.write(
       'inst-1',
-      stateWith({ published: { '@xbzbing/dsh-git-panel': { version: '1.1.0', at: '2026-09-20T02:30:00.000Z' } } })
+      stateWith({
+        published: {
+          '@xbzbing/dsh-git-panel': { version: '1.1.0', at: '2026-09-20T02:30:00.000Z' }
+        }
+      })
     )
     const manager = createPluginManager({ ...baseOptions(run), stateStore })
     const check = await manager.check(localInstance(), '@xbzbing/dsh-git-panel')
@@ -436,7 +485,8 @@ describe('createPluginManager.check', () => {
       return {
         code: 1,
         stdout: '',
-        stderr: 'Command failed with exit code 1: pnpm view dsh-opencode-zen-provider version peerDependencies time --json\nERR_PNPM_FETCH_404 GET https://registry.npmjs.org/dsh-opencode-zen-provider: Not Found - 404'
+        stderr:
+          'Command failed with exit code 1: pnpm view dsh-opencode-zen-provider version peerDependencies time --json\nERR_PNPM_FETCH_404 GET https://registry.npmjs.org/dsh-opencode-zen-provider: Not Found - 404'
       }
     })
     const manager = createPluginManager(baseOptions(run))
@@ -451,12 +501,18 @@ describe('createPluginManager.check', () => {
       if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
       return {
         code: 0,
-        stdout: JSON.stringify({ version: '2.0.0', peerDependencies: { '@deepseek-ai/dsh': '>=0.2.0' } }),
+        stdout: JSON.stringify({
+          version: '2.0.0',
+          peerDependencies: { '@deepseek-ai/dsh': '>=0.2.0' }
+        }),
         stderr: ''
       }
     })
     const manager = createPluginManager(baseOptions(run))
-    const check = await manager.check(localInstance({ dshVersion: '0.1.7-rc.2' }), '@xbzbing/dsh-git-panel')
+    const check = await manager.check(
+      localInstance({ dshVersion: '0.1.7-rc.2' }),
+      '@xbzbing/dsh-git-panel'
+    )
     expect(check.compatible).toBe(false)
     expect(check.dshPeer).toBe('>=0.2.0')
   })
@@ -479,7 +535,10 @@ describe('createPluginManager.check', () => {
       }
     })
     const manager = createPluginManager(baseOptions(run))
-    const check = await manager.check(localInstance({ dshVersion: '0.1.7-rc.2' }), '@xbzbing/dsh-git-panel')
+    const check = await manager.check(
+      localInstance({ dshVersion: '0.1.7-rc.2' }),
+      '@xbzbing/dsh-git-panel'
+    )
     // 主包 peer 未声明，但子包锁 0.2 → 整体不兼容，不给升级；
     // 展示范围回落到（锁步一致的）子包范围，不再显示成空「dsh —」。
     expect(check.compatible).toBe(false)
@@ -587,7 +646,11 @@ describe('createPluginManager.check', () => {
   })
 
   it('快照版本与已装版本不一致：不回填发布时间（升级后等下次检查）', async () => {
-    const run = vi.fn(async (): Promise<CommandResult> => ({ code: 0, stdout: LIST_JSON, stderr: '' }))
+    const run = vi.fn(async (): Promise<CommandResult> => ({
+      code: 0,
+      stdout: LIST_JSON,
+      stderr: ''
+    }))
     const stateStore = memoryStore()
     await stateStore.write(
       'inst-1',
@@ -601,7 +664,9 @@ describe('createPluginManager.check', () => {
     )
     const manager = createPluginManager({ ...baseOptions(run), stateStore })
     const plugins = await manager.list(localInstance())
-    expect(plugins.find((plugin) => plugin.name === '@xbzbing/dsh-git-panel')?.publishedAt).toBeNull()
+    expect(
+      plugins.find((plugin) => plugin.name === '@xbzbing/dsh-git-panel')?.publishedAt
+    ).toBeNull()
     // 版本一致的插件照常显示。
     expect(plugins.find((plugin) => plugin.name === 'dsh-free-search')?.publishedAt).toBe(
       '2026-09-10T00:00:00.000Z'
@@ -661,7 +726,9 @@ describe('createPluginManager.check', () => {
             dshVersion: null
           }
         },
-        published: { '@xbzbing/dsh-git-panel': { version: '1.1.0', at: '2026-09-20T02:30:00.000Z' } }
+        published: {
+          '@xbzbing/dsh-git-panel': { version: '1.1.0', at: '2026-09-20T02:30:00.000Z' }
+        }
       })
     )
     const manager = createPluginManager({ ...baseOptions(run), stateStore })
@@ -689,7 +756,8 @@ describe('createPluginManager.check', () => {
         upgraded = true
         return { code: 0, stdout: '', stderr: '' }
       }
-      if (args.includes('list')) return { code: 0, stdout: upgraded ? listV2 : LIST_JSON, stderr: '' }
+      if (args.includes('list'))
+        return { code: 0, stdout: upgraded ? listV2 : LIST_JSON, stderr: '' }
       if (args.includes('view')) {
         return {
           code: 0,
@@ -730,7 +798,9 @@ describe('createPluginManager.check', () => {
             dshVersion: null
           }
         },
-        published: { '@xbzbing/dsh-git-panel': { version: '1.1.0', at: '2026-09-20T02:30:00.000Z' } }
+        published: {
+          '@xbzbing/dsh-git-panel': { version: '1.1.0', at: '2026-09-20T02:30:00.000Z' }
+        }
       })
     )
     const manager = createPluginManager({ ...baseOptions(run), stateStore })
@@ -772,7 +842,11 @@ describe('createPluginManager.check', () => {
       void command
       if (args.includes('list')) return { code: 0, stdout: LIST_JSON, stderr: '' }
       await gate
-      return { code: 0, stdout: JSON.stringify({ version: '2.0.0', peerDependencies: {} }), stderr: '' }
+      return {
+        code: 0,
+        stdout: JSON.stringify({ version: '2.0.0', peerDependencies: {} }),
+        stderr: ''
+      }
     })
     const manager = createPluginManager({ ...baseOptions(run), stateStore: memoryStore() })
     const pending = manager.check(localInstance(), '@xbzbing/dsh-git-panel')
@@ -797,7 +871,11 @@ describe('createPluginManager.check', () => {
       dependencies: ['@xbzbing/dsh-git-panel', 'dsh-free-search']
     })
     const stateStore = memoryStore()
-    const manager = createPluginManager({ ...baseOptions(run), stateStore, bundleStore: bundles.store })
+    const manager = createPluginManager({
+      ...baseOptions(run),
+      stateStore,
+      bundleStore: bundles.store
+    })
 
     const result = await manager.setEnabled(localInstance(), '@xbzbing/dsh-git-panel', false)
     // profile 'web' 有 HMR → 启用/禁用走 dsh 默认规则，热生效
@@ -825,11 +903,19 @@ describe('createPluginManager.check', () => {
     })
     const stateStore = memoryStore()
     await stateStore.write('inst-1', stateWith({ bundleIndex: { '@xbzbing/dsh-git-panel': 1 } }))
-    const manager = createPluginManager({ ...baseOptions(run), stateStore, bundleStore: bundles.store })
+    const manager = createPluginManager({
+      ...baseOptions(run),
+      stateStore,
+      bundleStore: bundles.store
+    })
 
     await manager.setEnabled(localInstance(), '@xbzbing/dsh-git-panel', true)
     expect(bundles.calls[0]).toEqual({ name: '@xbzbing/dsh-git-panel', enabled: true, insertAt: 1 })
-    expect(bundles.current.bundles).toEqual(['@deepseek-ai/dsh-base', '@xbzbing/dsh-git-panel', 'dsh-free-search'])
+    expect(bundles.current.bundles).toEqual([
+      '@deepseek-ai/dsh-base',
+      '@xbzbing/dsh-git-panel',
+      'dsh-free-search'
+    ])
   })
 
   it('setEnabled(启用)：不兼容插件的启用先授予 allow-version --accept-risk 豁免，再放进清单', async () => {
@@ -940,7 +1026,8 @@ describe('createPluginManager.check', () => {
         return {
           code: 1,
           stdout: '',
-          stderr: 'dsh: usage: dsh plugin allow-version <package@version> --dsh-version <exact> --accept-risk'
+          stderr:
+            'dsh: usage: dsh plugin allow-version <package@version> --dsh-version <exact> --accept-risk'
         }
       }
       return { code: 0, stdout: '', stderr: '' }
@@ -961,9 +1048,9 @@ describe('createPluginManager.check', () => {
       }
     })
 
-    await expect(manager.setEnabled(localInstance(), '@xbzbing/dsh-git-panel', true)).rejects.toThrow(
-      /allow-version.*失败（exit 1）/
-    )
+    await expect(
+      manager.setEnabled(localInstance(), '@xbzbing/dsh-git-panel', true)
+    ).rejects.toThrow(/allow-version.*失败（exit 1）/)
     expect(bundles.calls).toEqual([])
     expect(bundles.current.bundles).toEqual(['@deepseek-ai/dsh-base'])
   })
@@ -984,10 +1071,16 @@ describe('createPluginManager.check', () => {
       stateWith({
         bundleIndex: { '@xbzbing/dsh-git-panel': 1 },
         runtimeVersion: '0.1.7-rc.2',
-        autoDisabled: [{ name: '@xbzbing/dsh-git-panel', version: '1.1.0', dshVersion: '0.1.7-rc.2' }]
+        autoDisabled: [
+          { name: '@xbzbing/dsh-git-panel', version: '1.1.0', dshVersion: '0.1.7-rc.2' }
+        ]
       })
     )
-    const manager = createPluginManager({ ...baseOptions(run), stateStore, bundleStore: bundles.store })
+    const manager = createPluginManager({
+      ...baseOptions(run),
+      stateStore,
+      bundleStore: bundles.store
+    })
 
     await manager.setEnabled(localInstance(), '@xbzbing/dsh-git-panel', true)
     expect((await stateStore.read('inst-1')).autoDisabled).toEqual([])
@@ -1006,7 +1099,9 @@ describe('createPluginManager.check', () => {
       stateStore: memoryStore(),
       bundleStore: bundles.store
     })
-    await expect(manager.setEnabled(localInstance(), '@xbzbing/dsh-git-panel', false)).rejects.toThrow(/未安装/)
+    await expect(
+      manager.setEnabled(localInstance(), '@xbzbing/dsh-git-panel', false)
+    ).rejects.toThrow(/未安装/)
   })
 
   it('list：按 bundles 给出 enabled（无 host 半的插件为 null）', async () => {
@@ -1076,7 +1171,9 @@ describe('createPluginManager.check', () => {
 
     const result = await manager.reconcileRuntime(localInstance(), '0.1.7-rc.2')
     expect(result.checked).toBe(true)
-    expect(result.disabled).toEqual([{ name: 'bad-plugin', version: '1.0.0', dshVersion: '0.1.7-rc.2' }])
+    expect(result.disabled).toEqual([
+      { name: 'bad-plugin', version: '1.0.0', dshVersion: '0.1.7-rc.2' }
+    ])
     // 只移除了不兼容的那个，且记下原索引
     expect(bundles.current.bundles).toEqual(['@deepseek-ai/dsh-base', 'good-plugin'])
     const state = await stateStore.read('inst-1')
@@ -1090,7 +1187,10 @@ describe('createPluginManager.check', () => {
   })
 
   it('reconcileRuntime：纯 client 插件（无 host 半）不参与判定', async () => {
-    const bundles = fakeBundles({ bundles: ['@deepseek-ai/dsh-base'], dependencies: ['client-only'] })
+    const bundles = fakeBundles({
+      bundles: ['@deepseek-ai/dsh-base'],
+      dependencies: ['client-only']
+    })
     const manager = createPluginManager({
       ...baseOptions(vi.fn()),
       stateStore: memoryStore(),
@@ -1123,7 +1223,11 @@ describe('createPluginManager.check', () => {
   })
 
   it('未安装的插件 → 抛错', async () => {
-    const run = vi.fn(async (): Promise<CommandResult> => ({ code: 0, stdout: LIST_JSON, stderr: '' }))
+    const run = vi.fn(async (): Promise<CommandResult> => ({
+      code: 0,
+      stdout: LIST_JSON,
+      stderr: ''
+    }))
     const manager = createPluginManager(baseOptions(run))
     await expect(manager.check(localInstance(), 'nope')).rejects.toThrow(/未安装/)
   })
@@ -1210,7 +1314,9 @@ describe('createPluginManager mutations', () => {
 
   it('profileHasHmr：web profile 与含 web-app bundle 的 profile 有 HMR，其余保守为无', () => {
     expect(profileHasHmr('web', null)).toBe(true)
-    expect(profileHasHmr('my-web', ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])).toBe(true)
+    expect(profileHasHmr('my-web', ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])).toBe(
+      true
+    )
     expect(profileHasHmr('headless', ['@deepseek-ai/dsh-base'])).toBe(false)
     expect(profileHasHmr('custom', null)).toBe(false)
   })
@@ -1301,7 +1407,9 @@ describe('createPluginManager mutations', () => {
         dependencies: ['@xbzbing/dsh-git-panel']
       }).store
     })
-    expect((await web.remove(localInstance(), '@xbzbing/dsh-git-panel')).application).toBe('applied')
+    expect((await web.remove(localInstance(), '@xbzbing/dsh-git-panel')).application).toBe(
+      'applied'
+    )
 
     const headless = createPluginManager({
       ...baseOptions(run),
@@ -1311,7 +1419,8 @@ describe('createPluginManager mutations', () => {
       }).store
     })
     expect(
-      (await headless.remove(localInstance({ profile: 'headless' }), '@xbzbing/dsh-git-panel')).application
+      (await headless.remove(localInstance({ profile: 'headless' }), '@xbzbing/dsh-git-panel'))
+        .application
     ).toBe('restart-required')
   })
 
@@ -1336,7 +1445,9 @@ describe('createPluginManager mutations', () => {
         dependencies: ['@xbzbing/dsh-git-panel']
       }).store
     })
-    expect((await manager.install(localInstance(), 'new-plugin')).application).toBe('restart-required')
+    expect((await manager.install(localInstance(), 'new-plugin')).application).toBe(
+      'restart-required'
+    )
   })
 
   it('install：spec 原样透传给 add', async () => {
@@ -1411,7 +1522,14 @@ describe('createPluginManager.resolveInstall', () => {
     // 第一次按裸名查全量字段，第二次按解析出的版本查 peer 与发布时间。
     expect(viewed(views[0]![1])).toBe('demo-plugin')
     expect(views[0]![1]).toEqual(
-      expect.arrayContaining(['version', 'versions', 'dist-tags', 'peerDependencies', 'time', '--json'])
+      expect.arrayContaining([
+        'version',
+        'versions',
+        'dist-tags',
+        'peerDependencies',
+        'time',
+        '--json'
+      ])
     )
     expect(viewed(views[1]![1])).toBe('demo-plugin@1.1.0')
   })
@@ -1532,7 +1650,9 @@ describe('createPluginManager.resolveInstall', () => {
   it('dist-tag 不存在 → not-found', async () => {
     const run = stubRun((spec) => (spec === 'demo-plugin' ? NAME_META : TARGET_META))
     const manager = createPluginManager(baseOptions(run))
-    await expect(manager.resolveInstall(localInstance(), 'demo-plugin@canary')).rejects.toMatchObject({
+    await expect(
+      manager.resolveInstall(localInstance(), 'demo-plugin@canary')
+    ).rejects.toMatchObject({
       code: 'not-found',
       message: expect.stringContaining('没有标签 canary')
     })
@@ -1542,7 +1662,9 @@ describe('createPluginManager.resolveInstall', () => {
     const run = vi.fn(async (): Promise<CommandResult> => ({ code: 0, stdout: '', stderr: '' }))
     const manager = createPluginManager(baseOptions(run))
 
-    await expect(manager.resolveInstall(localInstance(), 'github:owner/repo#v1.0.0')).resolves.toEqual({
+    await expect(
+      manager.resolveInstall(localInstance(), 'github:owner/repo#v1.0.0')
+    ).resolves.toEqual({
       installSpec: 'github:owner/repo#v1.0.0',
       input: 'github:owner/repo#v1.0.0',
       kind: 'github',
@@ -1557,8 +1679,15 @@ describe('createPluginManager.resolveInstall', () => {
       installedVersion: null
     })
     const file = await manager.resolveInstall(localInstance(), 'file:/tmp/demo-plugin')
-    expect(file).toMatchObject({ kind: 'file', installSpec: 'file:/tmp/demo-plugin', compatible: null })
-    const git = await manager.resolveInstall(localInstance(), 'git+https://github.com/owner/repo.git')
+    expect(file).toMatchObject({
+      kind: 'file',
+      installSpec: 'file:/tmp/demo-plugin',
+      compatible: null
+    })
+    const git = await manager.resolveInstall(
+      localInstance(),
+      'git+https://github.com/owner/repo.git'
+    )
     expect(git.kind).toBe('github')
     expect(run).not.toHaveBeenCalled()
   })
@@ -1587,11 +1716,14 @@ describe('createPluginManager.resolveInstall', () => {
       return {
         code: 1,
         stdout: '',
-        stderr: 'Command failed: pnpm view demo-plugin@9.9.9 peerDependencies time --json\nNot Found - 404'
+        stderr:
+          'Command failed: pnpm view demo-plugin@9.9.9 peerDependencies time --json\nNot Found - 404'
       }
     })
     const manager = createPluginManager(baseOptions(run))
-    await expect(manager.resolveInstall(localInstance(), 'demo-plugin@9.9.9')).rejects.toMatchObject({
+    await expect(
+      manager.resolveInstall(localInstance(), 'demo-plugin@9.9.9')
+    ).rejects.toMatchObject({
       code: 'not-found',
       message: expect.stringContaining('版本不存在：demo-plugin@9.9.9')
     })
@@ -1724,7 +1856,11 @@ describe('createPluginManager registry 口径', () => {
       { registry: 'npmmirror' }
     )
     const omitted = registryRun()
-    await createPluginManager(baseOptions(omitted)).upgrade(localInstance(), '@xbzbing/dsh-git-panel', '1.2.0')
+    await createPluginManager(baseOptions(omitted)).upgrade(
+      localInstance(),
+      '@xbzbing/dsh-git-panel',
+      '1.2.0'
+    )
     const explicitAdd = explicit.mock.calls.find(([, args]) => args.includes('add'))!
     const omittedAdd = omitted.mock.calls.find(([, args]) => args.includes('add'))!
     expect(explicitAdd[1].slice(-2)).toEqual(['--registry', 'https://registry.npmmirror.com'])
@@ -1768,7 +1904,10 @@ describe('createPluginManager install：安装后启用', () => {
       bundles: ['@deepseek-ai/dsh-base', GIT_PANEL],
       dependencies: [GIT_PANEL]
     })
-    const defaultManager = createPluginManager({ ...baseOptions(run), bundleStore: untouched.store })
+    const defaultManager = createPluginManager({
+      ...baseOptions(run),
+      bundleStore: untouched.store
+    })
     await defaultManager.install(localInstance(), `${GIT_PANEL}@1.2.0`)
     expect(untouched.calls).toEqual([])
     expect(untouched.current.bundles).toEqual(['@deepseek-ai/dsh-base', GIT_PANEL])
@@ -1815,7 +1954,11 @@ describe('createPluginManager.packageInfo', () => {
   }
 
   /** 取数桩：记录调用，返回固定下载量与更新内容（真实网络行为在 plugin-package-info.test.ts 覆盖）。 */
-  function stubPackageInfo(): { fetchers: PackageInfoFetchers; downloads: string[]; notes: unknown[] } {
+  function stubPackageInfo(): {
+    fetchers: PackageInfoFetchers
+    downloads: string[]
+    notes: unknown[]
+  } {
     const downloads: string[] = []
     const notes: unknown[] = []
     return {
@@ -1845,7 +1988,9 @@ describe('createPluginManager.packageInfo', () => {
 
   it('有 github 仓库：仓库地址由 view 推导后交给取数器（渲染层不传 URL）', async () => {
     const stub = stubPackageInfo()
-    const run = stubRun({ repository: { type: 'git', url: 'git+https://github.com/demo/demo-plugin.git' } })
+    const run = stubRun({
+      repository: { type: 'git', url: 'git+https://github.com/demo/demo-plugin.git' }
+    })
     const manager = createPluginManager({ ...baseOptions(run), packageInfoFetchers: stub.fetchers })
     const info = await manager.packageInfo(localInstance(), 'demo-plugin', '1.1.0')
 

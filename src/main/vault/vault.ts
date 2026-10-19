@@ -175,9 +175,14 @@ export function createVault(options: VaultOptions): Vault {
         if (typeof raw !== 'object' || raw === null) continue
         const entry: VaultItem = {}
         if (typeof raw.password === 'string') entry.password = raw.password
-        if (typeof raw.externalAccessToken === 'string') entry.externalAccessToken = raw.externalAccessToken
+        if (typeof raw.externalAccessToken === 'string')
+          entry.externalAccessToken = raw.externalAccessToken
         if (typeof raw.session === 'string') entry.session = raw.session
-        if (entry.password !== undefined || entry.externalAccessToken !== undefined || entry.session !== undefined) {
+        if (
+          entry.password !== undefined ||
+          entry.externalAccessToken !== undefined ||
+          entry.session !== undefined
+        ) {
           items.set(id, entry)
         }
       }
@@ -223,9 +228,14 @@ export function createVault(options: VaultOptions): Vault {
     for (const [id, entry] of items) {
       const next: VaultItem = {}
       if (entry.password !== undefined) next.password = entry.password
-      if (entry.externalAccessToken !== undefined) next.externalAccessToken = entry.externalAccessToken
+      if (entry.externalAccessToken !== undefined)
+        next.externalAccessToken = entry.externalAccessToken
       if (entry.session !== undefined) next.session = entry.session
-      if (next.password !== undefined || next.externalAccessToken !== undefined || next.session !== undefined) {
+      if (
+        next.password !== undefined ||
+        next.externalAccessToken !== undefined ||
+        next.session !== undefined
+      ) {
         payload.items[id] = next
       }
     }
@@ -282,7 +292,12 @@ export function createVault(options: VaultOptions): Vault {
 
   function dropIfEmpty(instanceId: string): void {
     const entry = items.get(instanceId)
-    if (entry && entry.password === undefined && entry.externalAccessToken === undefined && entry.session === undefined) {
+    if (
+      entry &&
+      entry.password === undefined &&
+      entry.externalAccessToken === undefined &&
+      entry.session === undefined
+    ) {
       items.delete(instanceId)
     }
   }

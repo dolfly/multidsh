@@ -12,5 +12,6 @@ export const createToastSlice: SliceCreator<ToastSlice> = (set, get) => ({
     setTimeout(() => get().dismissToast(id), 5000)
   },
 
-  dismissToast: (id) => set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) }))
+  dismissToast: (id) =>
+    set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) }))
 })

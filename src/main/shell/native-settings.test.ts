@@ -15,9 +15,9 @@ describe('planNativeSettings（设置 → 原生动作）', () => {
   })
 
   it('托盘已存在且仍开启 → **刷新文案**(切换语言后菜单不能停在旧语言)', () => {
-    expect(planNativeSettings({ settings: T(true), trayExists: true, startup: false })).toContainEqual(
-      { kind: 'update-tray' }
-    )
+    expect(
+      planNativeSettings({ settings: T(true), trayExists: true, startup: false })
+    ).toContainEqual({ kind: 'update-tray' })
   })
 
   it('启动时只在需要开启时写登录项(避免无意义地写「关闭」)', () => {
@@ -78,37 +78,25 @@ describe('createNativeSettingsApplier（原生副作用）', () => {
 
   it('托盘不存在且开启 → 真的调用 createTray', () => {
     const ports = spyPorts(false)
-    createNativeSettingsApplier(ports).apply(
-      { tray: true, autoStart: false },
-      { startup: false }
-    )
+    createNativeSettingsApplier(ports).apply({ tray: true, autoStart: false }, { startup: false })
     expect(ports.calls).toContain('create')
   })
 
   it('托盘已存在且开启 → 真的调用 updateTray(的锚点)', () => {
     const ports = spyPorts(true)
-    createNativeSettingsApplier(ports).apply(
-      { tray: true, autoStart: false },
-      { startup: false }
-    )
+    createNativeSettingsApplier(ports).apply({ tray: true, autoStart: false }, { startup: false })
     expect(ports.calls).toContain('update')
   })
 
   it('开启自启 → 真的把 true 交给登录项(的锚点)', () => {
     const ports = spyPorts(false)
-    createNativeSettingsApplier(ports).apply(
-      { tray: false, autoStart: true },
-      { startup: false }
-    )
+    createNativeSettingsApplier(ports).apply({ tray: false, autoStart: true }, { startup: false })
     expect(ports.calls).toContain('login:true')
   })
 
   it('启动且未开启自启 → 不触碰登录项', () => {
     const ports = spyPorts(false)
-    createNativeSettingsApplier(ports).apply(
-      { tray: false, autoStart: false },
-      { startup: true }
-    )
+    createNativeSettingsApplier(ports).apply({ tray: false, autoStart: false }, { startup: true })
     expect(ports.calls.some((call) => call.startsWith('login:'))).toBe(false)
   })
 

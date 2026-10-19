@@ -89,18 +89,36 @@ async function main() {
     await new Promise((r) => setTimeout(r, 300))
   }
 
-  log('A.running', !!runningEvent, runningEvent ? `启动成功(${Math.round((Date.now() - started) / 1000)}s)` : '30s 内未到 running')
+  log(
+    'A.running',
+    !!runningEvent,
+    runningEvent ? `启动成功(${Math.round((Date.now() - started) / 1000)}s)` : '30s 内未到 running'
+  )
 
   // 校验 1:runtimeSource === 'path'(用本机 dsh,不是下载)
-  log('A.runtimeSource', runningEvent?.runtimeSource === 'path', `runtimeSource=${runningEvent?.runtimeSource ?? '(缺失)'}`)
+  log(
+    'A.runtimeSource',
+    runningEvent?.runtimeSource === 'path',
+    `runtimeSource=${runningEvent?.runtimeSource ?? '(缺失)'}`
+  )
 
   // 校验 2:版本与 PATH dsh 一致
-  log('A.version', runningEvent?.version === pathVersion, `事件 version=${runningEvent?.version} / PATH ${pathVersion}`)
+  log(
+    'A.version',
+    runningEvent?.version === pathVersion,
+    `事件 version=${runningEvent?.version} / PATH ${pathVersion}`
+  )
 
   // 校验 3:注册表里 dshVersion 仍为 null(path 来源不回写,未固定跟随用户升级)
-  const registry = JSON.parse(await readFile(resolve(DATA_DIR, 'registry', 'instances.json'), 'utf8'))
+  const registry = JSON.parse(
+    await readFile(resolve(DATA_DIR, 'registry', 'instances.json'), 'utf8')
+  )
   const record = registry.instances.find((i) => i.id === id)
-  log('A.no-persist', record?.dshVersion == null, `落盘 dshVersion=${JSON.stringify(record?.dshVersion)}`)
+  log(
+    'A.no-persist',
+    record?.dshVersion == null,
+    `落盘 dshVersion=${JSON.stringify(record?.dshVersion)}`
+  )
 
   // 校验 4:没有往 hub 隔离目录安装任何运行时(runtimes/ 为空或不存在)
   let runtimesEntries
@@ -110,7 +128,11 @@ async function main() {
   } catch {
     runtimesEntries = []
   }
-  log('A.no-install', runtimesEntries.length === 0, `runtimes/ 条目=[${runtimesEntries.join(', ')}]`)
+  log(
+    'A.no-install',
+    runtimesEntries.length === 0,
+    `runtimes/ 条目=[${runtimesEntries.join(', ')}]`
+  )
 
   await win.evaluate(async (instanceId) => {
     window.dshHub.runtime.stop(instanceId)
@@ -118,7 +140,9 @@ async function main() {
   await new Promise((r) => setTimeout(r, 1500))
 
   const failed = process.exitCode != null && process.exitCode !== 0
-  console.log(failed ? '\n❌ verify-runtime-source 存在失败项' : '\n✅ verify-runtime-source 全部通过')
+  console.log(
+    failed ? '\n❌ verify-runtime-source 存在失败项' : '\n✅ verify-runtime-source 全部通过'
+  )
 }
 
 main()

@@ -22,7 +22,10 @@ describe('gateway-state（ 状态机）', () => {
 
   it('传输未就绪 → error(network)', () => {
     const started = transition(initialState(), { type: 'probe-started' }).state
-    const { state, action } = transition(started, { type: 'probe-unreachable', message: 'ECONNREFUSED' })
+    const { state, action } = transition(started, {
+      type: 'probe-unreachable',
+      message: 'ECONNREFUSED'
+    })
     expect(state.phase).toBe('error')
     expect(state.lastErrorCode).toBe('network')
     expect(action).toBe('stop')
@@ -53,7 +56,10 @@ describe('gateway-state（ 状态机）', () => {
   it('统一 401:await-otp → 回退 await-credentials 且提示不区分原因', () => {
     let state = transition(initialState(), { type: 'probe-gateway' }).state
     state = transition(state, { type: 'login-requires-otp', otpEnabled: true }).state
-    const result = transition(state, eventFromFailure(failure('invalid-credentials', { status: 401 })))
+    const result = transition(
+      state,
+      eventFromFailure(failure('invalid-credentials', { status: 401 }))
+    )
     expect(result.state.phase).toBe('await-credentials')
     expect(result.state.message).toBe('账号或验证码错误')
     expect(result.action).toBe('prompt-credentials')
@@ -81,13 +87,19 @@ describe('gateway-state（ 状态机）', () => {
 
   it('onboarding-required → 标记 onboarding 并回到密码屏', () => {
     const state = transition(initialState(), { type: 'probe-gateway' }).state
-    const result = transition(state, eventFromFailure(failure('onboarding-required', { status: 401 })))
+    const result = transition(
+      state,
+      eventFromFailure(failure('onboarding-required', { status: 401 }))
+    )
     expect(result.state.needsOnboarding).toBe(true)
     expect(result.state.phase).toBe('await-credentials')
   })
 
   it('登录成功 → connected 且清空锁定', () => {
-    const state = { ...transition(initialState(), { type: 'probe-gateway' }).state, lockedForMs: 5000 }
+    const state = {
+      ...transition(initialState(), { type: 'probe-gateway' }).state,
+      lockedForMs: 5000
+    }
     const result = transition(state, { type: 'login-succeeded', usedOtp: true })
     expect(result.state.phase).toBe('connected')
     expect(result.state.lockedForMs).toBe(0)

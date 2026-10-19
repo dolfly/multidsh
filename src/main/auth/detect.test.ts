@@ -31,7 +31,9 @@ describe('classifyAuthResponse（ 判定表）', () => {
   })
 
   it('302 → /onboarding = gateway（onboarding 未完成）', () => {
-    expect(classifyAuthResponse({ status: 302, location: '/onboarding' }).gatewayEvidence).toBe('onboarding')
+    expect(classifyAuthResponse({ status: 302, location: '/onboarding' }).gatewayEvidence).toBe(
+      'onboarding'
+    )
   })
 
   it('401 JSON unauthenticated = gateway（API 直探）', () => {
@@ -53,7 +55,7 @@ describe('classifyAuthResponse（ 判定表）', () => {
     expect(result.gatewayEvidence).toBe('onboarding')
   })
 
-  it("401 text/plain + dsh BrowserAuth 提示 = browser-auth", () => {
+  it('401 text/plain + dsh BrowserAuth 提示 = browser-auth', () => {
     const result = classifyAuthResponse({
       status: 401,
       contentType: 'text/plain; charset=utf-8',
@@ -102,7 +104,9 @@ describe('detectAuthMode（真实 HTTP 往返,含 redirect:manual）', () => {
       res.writeHead(200, { 'content-type': 'text/html' })
       res.end('<html><title>dsh</title></html>')
     })
-    expect((await detectAuthMode(`http://127.0.0.1:${port}/`, { timeoutMs: 1000 })).mode).toBe('none')
+    expect((await detectAuthMode(`http://127.0.0.1:${port}/`, { timeoutMs: 1000 })).mode).toBe(
+      'none'
+    )
   })
 
   it('ECONNREFUSED = unreachable（不抛异常）', async () => {
@@ -133,7 +137,8 @@ describe('防线', () => {
 
   it('特征串必须完整(仅含 dsh 的 text/plain 401 不判 browser-auth)', () => {
     expect(
-      classifyAuthResponse({ status: 401, contentType: 'text/plain', body: 'dsh: something else' }).mode
+      classifyAuthResponse({ status: 401, contentType: 'text/plain', body: 'dsh: something else' })
+        .mode
     ).not.toBe('browser-auth')
   })
 
@@ -172,7 +177,9 @@ describe('防线', () => {
       fetchImpl,
       cookie: 'dsh_auth=half-authenticated'
     })
-    expect(seen).toEqual([{ url: 'https://gw.example.com/dsh/', cookie: 'dsh_auth=half-authenticated' }])
+    expect(seen).toEqual([
+      { url: 'https://gw.example.com/dsh/', cookie: 'dsh_auth=half-authenticated' }
+    ])
     expect(detection.gatewayEvidence).toBe('otp-page')
   })
 

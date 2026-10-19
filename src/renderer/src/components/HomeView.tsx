@@ -27,7 +27,9 @@ function HomeContent(): ReactNode {
   const [trashSpace, setTrashSpace] = useState(false)
 
   const connected = instances.filter(
-    (item) => toDisplayStatus(statuses[item.id]?.status, workspaceConnected[item.id] ?? true) === 'connected'
+    (item) =>
+      toDisplayStatus(statuses[item.id]?.status, workspaceConnected[item.id] ?? true) ===
+      'connected'
   ).length
   const attention = instances.filter(
     (item) => toDisplayStatus(statuses[item.id]?.status) === 'error'
@@ -35,7 +37,11 @@ function HomeContent(): ReactNode {
 
   const deleteInstance = async (): Promise<void> => {
     if (!deleteTarget) return
-    const removed = await removeInstance({ id: deleteTarget.id, name: deleteTarget.name, trashSpace })
+    const removed = await removeInstance({
+      id: deleteTarget.id,
+      name: deleteTarget.name,
+      trashSpace
+    })
     if (!removed) return
     setDeleteTarget(null)
     setTrashSpace(false)
@@ -47,9 +53,7 @@ function HomeContent(): ReactNode {
       <div className="page-head">
         <p className="eyebrow">INSTANCE OVERVIEW</p>
         <h1>{t('home.heroTitle', { n: connected })}</h1>
-        <p className="lead">
-          {t('home.heroBody')}
-        </p>
+        <p className="lead">{t('home.heroBody')}</p>
       </div>
       <div className="grid-3 mt24">
         <StatCard n={instances.length} label={t('home.statInstances')} />
@@ -94,7 +98,10 @@ function HomeContent(): ReactNode {
           showTrashSpace={deleteTarget.transport === 'local' && !deleteTarget.useDefaultSpace}
           trashSpace={trashSpace}
           onTrashSpaceChange={setTrashSpace}
-          onClose={() => { setDeleteTarget(null); setTrashSpace(false) }}
+          onClose={() => {
+            setDeleteTarget(null)
+            setTrashSpace(false)
+          }}
           onConfirm={() => void deleteInstance()}
         />
       )}
@@ -141,7 +148,11 @@ function TableRow(props: {
       <td className="num-col meta">{props.version ?? '—'}</td>
       <td className="num-col">
         <div className="row" style={{ justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost btn-sm" onClick={props.onDetail} data-testid={`detail-${props.item.id}`}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={props.onDetail}
+            data-testid={`detail-${props.item.id}`}
+          >
             {t('home.viewDetail')}
           </button>
           <button

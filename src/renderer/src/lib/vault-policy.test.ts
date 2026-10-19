@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { VaultStatusSnapshot } from '@shared/contracts'
 import { canSubmitPolicy, effectivePolicy, policyReady } from './vault-policy'
 
-const snapshot = (policies: Record<string, { rememberPassword: boolean; rememberSession: boolean }>): VaultStatusSnapshot => ({
+const snapshot = (
+  policies: Record<string, { rememberPassword: boolean; rememberSession: boolean }>
+): VaultStatusSnapshot => ({
   available: true,
   degraded: false,
   rememberedInstances: Object.keys(policies),

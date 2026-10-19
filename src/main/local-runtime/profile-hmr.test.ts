@@ -22,7 +22,13 @@ describe('hmrDisabledInPatchText', () => {
   })
 
   it('映射键形式（更深的子键）同样识别', () => {
-    const text = ['entries:', '  - id: other', '  - id: hmr', '    name: x', '    disabled: true'].join('\n')
+    const text = [
+      'entries:',
+      '  - id: other',
+      '  - id: hmr',
+      '    name: x',
+      '    disabled: true'
+    ].join('\n')
     expect(hmrDisabledInPatchText(text)).toBe(true)
   })
 
@@ -32,11 +38,15 @@ describe('hmrDisabledInPatchText', () => {
   })
 
   it('!!js 表达式无法判定 → 不判定（不误判 base 的 profileContext 表达式）', () => {
-    expect(hmrDisabledInPatchText('- id: hmr\n  disabled: !!js "!ctx.get(\'profileContext\')"\n')).toBeUndefined()
+    expect(
+      hmrDisabledInPatchText('- id: hmr\n  disabled: !!js "!ctx.get(\'profileContext\')"\n')
+    ).toBeUndefined()
   })
 
   it('hmr 行没有 disabled 字段 → 未判定', () => {
-    expect(hmrDisabledInPatchText('- id: hmr\n  name: "@deepseek-ai/dsh-hmr"\n  config:\n    root: []\n')).toBeUndefined()
+    expect(
+      hmrDisabledInPatchText('- id: hmr\n  name: "@deepseek-ai/dsh-hmr"\n  config:\n    root: []\n')
+    ).toBeUndefined()
   })
 
   it('同一文件多次声明取最后一次（后者覆盖前者）', () => {

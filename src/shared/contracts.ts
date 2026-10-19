@@ -24,7 +24,11 @@ export type AuthMode = (typeof AUTH_MODES)[number]
 
 // ===== 基础字段 =====
 
-const PORT_SCHEMA = z.number('端口必须是数字').int('端口必须是整数').min(1, '端口最小 1').max(65535, '端口最大 65535')
+const PORT_SCHEMA = z
+  .number('端口必须是数字')
+  .int('端口必须是整数')
+  .min(1, '端口最小 1')
+  .max(65535, '端口最大 65535')
 
 /**
  * SSH 主机合法性：
@@ -56,7 +60,8 @@ function isValidSshHost(host: string): boolean {
   const portOfPlain = PLAIN_HOST_PORT.exec(host)
   if (portOfPlain) return parseSshPort(portOfPlain[2] ?? '') !== null
   const portOfBracket = /^\[([0-9a-fA-F:.]+)\](?::(\d+))?$/.exec(host)
-  if (portOfBracket) return portOfBracket[2] === undefined || parseSshPort(portOfBracket[2]) !== null
+  if (portOfBracket)
+    return portOfBracket[2] === undefined || parseSshPort(portOfBracket[2]) !== null
   // 方括号只允许包裹 IPv6 字面量（仅十六进制/冒号/点分尾）。其余方括号内容一律拒绝：
   // ssh-keyscan 会先剥掉方括号再作为位置参数传入，`[-flist]` → `-flist` 会被当作选项解析
   // （argv 选项注入面），而顶层 `startsWith('-')` 守卫只看到 `[` 拦不住它。
@@ -180,7 +185,10 @@ export const HttpInstanceSchema = z.object({
     .string()
     .trim()
     .max(2048)
-    .refine((value) => tryParseEndpoint(value).ok, '端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）')
+    .refine(
+      (value) => tryParseEndpoint(value).ok,
+      '端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）'
+    )
 })
 
 export const InstanceRecordSchema = z.discriminatedUnion('transport', [
@@ -240,7 +248,10 @@ export const CreateInstanceInputSchema = z.discriminatedUnion('transport', [
         .string()
         .trim()
         .max(2048)
-        .refine((value) => tryParseEndpoint(value).ok, '端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）')
+        .refine(
+          (value) => tryParseEndpoint(value).ok,
+          '端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）'
+        )
     })
     .strict()
 ])
@@ -279,7 +290,10 @@ export const PatchInstanceSchema = z
       .string()
       .trim()
       .max(2048)
-      .refine((value) => tryParseEndpoint(value).ok, '端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）')
+      .refine(
+        (value) => tryParseEndpoint(value).ok,
+        '端点 URL 无法解析（仅支持 http/https，禁止内嵌凭据 / 查询串 / 锚点）'
+      )
       .optional()
   })
   .strict()
@@ -497,13 +511,7 @@ export interface EnvironmentRefreshResult {
 }
 
 export type AuthPhase =
-  | 'unknown'
-  | 'probe'
-  | 'needs-auth'
-  | 'await-credentials'
-  | 'await-otp'
-  | 'connected'
-  | 'error'
+  'unknown' | 'probe' | 'needs-auth' | 'await-credentials' | 'await-otp' | 'connected' | 'error'
 
 export interface AuthStateSnapshot {
   phase: AuthPhase
@@ -622,7 +630,7 @@ export const INSTANCE_RUNTIME_IPC = {
   /** 探测本机已运行的 dsh web 进程；返回 pid、端口和 patch 路径。 */
   scanExternal: 'instances:scanExternal',
   /** 接管外部 dsh 时提交 token 或完整 URL；主进程重新扫描 PID 并验证回环端口。 */
-  adoptExternal: 'instances:adoptExternal',
+  adoptExternal: 'instances:adoptExternal'
 } as const
 
 /** dsh 版本管理通道：check 立即返回，upgrade 异步执行并经进度事件回推。 */
@@ -968,7 +976,6 @@ export interface PluginAutoDisabled {
   dshVersion: string
 }
 
-
 export const WorkspaceViewBoundsSchema = z
   .object({
     x: z.number().int().min(0).max(10_000),
@@ -1059,7 +1066,8 @@ export type IpcErrorCode = 'invalid-input' | 'not-found' | 'invalid-state' | 'io
  * IPC 统一响应信封：`code` 稳定可用于分支判断；`message` 是主进程文案，
  * 渲染层直接展示原文——主进程文案就是用户可见文本的单一来源，渲染层不按码表二次翻译。
  */
-export type IpcResult<T> = { ok: true; value: T } | { ok: false; code: IpcErrorCode; message: string }
+export type IpcResult<T> =
+  { ok: true; value: T } | { ok: false; code: IpcErrorCode; message: string }
 
 // ===== 工具 =====
 

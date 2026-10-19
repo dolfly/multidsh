@@ -7,14 +7,7 @@ import type { MessageKey } from '@shared/i18n/messages'
 import type { IconName } from './icons'
 
 export type DisplayStatus =
-  | 'idle'
-  | 'connecting'
-  | 'auth'
-  | 'connected'
-  | 'interrupted'
-  | 'error'
-  | 'locked'
-  | 'installing'
+  'idle' | 'connecting' | 'auth' | 'connected' | 'interrupted' | 'error' | 'locked' | 'installing'
 
 export interface DisplayStatusInfo {
   chipClass: string
@@ -47,11 +40,19 @@ export const STATUS_INFO: Record<DisplayStatus, DisplayStatusInfo> = {
   },
   error: { labelKey: 'state.error', chipClass: 'c-err', dotClass: 's-error', icon: 'alert' },
   locked: { labelKey: 'state.locked', chipClass: 'c-err', dotClass: 's-locked', icon: 'lock' },
-  installing: { labelKey: 'state.installing', chipClass: 'c-info', dotClass: 's-connecting', icon: 'refresh' }
+  installing: {
+    labelKey: 'state.installing',
+    chipClass: 'c-info',
+    dotClass: 's-connecting',
+    icon: 'refresh'
+  }
 }
 
 /** 将运行时状态映射为展示状态。 */
-export function toDisplayStatus(status?: InstanceRuntimeStatus, workspaceConnected = true): DisplayStatus {
+export function toDisplayStatus(
+  status?: InstanceRuntimeStatus,
+  workspaceConnected = true
+): DisplayStatus {
   if (status === 'running' && !workspaceConnected) return 'idle'
   switch (status) {
     case 'starting':
@@ -72,7 +73,10 @@ export function toDisplayStatus(status?: InstanceRuntimeStatus, workspaceConnect
  *
  * 列表和侧边栏共用此映射，确保圆点、胶囊和文案反映同一状态。
  */
-export function toStatusInfo(status?: InstanceRuntimeStatus, workspaceConnected = true): DisplayStatusInfo {
+export function toStatusInfo(
+  status?: InstanceRuntimeStatus,
+  workspaceConnected = true
+): DisplayStatusInfo {
   return STATUS_INFO[toDisplayStatus(status, workspaceConnected)]
 }
 

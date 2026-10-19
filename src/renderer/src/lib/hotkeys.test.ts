@@ -2,9 +2,19 @@ import { describe, expect, it } from 'vitest'
 import { instanceSwitchIndex } from './hotkeys'
 
 function key(
-  patch: Partial<Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'altKey' | 'ctrlKey' | 'isComposing'>>
+  patch: Partial<
+    Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'altKey' | 'ctrlKey' | 'isComposing'>
+  >
 ): Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'altKey' | 'ctrlKey' | 'isComposing'> {
-  return { key: '', code: '', metaKey: false, altKey: false, ctrlKey: false, isComposing: false, ...patch }
+  return {
+    key: '',
+    code: '',
+    metaKey: false,
+    altKey: false,
+    ctrlKey: false,
+    isComposing: false,
+    ...patch
+  }
 }
 
 describe('instanceSwitchIndex', () => {
@@ -19,10 +29,16 @@ describe('instanceSwitchIndex', () => {
   })
 
   it('平台不匹配的修饰键不切换：Windows 的 ⌘(Win 键)、macOS 的 Alt 都不触发', () => {
-    expect(instanceSwitchIndex(key({ key: '1', code: 'Digit1', metaKey: true }), 'win32')).toBeNull()
-    expect(instanceSwitchIndex(key({ key: '1', code: 'Digit1', altKey: true }), 'darwin')).toBeNull()
+    expect(
+      instanceSwitchIndex(key({ key: '1', code: 'Digit1', metaKey: true }), 'win32')
+    ).toBeNull()
+    expect(
+      instanceSwitchIndex(key({ key: '1', code: 'Digit1', altKey: true }), 'darwin')
+    ).toBeNull()
     // Ctrl 不再是切换修饰键
-    expect(instanceSwitchIndex(key({ key: '1', code: 'Digit1', ctrlKey: true }), 'win32')).toBeNull()
+    expect(
+      instanceSwitchIndex(key({ key: '1', code: 'Digit1', ctrlKey: true }), 'win32')
+    ).toBeNull()
   })
 
   it('缺 code 时按 key 兜底', () => {
@@ -38,7 +54,10 @@ describe('instanceSwitchIndex', () => {
 
   it('输入法组合期间不接管', () => {
     expect(
-      instanceSwitchIndex(key({ key: '1', code: 'Digit1', metaKey: true, isComposing: true }), 'darwin')
+      instanceSwitchIndex(
+        key({ key: '1', code: 'Digit1', metaKey: true, isComposing: true }),
+        'darwin'
+      )
     ).toBeNull()
   })
 })

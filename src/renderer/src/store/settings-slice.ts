@@ -82,7 +82,9 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
  * 应用启动时的偏好水合与系统主题订阅：由 instance slice 的 load() 调用。
  * 重新订阅前先取消旧订阅，避免重复监听。
  */
-export async function hydrateAndSubscribeTheme(get: () => import('./types').AppState): Promise<void> {
+export async function hydrateAndSubscribeTheme(
+  get: () => import('./types').AppState
+): Promise<void> {
   await get().hydrateSettings()
   systemThemeUnsubscribe?.()
   systemThemeUnsubscribe = get().subscribeSystemTheme()

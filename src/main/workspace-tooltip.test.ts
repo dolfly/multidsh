@@ -156,7 +156,12 @@ describe('createWorkspaceTooltipHost', () => {
       hide = vi.fn()
       isDestroyed = vi.fn(() => false)
       destroy = vi.fn()
-      loadURL = vi.fn(() => new Promise<void>((resolve, reject) => { loads.push({ resolve, reject }) }))
+      loadURL = vi.fn(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            loads.push({ resolve, reject })
+          })
+      )
       constructor(options: Record<string, unknown>) {
         this.options = options
       }

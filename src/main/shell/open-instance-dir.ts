@@ -48,13 +48,19 @@ async function openResolved(ports: OpenInstanceDirPorts, dir: string): Promise<v
     await mkdir(dir, { recursive: true })
     failure = await ports.openPath(dir)
   } catch (error) {
-    throw new InstanceDirOpenError('io-error', error instanceof Error ? error.message : String(error))
+    throw new InstanceDirOpenError(
+      'io-error',
+      error instanceof Error ? error.message : String(error)
+    )
   }
   if (failure !== '') throw new InstanceDirOpenError('io-error', failure)
 }
 
 /** 打开实例数据目录（DSH_HOME）；不存在时先创建，保证总有目录可开。 */
-export async function openInstanceDir(ports: OpenInstanceDirPorts, record: InstanceRecord): Promise<void> {
+export async function openInstanceDir(
+  ports: OpenInstanceDirPorts,
+  record: InstanceRecord
+): Promise<void> {
   await openResolved(ports, instanceHomeDir(ports, record))
 }
 
@@ -63,7 +69,10 @@ export async function openInstanceDir(ports: OpenInstanceDirPorts, record: Insta
  * `<DSH_HOME>/profiles/<profile>/.plugin-manager/logs`（插件安装失败的诊断日志落点），
  * 不存在时回落到 DSH_HOME，保证总有目录可开。
  */
-export async function openInstanceLogDir(ports: OpenInstanceDirPorts, record: InstanceRecord): Promise<void> {
+export async function openInstanceLogDir(
+  ports: OpenInstanceDirPorts,
+  record: InstanceRecord
+): Promise<void> {
   const home = instanceHomeDir(ports, record)
   const profile = (record.transport === 'local' ? record.profile : null) ?? 'web'
   const logsDir = join(home, 'profiles', profile, '.plugin-manager', 'logs')

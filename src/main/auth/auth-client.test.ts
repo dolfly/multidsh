@@ -57,7 +57,6 @@ describe('AuthClient（/ 编排）', () => {
   })
 
   it('settings 200 但页面 302 → /onboarding 时不得进入 connected', async () => {
-
     // GET /login-api/settings 仍返回 200 —— 若直接静默恢复,界面显示「已连接」
     const jar = {
       store: vi.fn(),
@@ -69,7 +68,10 @@ describe('AuthClient（/ 编排）', () => {
     const seen: Array<string | null> = []
     const fetchImpl = fakeFetch((url, init) => {
       if (url.includes('/login-api/settings')) {
-        return jsonResponse(200, { ok: true, config: { 'dsh-auth-gateway': { otpEnabled: false } } })
+        return jsonResponse(200, {
+          ok: true,
+          config: { 'dsh-auth-gateway': { otpEnabled: false } }
+        })
       }
       seen.push(new Headers(init.headers).get('cookie'))
       return htmlResponse(302, '', '/dsh/onboarding')
@@ -142,7 +144,10 @@ describe('AuthClient（/ 编排）', () => {
     } as unknown as CookieJar
     const fetchImpl = fakeFetch((url) => {
       if (url.includes('/login-api/settings')) {
-        return jsonResponse(200, { ok: true, config: { 'dsh-auth-gateway': { otpEnabled: false } } })
+        return jsonResponse(200, {
+          ok: true,
+          config: { 'dsh-auth-gateway': { otpEnabled: false } }
+        })
       }
       return htmlResponse(302, '', '/dsh/login')
     })
@@ -166,7 +171,12 @@ describe('AuthClient（/ 编排）', () => {
     const jar = {
       store: vi.fn(),
       header: () => 'dsh_auth=half-authenticated',
-      get: () => ({ name: 'dsh_auth', value: 'half-authenticated', expiresAt: null, attributes: '' }),
+      get: () => ({
+        name: 'dsh_auth',
+        value: 'half-authenticated',
+        expiresAt: null,
+        attributes: ''
+      }),
       clear: vi.fn(),
       describe: () => []
     } as unknown as CookieJar
@@ -177,9 +187,7 @@ describe('AuthClient（/ 编排）', () => {
       }
       const cookie = new Headers(init.headers).get('cookie')
       probes.push(cookie)
-      return cookie
-        ? htmlResponse(302, '', '/dsh/otp/verify')
-        : htmlResponse(302, '', '/dsh/login')
+      return cookie ? htmlResponse(302, '', '/dsh/otp/verify') : htmlResponse(302, '', '/dsh/login')
     })
 
     const client = createAuthClient({
@@ -224,13 +232,24 @@ describe('AuthClient（/ 编排）', () => {
   })
 
   it('静默恢复:已存 Cookie 打 settings=200 → connected,不打扰用户', async () => {
-    const jar = { store: vi.fn(), header: () => 'dsh_auth=abc', get: () => ({ name: 'dsh_auth', value: 'abc', expiresAt: null, attributes: 'HttpOnly' }), clear: vi.fn(), describe: () => [] } as unknown as CookieJar
+    const jar = {
+      store: vi.fn(),
+      header: () => 'dsh_auth=abc',
+      get: () => ({ name: 'dsh_auth', value: 'abc', expiresAt: null, attributes: 'HttpOnly' }),
+      clear: vi.fn(),
+      describe: () => []
+    } as unknown as CookieJar
     const fetchImpl = fakeFetch((url) =>
       url.includes('/login-api/settings')
         ? jsonResponse(200, { ok: true, config: { 'dsh-auth-gateway': { otpEnabled: true } } })
         : new Response('<html></html>', { status: 200, headers: { 'content-type': 'text/html' } })
     )
-    const client = createAuthClient({ instanceId: 'i1', endpointUrl: 'https://gw/dsh', jar, fetchImpl })
+    const client = createAuthClient({
+      instanceId: 'i1',
+      endpointUrl: 'https://gw/dsh',
+      jar,
+      fetchImpl
+    })
     await client.probeAndRestore()
     expect(client.state().phase).toBe('connected')
     expect(client.state().otpEnabled).toBe(true)
@@ -242,7 +261,11 @@ describe('AuthClient（/ 编排）', () => {
       endpointUrl: 'https://gw/dsh',
       fetchImpl: fakeFetch((url) =>
         url.includes('/login/auth')
-          ? jsonResponse(200, { ok: true }, 'dsh_auth=tok; Path=/; HttpOnly; SameSite=Strict; Max-Age=100')
+          ? jsonResponse(
+              200,
+              { ok: true },
+              'dsh_auth=tok; Path=/; HttpOnly; SameSite=Strict; Max-Age=100'
+            )
           : htmlResponse(302, '', '/login')
       )
     })
@@ -413,7 +436,11 @@ describe('AuthClient（/ 编排）', () => {
       endpointUrl: 'https://gw/dsh',
       fetchImpl: fakeFetch((url) => {
         if (url.includes('/login/auth')) {
-          return jsonResponse(200, { ok: true }, 'dsh_auth=t; Path=/; HttpOnly; SameSite=Strict; Max-Age=100')
+          return jsonResponse(
+            200,
+            { ok: true },
+            'dsh_auth=t; Path=/; HttpOnly; SameSite=Strict; Max-Age=100'
+          )
         }
         if (url.includes('/login/logout')) return jsonResponse(200, { ok: true })
         return htmlResponse(302, '', '/login')
@@ -449,15 +476,17 @@ describe('防线', () => {
     // 窗口未过:再提交仍被拒,且不新增请求
     const callsBefore = (fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls.length
     await client.login('pw')
-    expect((fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(callsBefore)
+    expect((fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(
+      callsBefore
+    )
 
     now += 91_000
     expect(client.backoff.canAttempt()).toBe(true)
     expect(client.state().lockedForMs).toBe(0)
     await client.login('pw')
-    expect((fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBeGreaterThan(
-      callsBefore
-    )
+    expect(
+      (fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls.length
+    ).toBeGreaterThan(callsBefore)
   })
 
   it('锁定期间不发送任何认证请求(以 fetch 调用次数断言,而非死代码)', async () => {
@@ -472,7 +501,9 @@ describe('防线', () => {
     const after429 = (fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls.length
     await client.login('pw')
     await client.login('pw')
-    expect((fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(after429)
+    expect((fetchImpl as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(
+      after429
+    )
   })
 
   it('客户端请求强制 redirect:manual(含 /login/auth 自身请求)', async () => {
@@ -481,7 +512,11 @@ describe('防线', () => {
       const url = String(input)
       seen.push({ url, init })
       if (url.includes('/login/auth')) {
-        return jsonResponse(200, { ok: true }, 'dsh_auth=t; Path=/; HttpOnly; SameSite=Strict; Max-Age=100')
+        return jsonResponse(
+          200,
+          { ok: true },
+          'dsh_auth=t; Path=/; HttpOnly; SameSite=Strict; Max-Age=100'
+        )
       }
       return htmlResponse(302, '', '/login')
     }) as unknown as typeof fetch
@@ -501,7 +536,11 @@ describe('防线', () => {
       if (url.includes('/login/auth')) {
         return urls.filter((item) => item.includes('/login/auth')).length === 1
           ? jsonResponse(400, { ok: false, error: 'otp-required' })
-          : jsonResponse(200, { ok: true }, 'dsh_auth=t; Path=/; HttpOnly; SameSite=Strict; Max-Age=100')
+          : jsonResponse(
+              200,
+              { ok: true },
+              'dsh_auth=t; Path=/; HttpOnly; SameSite=Strict; Max-Age=100'
+            )
       }
       return htmlResponse(302, '', '/login')
     }) as unknown as typeof fetch

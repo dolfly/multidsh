@@ -64,7 +64,14 @@ describe('buildCreateInput', () => {
         externalWorkspace: null,
         existingSpaceId: null
       })
-    ).toEqual({ transport: 'ssh', name: 'a', host: 'h', username: 'u', port: 2222, remotePort: 8080 })
+    ).toEqual({
+      transport: 'ssh',
+      name: 'a',
+      host: 'h',
+      username: 'u',
+      port: 2222,
+      remotePort: 8080
+    })
   })
 
   it('http:归一化 endpointUrl（去空白）', () => {

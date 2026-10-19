@@ -1,4 +1,12 @@
-import { app, BrowserWindow, protocol, session, shell, nativeTheme, powerSaveBlocker } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  protocol,
+  session,
+  shell,
+  nativeTheme,
+  powerSaveBlocker
+} from 'electron'
 import type { Tray } from 'electron'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -105,7 +113,9 @@ if (userDataOverride) app.setPath('userData', userDataOverride)
  */
 const mainLog = installMainLogging({ dir: join(app.getPath('userData'), 'logs') })
 // 启动时清理过期归档（不阻塞启动）
-void mainLog.prune().catch((error: unknown) => console.error('[main] 主进程日志归档清理失败：', error))
+void mainLog
+  .prune()
+  .catch((error: unknown) => console.error('[main] 主进程日志归档清理失败：', error))
 
 /**
  * E2E 隐藏窗口模式（`DSH_HUB_E2E_HIDDEN=1`）：测试仍启动真实应用，但窗口不显示、
@@ -204,14 +214,20 @@ const gracefulQuit = createGracefulQuit({
     sleepBlocker?.dispose()
     const recycling: Array<Promise<void>> = []
     if (runtime) {
-      recycling.push(runtime.stopAll().catch((error: unknown) => console.error('[main] 停止实例失败：', error)))
+      recycling.push(
+        runtime.stopAll().catch((error: unknown) => console.error('[main] 停止实例失败：', error))
+      )
     }
     if (tunnels) {
-      recycling.push(tunnels.stopAll().catch((error: unknown) => console.error('[main] 停止隧道失败：', error)))
+      recycling.push(
+        tunnels.stopAll().catch((error: unknown) => console.error('[main] 停止隧道失败：', error))
+      )
     }
     if (httpEndpoints) {
       recycling.push(
-        httpEndpoints.stopAll().catch((error: unknown) => console.error('[main] 停止 HTTP 实例失败：', error))
+        httpEndpoints
+          .stopAll()
+          .catch((error: unknown) => console.error('[main] 停止 HTTP 实例失败：', error))
       )
     }
     await Promise.all(recycling)
@@ -297,7 +313,10 @@ void app.whenReady().then(() => {
    * 「该做哪些动作」由纯函数 `planNativeSettings` 决定,「动作有没有真的落到
    * electron」由注入端口的 `createNativeSettingsApplier` 保证 —— 两者都有单测
    */
-  const applyNativeSettings = (current: Settings, changedKeys: readonly (keyof Settings)[]): void => {
+  const applyNativeSettings = (
+    current: Settings,
+    changedKeys: readonly (keyof Settings)[]
+  ): void => {
     nativeApplier.apply(current, { changedKeys })
     if (changedKeys.includes('workspaceCacheSize')) {
       workspaceHost.setCacheLimit(current.workspaceCacheSize)
@@ -404,7 +423,8 @@ void app.whenReady().then(() => {
     hideInstanceTooltip: () => workspaceTooltipHost.hide(),
     instanceViewUrl: (instanceId) => workspaceHost.loadedUrl(instanceId),
     listLocalSpaces: () => listLocalSpaces(dataRoot),
-    trashLocalSpace: (instanceId) => trashLocalSpaceDir(dataRoot, instanceId, (path) => shell.trashItem(path)),
+    trashLocalSpace: (instanceId) =>
+      trashLocalSpaceDir(dataRoot, instanceId, (path) => shell.trashItem(path)),
     localHomePath: (record) =>
       record.transport === 'local' && !record.useDefaultSpace
         ? join(dataRoot, 'homes', record.id)

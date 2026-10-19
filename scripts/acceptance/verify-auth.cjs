@@ -46,7 +46,11 @@ async function main() {
   // 1) 建 http 实例(指向网关)→ start(探测为 gateway)→ running
   const created = await hub.evaluate(
     (url) =>
-      window.dshHub.instances.create({ transport: 'http', name: '验证 · 网关登录', endpointUrl: url }),
+      window.dshHub.instances.create({
+        transport: 'http',
+        name: '验证 · 网关登录',
+        endpointUrl: url
+      }),
     fixture.baseUrl
   )
   if (!created.ok) throw new Error(`创建失败:${created.message}`)
@@ -80,7 +84,10 @@ async function main() {
   console.log(`[ok] auth:state 广播:${stateEvent.state.phase}`)
 
   // 3) openView → 分区 Cookie 注入 → 视图应直达受保护页(不落在 /login)
-  const openResult = await hub.evaluate((instanceId) => window.dshHub.runtime.openView(instanceId), id)
+  const openResult = await hub.evaluate(
+    (instanceId) => window.dshHub.runtime.openView(instanceId),
+    id
+  )
   if (!openResult.ok) throw new Error(`openView 失败:${JSON.stringify(openResult)}`)
   const viewUrl = await waitFor(
     async () => {

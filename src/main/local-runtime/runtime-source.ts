@@ -85,13 +85,23 @@ export function planRuntimeSource(input: PlanInput): RuntimePlan {
       return { kind: 'hub', version: desiredVersion, reason: 'pinned-installed' }
     }
     if (pathRuntime !== null && pathRuntime.version === desiredVersion) {
-      return { kind: 'path', command: pathRuntime.command, version: desiredVersion, reason: 'pinned-path-match' }
+      return {
+        kind: 'path',
+        command: pathRuntime.command,
+        version: desiredVersion,
+        reason: 'pinned-path-match'
+      }
     }
     return { kind: 'download', version: desiredVersion, reason: 'pinned-missing' }
   }
 
   if (pathRuntime !== null) {
-    return { kind: 'path', command: pathRuntime.command, version: pathRuntime.version, reason: 'unpinned-path-any' }
+    return {
+      kind: 'path',
+      command: pathRuntime.command,
+      version: pathRuntime.version,
+      reason: 'unpinned-path-any'
+    }
   }
   if (hubInstalled.length > 0) {
     const latest = [...hubInstalled].sort(compareDshVersions).at(-1) ?? hubInstalled[0]!
@@ -133,7 +143,8 @@ export function createPathProbe(options: PathProbeOptions = {}): PathProbe {
   const run =
     options.run ??
     // 探测只关心 stdout/exit code；超时远短于安装器的 15 分钟，超时按失败 reject
-    ((command, args) => execFileResult(command, args, { timeout: WHICH_TIMEOUT_MS, maxBuffer: 64 * 1024 }))
+    ((command, args) =>
+      execFileResult(command, args, { timeout: WHICH_TIMEOUT_MS, maxBuffer: 64 * 1024 }))
 
   /**
    * 带超时的执行(候选探测/登录 shell 兜底用)。注入的 `run` 自带其超时策略,
@@ -200,9 +211,15 @@ export function createPathProbe(options: PathProbeOptions = {}): PathProbe {
   function enrichedEnv(command: string): NodeJS.ProcessEnv {
     // Windows 的 PATH 分隔符是分号;候选目录统一按对应平台目录形态拼接
     const separator = platform === 'win32' ? ';' : ':'
-    const dirs = [platform === 'win32' ? winDirname(command) : posix.dirname(command), ...searchNodeDirs(home, listDir)]
+    const dirs = [
+      platform === 'win32' ? winDirname(command) : posix.dirname(command),
+      ...searchNodeDirs(home, listDir)
+    ]
     const existing = process.env.PATH ?? ''
-    return { ...process.env, PATH: [...new Set(dirs)].join(separator) + (existing ? `${separator}${existing}` : '') }
+    return {
+      ...process.env,
+      PATH: [...new Set(dirs)].join(separator) + (existing ? `${separator}${existing}` : '')
+    }
   }
 
   /**

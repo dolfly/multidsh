@@ -47,11 +47,20 @@ describe('externalAccessUrl', () => {
 
 describe('defaultVerifyExternalAccess', () => {
   it('200 视为通过，401/403 视为未通过', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ status: 200 }) as Response))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ status: 200 }) as Response)
+    )
     await expect(defaultVerifyExternalAccess('http://127.0.0.1:8080/')).resolves.toBe(true)
-    vi.stubGlobal('fetch', vi.fn(async () => ({ status: 401 }) as Response))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ status: 401 }) as Response)
+    )
     await expect(defaultVerifyExternalAccess('http://127.0.0.1:8080/')).resolves.toBe(false)
-    vi.stubGlobal('fetch', vi.fn(async () => ({ status: 403 }) as Response))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ status: 403 }) as Response)
+    )
     await expect(defaultVerifyExternalAccess('http://127.0.0.1:8080/')).resolves.toBe(false)
   })
 
@@ -63,7 +72,9 @@ describe('defaultVerifyExternalAccess', () => {
         (_url: string, init?: RequestInit) =>
           new Promise((_resolve, reject) => {
             init?.signal?.addEventListener('abort', () =>
-              reject(Object.assign(new Error('The operation was aborted'), { name: 'TimeoutError' }))
+              reject(
+                Object.assign(new Error('The operation was aborted'), { name: 'TimeoutError' })
+              )
             )
           })
       )

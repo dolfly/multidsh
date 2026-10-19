@@ -15,7 +15,10 @@ export interface WorkspaceView {
     getURL(): string
     isDestroyed(): boolean
     reload(): void
-    on(event: 'will-redirect', listener: (_event: { preventDefault(): void }, url: string) => void): void
+    on(
+      event: 'will-redirect',
+      listener: (_event: { preventDefault(): void }, url: string) => void
+    ): void
   }
 }
 
@@ -88,7 +91,9 @@ export function createWorkspaceHost(
   function configureLocale(webContents: WebContentsView['webContents']): void {
     // dsh 在持久化设置同步前按 navigator.languages 初始化；使用 Hub 的显式语言偏好，
     // 避免系统语言与应用设置不一致时远程登录页回落为英文。
-    const locale = workspaceLocale().toLowerCase().startsWith('zh') ? 'zh-CN,zh,en-US,en' : 'en-US,en,zh-CN,zh'
+    const locale = workspaceLocale().toLowerCase().startsWith('zh')
+      ? 'zh-CN,zh,en-US,en'
+      : 'en-US,en,zh-CN,zh'
     webContents.session.setUserAgent(webContents.getUserAgent(), locale)
   }
 
@@ -103,7 +108,9 @@ export function createWorkspaceHost(
       }
       // 排查「DSH 丢焦点给浏览器」方向：工作区内 target="_blank" 外链会经系统浏览器
       // 打开并激活它，把前台让给浏览器。记录来源与脱敏 URL，供与 win.blur 对齐。
-      focusDebug(`[workspace-host] openExternal source=workspace-target-blank url=${redactUrl(url)}`)
+      focusDebug(
+        `[workspace-host] openExternal source=workspace-target-blank url=${redactUrl(url)}`
+      )
       openExternalSafely(url, shell.openExternal.bind(shell))
       return { action: 'deny' }
     })
@@ -220,7 +227,9 @@ export function createWorkspaceHost(
       if (entry.view.webContents.isDestroyed()) return
       const current = getHubWindow()
       if (!current || current.isDestroyed() || !current.isFocused()) {
-        focusDebug(`[workspace-host] focusEntry deferred-skip source=${source} (blurred before setImmediate)`)
+        focusDebug(
+          `[workspace-host] focusEntry deferred-skip source=${source} (blurred before setImmediate)`
+        )
         return
       }
       entry.view.webContents.focus()
@@ -308,15 +317,17 @@ export function createWorkspaceHost(
             () => undefined
           )
         : Promise.resolve(false)
-    return inject.then(() => entry.view.webContents.loadURL(plan.url)).catch((error: unknown) => {
-      // 被更新导航取代（用户/其他流程已再次 loadURL）是常态，按调试记录；
-      // 其余错误记录以保留排查线索。
-      if ((error as { code?: unknown } | null)?.code === 'ERR_ABORTED') {
-        console.debug('[workspace-host] 会话刷新被更新的导航取代（正常）:', redactUrl(plan.url))
-        return
-      }
-      console.error('[workspace-host] 会话刷新工作区失败：', error)
-    })
+    return inject
+      .then(() => entry.view.webContents.loadURL(plan.url))
+      .catch((error: unknown) => {
+        // 被更新导航取代（用户/其他流程已再次 loadURL）是常态，按调试记录；
+        // 其余错误记录以保留排查线索。
+        if ((error as { code?: unknown } | null)?.code === 'ERR_ABORTED') {
+          console.debug('[workspace-host] 会话刷新被更新的导航取代（正常）:', redactUrl(plan.url))
+          return
+        }
+        console.error('[workspace-host] 会话刷新工作区失败：', error)
+      })
   }
 
   function loadedUrl(instanceId: string): string | null {

@@ -86,36 +86,41 @@ async function waitForStatus(
 
 describe('createSshTunnels（隧道管理器 + 看门狗）', () => {
   // 隧道参数里的 ControlPath/askpass 是 OpenSSH 的 POSIX 接线,Windows 侧另有通道
-  it.skipIf(process.platform === 'win32')('start → 隧道建立(参数含 -L 转发/私有 known_hosts) → 探测通过 → running', async () => {
-    const child = makeFakeChild()
-    let lastInvocation!: { args: string[]; env: NodeJS.ProcessEnv }
-    const spawnImpl = vi.fn((invocation: { args: string[]; env: NodeJS.ProcessEnv }) => {
-      lastInvocation = invocation
-      return child as unknown as SpawnedProcess
-    })
-    const manager = createSshTunnels({
-      dataRoot: '/tmp/hub-data',
-      spawnImpl: spawnImpl as never,
-      probe: async () => true,
-      readyTimeoutMs: 2000
-    })
-    const events: InstanceStatusEvent[] = []
-    manager.onStatus((event) => events.push(event))
-    const instance = sshInstance()
-    await manager.start(instance)
-    await waitForStatus(manager, instance.id, 'running')
+  it.skipIf(process.platform === 'win32')(
+    'start → 隧道建立(参数含 -L 转发/私有 known_hosts) → 探测通过 → running',
+    async () => {
+      const child = makeFakeChild()
+      let lastInvocation!: { args: string[]; env: NodeJS.ProcessEnv }
+      const spawnImpl = vi.fn((invocation: { args: string[]; env: NodeJS.ProcessEnv }) => {
+        lastInvocation = invocation
+        return child as unknown as SpawnedProcess
+      })
+      const manager = createSshTunnels({
+        dataRoot: '/tmp/hub-data',
+        spawnImpl: spawnImpl as never,
+        probe: async () => true,
+        readyTimeoutMs: 2000
+      })
+      const events: InstanceStatusEvent[] = []
+      manager.onStatus((event) => events.push(event))
+      const instance = sshInstance()
+      await manager.start(instance)
+      await waitForStatus(manager, instance.id, 'running')
 
-    expect(lastInvocation?.args).toEqual(
-      expect.arrayContaining(['-L', expect.stringMatching(/^30\d+:127\.0\.0\.1:3080$/)])
-    )
-    expect(lastInvocation?.args.join(' ')).toContain('UserKnownHostsFile=/tmp/hub-data/ssh/known_hosts')
-    expect(lastInvocation?.args.join(' ')).toContain('ControlPath=/tmp/hub-data/ssh/')
-    expect(lastInvocation?.env['SSH_ASKPASS_REQUIRE']).toBe('never')
-    const status = manager.statusOf(instance.id)
-    expect(status?.url).toMatch(/^http:\/\/127\.0\.0\.1:30\d+\/$/)
-    expect(status?.port).toBeDefined()
-    expect(events.map((event) => event.status)).toContain('running')
-  })
+      expect(lastInvocation?.args).toEqual(
+        expect.arrayContaining(['-L', expect.stringMatching(/^30\d+:127\.0\.0\.1:3080$/)])
+      )
+      expect(lastInvocation?.args.join(' ')).toContain(
+        'UserKnownHostsFile=/tmp/hub-data/ssh/known_hosts'
+      )
+      expect(lastInvocation?.args.join(' ')).toContain('ControlPath=/tmp/hub-data/ssh/')
+      expect(lastInvocation?.env['SSH_ASKPASS_REQUIRE']).toBe('never')
+      const status = manager.statusOf(instance.id)
+      expect(status?.url).toMatch(/^http:\/\/127\.0\.0\.1:30\d+\/$/)
+      expect(status?.port).toBeDefined()
+      expect(events.map((event) => event.status)).toContain('running')
+    }
+  )
 
   it('SSH 别名解析为实际目标时，TOFU 将实际主机键写入私有 known_hosts', async () => {
     const { mkdtemp, readFile } = await import('node:fs/promises')
@@ -238,7 +243,10 @@ describe('createSshTunnels（隧道管理器 + 看门狗）', () => {
     const reconnected = await Promise.race([
       new Promise<'ok'>((resolve) => {
         const timer = setInterval(() => {
-          if (spawnImpl.mock.calls.length >= 2 && manager.statusOf(instance.id)?.status === 'running') {
+          if (
+            spawnImpl.mock.calls.length >= 2 &&
+            manager.statusOf(instance.id)?.status === 'running'
+          ) {
             clearInterval(timer)
             resolve('ok')
           }
@@ -527,45 +535,48 @@ describe('createSshTunnels（隧道管理器 + 看门狗）', () => {
   })
 })
 // unix socket 104 字节上限是 POSIX AF_UNIX 约束,Windows 无此语义
-describe.skipIf(process.platform === 'win32')("ControlPath 路径规则（unix socket 104 字节上限）", () => {
-  it('socket slug 按实例隔离且短（12 hex,UUID 去横线）', () => {
-    const instance = sshInstance({ id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' })
-    expect(controlSlug(instance)).toBe('f47ac10b58cc')
-    expect(controlSlug(instance)).toHaveLength(12)
-    expect(controlSlug(sshInstance({ id: 'a47ac10b-58cc-4372-a567-0e02b2c3d479' }))).not.toBe(
-      controlSlug(instance)
-    )
-  })
+describe.skipIf(process.platform === 'win32')(
+  'ControlPath 路径规则（unix socket 104 字节上限）',
+  () => {
+    it('socket slug 按实例隔离且短（12 hex,UUID 去横线）', () => {
+      const instance = sshInstance({ id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' })
+      expect(controlSlug(instance)).toBe('f47ac10b58cc')
+      expect(controlSlug(instance)).toHaveLength(12)
+      expect(controlSlug(sshInstance({ id: 'a47ac10b-58cc-4372-a567-0e02b2c3d479' }))).not.toBe(
+        controlSlug(instance)
+      )
+    })
 
-  it('数据目录短 → socket 落在 <dataRoot>/ssh', () => {
-    expect(socketsDirFor('/tmp/hub-data')).toBe('/tmp/hub-data/ssh')
-  })
+    it('数据目录短 → socket 落在 <dataRoot>/ssh', () => {
+      expect(socketsDirFor('/tmp/hub-data')).toBe('/tmp/hub-data/ssh')
+    })
 
-  it("数据目录过长时自适应退化到系统临时目录", () => {
-    // 长度是这条用例的关键输入:退化阈值是 dataRoot ≥ 66 字节。前缀取自系统临时目录,
-    // 既不写死任何用户的目录结构,又在 macOS/Linux 上都足够长。
-    const long = join(
-      tmpdir(),
-      'workspace',
-      'private',
-      'some-very-long-org',
-      'dsh-plugins',
-      'dsh-hub-desktop',
-      'hub-data',
-      'verify-ssh'
-    )
-    expect(long.length).toBeGreaterThan(66)
-    const dir = socketsDirFor(long)
-    expect(dir).not.toBe(`${long}/ssh`)
-    const base =
-      process.env['XDG_RUNTIME_DIR'] !== undefined && process.env['XDG_RUNTIME_DIR'].trim() !== ''
-        ? process.env['XDG_RUNTIME_DIR']
-        : tmpdir()
-    expect(dir.startsWith(base)).toBe(true)
-    // 最坏形态(12 字符 slug + ssh 追加大约 16 字符随机后缀)必须 < 104 字节
-    expect(join(dir, 'ctl-000000000000').length + 17).toBeLessThan(104)
-  })
-})
+    it('数据目录过长时自适应退化到系统临时目录', () => {
+      // 长度是这条用例的关键输入:退化阈值是 dataRoot ≥ 66 字节。前缀取自系统临时目录,
+      // 既不写死任何用户的目录结构,又在 macOS/Linux 上都足够长。
+      const long = join(
+        tmpdir(),
+        'workspace',
+        'private',
+        'some-very-long-org',
+        'dsh-plugins',
+        'dsh-hub-desktop',
+        'hub-data',
+        'verify-ssh'
+      )
+      expect(long.length).toBeGreaterThan(66)
+      const dir = socketsDirFor(long)
+      expect(dir).not.toBe(`${long}/ssh`)
+      const base =
+        process.env['XDG_RUNTIME_DIR'] !== undefined && process.env['XDG_RUNTIME_DIR'].trim() !== ''
+          ? process.env['XDG_RUNTIME_DIR']
+          : tmpdir()
+      expect(dir.startsWith(base)).toBe(true)
+      // 最坏形态(12 字符 slug + ssh 追加大约 16 字符随机后缀)必须 < 104 字节
+      expect(join(dir, 'ctl-000000000000').length + 17).toBeLessThan(104)
+    })
+  }
+)
 
 describe.skipIf(process.platform === 'win32')('ensureSocketsDir（socket 目录安全）', () => {
   it('短 dataRoot → 创建 <root>/ssh 为 0700，与 socketsDirFor 同步', async () => {

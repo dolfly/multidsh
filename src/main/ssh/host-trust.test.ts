@@ -35,8 +35,7 @@ describe('host-trust（TOFU 纯逻辑）', () => {
     expect(knownHostsHostField('dsh.internal', 2222)).toBe('[dsh.internal]:2222')
   })
 
-  it("SHA256 指纹与 ssh-keygen 一致", () => {
-
+  it('SHA256 指纹与 ssh-keygen 一致', () => {
     expect(publicKeyFingerprint(ED25519_BLOB)).toBe(
       'SHA256:WVEaUHwlYk84FEWb7QvPJ5ptvpPwIbrN3GIrwvt32RM'
     )
@@ -85,10 +84,7 @@ describe('host-trust（TOFU 纯逻辑）', () => {
     const scanned = [{ type: 'ssh-ed25519', blob: ED25519_BLOB }]
     expect(evaluateHostTrust(scanned, scanned).verdict).toBe('trusted')
     expect(evaluateHostTrust([], scanned).verdict).toBe('unknown')
-    const changed = evaluateHostTrust(
-      [{ type: 'ssh-ed25519', blob: OTHER_BLOB }],
-      scanned
-    )
+    const changed = evaluateHostTrust([{ type: 'ssh-ed25519', blob: OTHER_BLOB }], scanned)
     expect(changed.verdict).toBe('changed')
     expect(changed.mismatched).toEqual([{ type: 'ssh-ed25519', blob: OTHER_BLOB }])
     // 已信任密钥「不再出示」(类型消失/轮换)同样告警,并给出旧条目供 UI 展示
@@ -98,9 +94,9 @@ describe('host-trust（TOFU 纯逻辑）', () => {
   })
 
   it('formatKnownHostsLines 生成可写入的 known_hosts 行', () => {
-    expect(formatKnownHostsLines('[h]:2222', [{ type: 'ssh-ed25519', blob: ED25519_BLOB }])).toEqual([
-      `[h]:2222 ssh-ed25519 ${ED25519_BLOB}`
-    ])
+    expect(
+      formatKnownHostsLines('[h]:2222', [{ type: 'ssh-ed25519', blob: ED25519_BLOB }])
+    ).toEqual([`[h]:2222 ssh-ed25519 ${ED25519_BLOB}`])
   })
 
   it('toFingerprints 输出 UI 展示用类型+指纹', () => {
@@ -110,25 +106,38 @@ describe('host-trust（TOFU 纯逻辑）', () => {
   })
 
   // Windows 文件系统没有 POSIX mode 位;known_hosts 的 0600 语义仅 POSIX 可验证
-  it.skipIf(process.platform === 'win32')('recordHostTrust:append 追加并去重,replace 轮换旧行', async () => {
-    const path = join(dir, 'known_hosts')
-    const hostField = '[h]:2222'
-    await recordHostTrust(path, hostField, [{ type: 'ssh-ed25519', blob: ED25519_BLOB }], 'append')
-    // 幂等追加
-    await recordHostTrust(path, hostField, [{ type: 'ssh-ed25519', blob: ED25519_BLOB }], 'append')
-    let content = await readFile(path, 'utf8')
-    expect(content.trim().split('\n')).toHaveLength(1)
+  it.skipIf(process.platform === 'win32')(
+    'recordHostTrust:append 追加并去重,replace 轮换旧行',
+    async () => {
+      const path = join(dir, 'known_hosts')
+      const hostField = '[h]:2222'
+      await recordHostTrust(
+        path,
+        hostField,
+        [{ type: 'ssh-ed25519', blob: ED25519_BLOB }],
+        'append'
+      )
+      // 幂等追加
+      await recordHostTrust(
+        path,
+        hostField,
+        [{ type: 'ssh-ed25519', blob: ED25519_BLOB }],
+        'append'
+      )
+      let content = await readFile(path, 'utf8')
+      expect(content.trim().split('\n')).toHaveLength(1)
 
-    // 轮换:旧行被替换
-    await recordHostTrust(path, hostField, [{ type: 'ssh-ed25519', blob: OTHER_BLOB }], 'replace')
-    content = await readFile(path, 'utf8')
-    const lines = content.trim().split('\n')
-    expect(lines).toHaveLength(1)
-    expect(lines[0]).toContain(OTHER_BLOB)
-    // 权限 0600(仅当前用户可读)
-    const mode = (await stat(path)).mode & 0o777
-    expect(mode).toBe(0o600)
-  })
+      // 轮换:旧行被替换
+      await recordHostTrust(path, hostField, [{ type: 'ssh-ed25519', blob: OTHER_BLOB }], 'replace')
+      content = await readFile(path, 'utf8')
+      const lines = content.trim().split('\n')
+      expect(lines).toHaveLength(1)
+      expect(lines[0]).toContain(OTHER_BLOB)
+      // 权限 0600(仅当前用户可读)
+      const mode = (await stat(path)).mode & 0o777
+      expect(mode).toBe(0o600)
+    }
+  )
 
   it('hostTargetLabel:22 端口不显示端口号', () => {
     expect(hostTargetLabel('h', 22)).toBe('h')

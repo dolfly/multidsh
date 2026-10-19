@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import type {
-  AskpassPromptPayload,
-  HostKeyDecision,
-  HostKeyPromptPayload
-} from '@shared/contracts'
+import type { AskpassPromptPayload, HostKeyDecision, HostKeyPromptPayload } from '@shared/contracts'
 import { Icon } from '../lib/icons'
 import { Modal } from './Modal'
 import { useAppStore } from '../store'
@@ -134,27 +130,27 @@ export default function SshDialogs(): ReactNode {
               <button className="btn btn-secondary" onClick={() => replyHostKey('reject')}>
                 {changed ? t('common.close') : t('common.cancel')}
               </button>
-              {changed
-                ? canForgetHostKey && (
-                    // 指纹变化**没有**一键放行路径（主进程一律拒绝）。这里只提供显式、破坏性的
-                    // 恢复动作：忘记本机已信任指纹后，下一次连接重新走首次确认。
-                    <button
-                      className="btn btn-danger"
-                      data-testid="fingerprint-forget"
-                      onClick={requestForgetHostKey}
-                    >
-                      {t('ssh.forgetHostKey')}
-                    </button>
-                  )
-                : (
+              {changed ? (
+                canForgetHostKey && (
+                  // 指纹变化**没有**一键放行路径（主进程一律拒绝）。这里只提供显式、破坏性的
+                  // 恢复动作：忘记本机已信任指纹后，下一次连接重新走首次确认。
                   <button
-                    className="btn btn-primary"
-                    data-testid="fingerprint-accept"
-                    onClick={() => replyHostKey('trust')}
+                    className="btn btn-danger"
+                    data-testid="fingerprint-forget"
+                    onClick={requestForgetHostKey}
                   >
-                    {t('ssh.trustAndConnect')}
+                    {t('ssh.forgetHostKey')}
                   </button>
-                )}
+                )
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  data-testid="fingerprint-accept"
+                  onClick={() => replyHostKey('trust')}
+                >
+                  {t('ssh.trustAndConnect')}
+                </button>
+              )}
             </div>
           </>
         }
@@ -211,7 +207,7 @@ export default function SshDialogs(): ReactNode {
             <span className="meta">{t('ssh.askpassTransient')}</span>
             <div className="right">
               <button className="btn btn-secondary" onClick={() => replyAskpass(null)}>
-               {t('common.cancel')}
+                {t('common.cancel')}
               </button>
               <button
                 className="btn btn-primary"
@@ -219,7 +215,7 @@ export default function SshDialogs(): ReactNode {
                 onClick={() => replyAskpass(secret)}
                 disabled={secret === ''}
               >
-               {t('ssh.continue')}
+                {t('ssh.continue')}
               </button>
             </div>
           </>

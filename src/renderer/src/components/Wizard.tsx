@@ -11,7 +11,12 @@ import SshConfig from './wizard/SshConfig'
 import HttpConfig from './wizard/HttpConfig'
 import StepConfirm from './wizard/StepConfirm'
 import { useCreateInstance } from './wizard/useCreateInstance'
-import { EMPTY_FORM, type ExternalWorkspace, type WizardForm, type WizardTransport } from './wizard/types'
+import {
+  EMPTY_FORM,
+  type ExternalWorkspace,
+  type WizardForm,
+  type WizardTransport
+} from './wizard/types'
 
 const STEP_KEYS: MessageKey[] = ['wizard.stepTransport', 'wizard.stepConfig', 'wizard.stepConfirm']
 
@@ -27,7 +32,9 @@ export default function Wizard(): ReactNode {
   const [transport, setTransport] = useState<WizardTransport>('local')
   const [form, setForm] = useState<WizardForm>(EMPTY_FORM)
   const [busy, setBusy] = useState(false)
-  const [localLaunchers, setLocalLaunchers] = useState<Array<{ launcher: WizardForm['launcher']; version: string }>>([])
+  const [localLaunchers, setLocalLaunchers] = useState<
+    Array<{ launcher: WizardForm['launcher']; version: string }>
+  >([])
   const [externalWorkspace, setExternalWorkspace] = useState<ExternalWorkspace | null>(null)
   const [useExistingExternal, setUseExistingExternal] = useState(false)
   const [localProbeDone, setLocalProbeDone] = useState(false)
@@ -47,17 +54,21 @@ export default function Wizard(): ReactNode {
   useEffect(() => {
     if (step !== 2 || transport !== 'local' || localProbeDone) return
     let cancelled = false
-    void Promise.all([window.dshHub?.runtime.probeLocalDsh(), window.dshHub?.runtime.scanExternal()]).then(
-      ([runtime, external]) => {
-        if (!cancelled) {
-          setLocalLaunchers(runtime?.ok ? runtime.value : [])
-          setExternalWorkspace(
-            external?.ok ? (external.value.find((item) => item.port !== null) as ExternalWorkspace | undefined) ?? null : null
-          )
-          setLocalProbeDone(true)
-        }
+    void Promise.all([
+      window.dshHub?.runtime.probeLocalDsh(),
+      window.dshHub?.runtime.scanExternal()
+    ]).then(([runtime, external]) => {
+      if (!cancelled) {
+        setLocalLaunchers(runtime?.ok ? runtime.value : [])
+        setExternalWorkspace(
+          external?.ok
+            ? ((external.value.find((item) => item.port !== null) as
+                ExternalWorkspace | undefined) ?? null)
+            : null
+        )
+        setLocalProbeDone(true)
       }
-    )
+    })
     return () => {
       cancelled = true
     }
@@ -81,7 +92,9 @@ export default function Wizard(): ReactNode {
   // 版本默认与本地版本相同：本机探测到的 dsh 优先，其次 hub 已安装的最新；用户改过不覆盖。
   useEffect(() => {
     if (versionTouched || form.version !== '') return
-    const preset = localLaunchers.find((item) => item.launcher === 'dsh')?.version ?? versionCatalog?.installed[0]
+    const preset =
+      localLaunchers.find((item) => item.launcher === 'dsh')?.version ??
+      versionCatalog?.installed[0]
     if (preset) {
       setForm((current) => (current.version === '' ? { ...current, version: preset } : current))
     }
@@ -110,7 +123,8 @@ export default function Wizard(): ReactNode {
   }
 
   const set =
-    (key: Exclude<keyof WizardForm, 'useDefaultSpace'>) => (event: { target: { value: string } }) => {
+    (key: Exclude<keyof WizardForm, 'useDefaultSpace'>) =>
+    (event: { target: { value: string } }) => {
       const value = event.target.value
       setForm((current) => ({ ...current, [key]: value }))
       if (key === 'name' && value.trim() !== '') setError(null)
@@ -119,14 +133,20 @@ export default function Wizard(): ReactNode {
   const reusableExternalInstance =
     transport === 'local' && useExistingExternal && externalWorkspace
       ? instances.find(
-          (instance) => instance.transport === 'local' && instance.address === `127.0.0.1:${externalWorkspace.port}`
+          (instance) =>
+            instance.transport === 'local' &&
+            instance.address === `127.0.0.1:${externalWorkspace.port}`
         )
       : undefined
   const configuredName = reusableExternalInstance?.name ?? form.name
 
   // 版本下拉：registry 最近 10 个（从新到旧、最新在上）；本地版本/当前选中值不在其中时补在末尾。
   const localDshVersion = localLaunchers.find((item) => item.launcher === 'dsh')?.version
-  const versionOptions = buildVersionOptions(versionCatalog?.versions ?? [], localDshVersion, form.version)
+  const versionOptions = buildVersionOptions(
+    versionCatalog?.versions ?? [],
+    localDshVersion,
+    form.version
+  )
 
   const { validate, submit } = useCreateInstance({
     transport,
@@ -156,7 +176,11 @@ export default function Wizard(): ReactNode {
           </span>
           <div className="right">
             {step > 1 && (
-              <button className="btn btn-secondary" onClick={() => setStep(step - 1)} disabled={busy}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setStep(step - 1)}
+                disabled={busy}
+              >
                 {t('wizard.prev')}
               </button>
             )}

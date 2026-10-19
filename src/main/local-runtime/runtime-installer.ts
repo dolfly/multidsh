@@ -63,9 +63,7 @@ function findWindowsNodeDir(exists: (path: string) => boolean): string | null {
 
 /** Windows：node.exe 可能所在的目录，PATH 优先，常见安装位置兜底 */
 function windowsNodeDirs(): string[] {
-  const dirs = (process.env.PATH ?? '')
-    .split(';')
-    .filter((dir) => dir !== '')
+  const dirs = (process.env.PATH ?? '').split(';').filter((dir) => dir !== '')
   return [
     ...dirs,
     join(process.env['ProgramFiles'] || 'C:\\Program Files', 'nodejs'),
@@ -135,7 +133,8 @@ export async function resolveNpmInvocation(
     for (const dir of windowsNodeDirs()) {
       const nodeExe = join(dir, 'node.exe')
       const bundledCli = join(dir, 'node_modules', 'npm', 'bin', 'npm-cli.js')
-      if (exists(nodeExe) && exists(bundledCli)) return { command: nodeExe, prefixArgs: [bundledCli] }
+      if (exists(nodeExe) && exists(bundledCli))
+        return { command: nodeExe, prefixArgs: [bundledCli] }
     }
     return null
   }
@@ -147,7 +146,8 @@ export async function resolveNpmInvocation(
   for (const dir of (process.env.PATH ?? '').split(':')) {
     if (dir === '') continue
     const npmInSameDir = join(dir, 'npm')
-    if (exists(join(dir, 'node')) && exists(npmInSameDir)) return { command: npmInSameDir, prefixArgs: [] }
+    if (exists(join(dir, 'node')) && exists(npmInSameDir))
+      return { command: npmInSameDir, prefixArgs: [] }
   }
 
   // 系统 PATH 上的 which
@@ -380,7 +380,10 @@ export interface RuntimeInstaller {
    * 原子「检查并安装」：同一版本只会安装一次 —— 并发调用（多实例同时首次启动）
    * 会在队列里串行，后来者直接复用已完成的安装结果。
    */
-  ensureInstalled(version: string, onProgress?: (progress: InstallProgress) => void): Promise<InstalledRuntime>
+  ensureInstalled(
+    version: string,
+    onProgress?: (progress: InstallProgress) => void
+  ): Promise<InstalledRuntime>
   resolveEntry(version: string): string
   /** 安装中断标记（installing.json）是否残留 */
   hasIncompleteInstall(version: string): Promise<boolean>
@@ -395,7 +398,11 @@ export interface RuntimeInstaller {
    * 把 npm 全局安装的系统 dsh 原位升级到指定版本（`npm install -g --prefix <prefix>`）。
    * 只写入 prefix 自身的 lib/node_modules，不动 hub 隔离目录与其它安装。
    */
-  installGlobal(prefix: string, version: string, onProgress?: (progress: InstallProgress) => void): Promise<void>
+  installGlobal(
+    prefix: string,
+    version: string,
+    onProgress?: (progress: InstallProgress) => void
+  ): Promise<void>
   /**
    * 应用退出时调用：终止在飞的 npm 安装子进程，避免退出后仍在后台下载。
    * **一次性、不可逆**：内部 AbortController 一旦 abort 便永久失效，此后所有安装/查询都会立即
@@ -412,7 +419,13 @@ export function runtimeDirFor(runtimesDir: string, version: string): string {
 }
 
 export function runtimeEntryFor(runtimesDir: string, version: string): string {
-  return join(runtimeDirFor(runtimesDir, version), 'node_modules', DSH_PACKAGE_NAME, 'lib', 'bin.js')
+  return join(
+    runtimeDirFor(runtimesDir, version),
+    'node_modules',
+    DSH_PACKAGE_NAME,
+    'lib',
+    'bin.js'
+  )
 }
 
 function assertVersion(version: string): void {
@@ -429,7 +442,10 @@ function assertVersion(version: string): void {
  * （`.pnpm/.../node_modules/@deepseek-ai/dsh`）、本地 node_modules、shim 脚本
  * 都不落在该布局下 → 返回 null，交由调用方给出「无法代管升级」的失败原因。
  */
-export function globalPrefixFor(realPath: string, platform: NodeJS.Platform = process.platform): string | null {
+export function globalPrefixFor(
+  realPath: string,
+  platform: NodeJS.Platform = process.platform
+): string | null {
   const normalized = realPath.replace(/\\/g, '/')
   const index = normalized.indexOf(`/node_modules/${DSH_PACKAGE_NAME}/`)
   if (index <= 0) return null
@@ -441,7 +457,10 @@ export function globalPrefixFor(realPath: string, platform: NodeJS.Platform = pr
 }
 
 /** npm 全局安装里 dsh 入口的绝对路径（POSIX 多一层 lib），与 `globalPrefixFor` 互为逆运算。 */
-export function globalRuntimeEntry(prefix: string, platform: NodeJS.Platform = process.platform): string {
+export function globalRuntimeEntry(
+  prefix: string,
+  platform: NodeJS.Platform = process.platform
+): string {
   const nodeModules =
     platform === 'win32' ? join(prefix, 'node_modules') : join(prefix, 'lib', 'node_modules')
   return join(nodeModules, ...DSH_PACKAGE_NAME.split('/'), 'lib', 'bin.js')
@@ -451,7 +470,8 @@ export function createRuntimeInstaller(options: RuntimeInstallerOptions): Runtim
   const run = options.run ?? runCommand
   const runNpm = options.runNpm ?? spawnNpm
   const resolveNpm =
-    options.resolveNpm ?? (() => resolveNpmInvocation(run, options.exists, options.bundledNpm ?? null))
+    options.resolveNpm ??
+    (() => resolveNpmInvocation(run, options.exists, options.bundledNpm ?? null))
 
   /** 解析当前生效的 registry：动态回调优先，其次静态配置。 */
   function currentRegistry(): string | undefined {
@@ -517,7 +537,15 @@ export function createRuntimeInstaller(options: RuntimeInstallerOptions): Runtim
     const npm = await getNpmInvocation()
     return run(
       npm.command,
-      [...npm.prefixArgs, 'view', DSH_PACKAGE_NAME, ...args, '--cache', options.cacheDir, ...registryArgs()],
+      [
+        ...npm.prefixArgs,
+        'view',
+        DSH_PACKAGE_NAME,
+        ...args,
+        '--cache',
+        options.cacheDir,
+        ...registryArgs()
+      ],
       { env: npmChildEnv(npm, { npm_config_cache: options.cacheDir }) }
     )
   }
@@ -530,7 +558,9 @@ export function createRuntimeInstaller(options: RuntimeInstallerOptions): Runtim
     }
     const parsed: unknown = JSON.parse(result.stdout || '[]')
     const list = Array.isArray(parsed) ? parsed : []
-    return list.filter((item): item is string => typeof item === 'string').filter((v) => !v.includes('/'))
+    return list
+      .filter((item): item is string => typeof item === 'string')
+      .filter((v) => !v.includes('/'))
   }
 
   async function unsafeResolveDefaultVersion(): Promise<string> {
@@ -653,7 +683,10 @@ export function createRuntimeInstaller(options: RuntimeInstallerOptions): Runtim
       return enqueueSerial(() => doInstall(version))
     },
 
-    ensureInstalled(version: string, onProgress?: (progress: InstallProgress) => void): Promise<InstalledRuntime> {
+    ensureInstalled(
+      version: string,
+      onProgress?: (progress: InstallProgress) => void
+    ): Promise<InstalledRuntime> {
       return enqueueSerial(async () => {
         assertVersion(version)
         if (!(await unsafeIsInstalled(version))) return doInstall(version, onProgress)
@@ -677,11 +710,19 @@ export function createRuntimeInstaller(options: RuntimeInstallerOptions): Runtim
       }
     },
 
-    installGlobal(prefix: string, version: string, onProgress?: (progress: InstallProgress) => void): Promise<void> {
+    installGlobal(
+      prefix: string,
+      version: string,
+      onProgress?: (progress: InstallProgress) => void
+    ): Promise<void> {
       return enqueueSerial(async () => {
         assertVersion(version)
         const npm = await getNpmInvocation()
-        onProgress?.({ phase: 'installing', version, detail: `全局安装 ${DSH_PACKAGE_NAME}@${version}（${prefix}）` })
+        onProgress?.({
+          phase: 'installing',
+          version,
+          detail: `全局安装 ${DSH_PACKAGE_NAME}@${version}（${prefix}）`
+        })
         const installArgs = [
           'install',
           '-g',
@@ -732,7 +773,10 @@ export function createRuntimeInstaller(options: RuntimeInstallerOptions): Runtim
     }
   }
 
-  async function doInstall(version: string, onProgress?: (progress: InstallProgress) => void): Promise<InstalledRuntime> {
+  async function doInstall(
+    version: string,
+    onProgress?: (progress: InstallProgress) => void
+  ): Promise<InstalledRuntime> {
     assertVersion(version)
     const dir = runtimeDirFor(options.runtimesDir, version)
     const markerPath = join(dir, INSTALLING_MARKER)

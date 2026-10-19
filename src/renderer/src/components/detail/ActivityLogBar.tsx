@@ -24,8 +24,14 @@ export default function ActivityLogBar(props: ActivityLogBarProps): ReactNode {
 
   // 信息栏固定单行：最新一条若本身含多行（如带换行的错误），只取最后一个非空行；
   // 过长再由 CSS 截断省略，不换行、不出滚动条。完整内容去「更多」弹层看。
-  const latestText = latestLine !== undefined ? formatActivity(t, latestLine) : t('detail.log.empty')
-  const singleLine = latestText.split('\n').map((line) => line.trimEnd()).filter((line) => line !== '').at(-1) ?? latestText
+  const latestText =
+    latestLine !== undefined ? formatActivity(t, latestLine) : t('detail.log.empty')
+  const singleLine =
+    latestText
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .filter((line) => line !== '')
+      .at(-1) ?? latestText
 
   // 「更多」弹层：打开与新行到达时滚到最新。
   useEffect(() => {
@@ -41,7 +47,11 @@ export default function ActivityLogBar(props: ActivityLogBarProps): ReactNode {
             {singleLine}
           </p>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => setShowMore(true)} data-testid="detail-logbar-more">
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => setShowMore(true)}
+          data-testid="detail-logbar-more"
+        >
           {t('detail.log.more')}
         </button>
       </div>
@@ -57,16 +67,28 @@ export default function ActivityLogBar(props: ActivityLogBarProps): ReactNode {
           footer={
             <div className="right">
               {onOpenLogDir && (
-                <button className="btn btn-secondary btn-sm" onClick={onOpenLogDir} data-testid="log-more-open-dir">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={onOpenLogDir}
+                  data-testid="log-more-open-dir"
+                >
                   {t('detail.log.openDir')}
                 </button>
               )}
               {latestLine !== undefined && (
                 <>
-                  <button className="btn btn-secondary btn-sm" onClick={onCopy} data-testid="log-more-copy">
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={onCopy}
+                    data-testid="log-more-copy"
+                  >
                     {t('detail.log.copy')}
                   </button>
-                  <button className="btn btn-secondary btn-sm" onClick={onClear} data-testid="log-more-clear">
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={onClear}
+                    data-testid="log-more-clear"
+                  >
                     {t('detail.log.clear')}
                   </button>
                 </>

@@ -74,9 +74,7 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
   const appendActivity = useAppStore((state) => state.appendActivity)
   /** 领取「已自动禁用」提示的发送权（每实例每个 dsh 版本只发一次）。 */
   const notifyAutoDisabledOnce = useAppStore((state) => state.notifyAutoDisabledOnce)
-  const workspaceConnected = useAppStore(
-    (state) => state.workspaceConnected[instanceId] ?? false
-  )
+  const workspaceConnected = useAppStore((state) => state.workspaceConnected[instanceId] ?? false)
   /** 实例是否运行中：决定改动提示是「已保存」还是「已生效/需重启」。 */
   const instanceRunning = useAppStore((state) => state.statuses[instanceId]?.status === 'running')
 
@@ -133,17 +131,22 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
           const dshVersion = disabled[0]?.dshVersion ?? ''
           // 用户已确认过这一批（「知道了」记在 localStorage，刷新与应用重启后依然有效）时，
           // 提示条与一次性提示都不再出现；dsh 版本再次变更会重新提示。
-          const acked = disabled.length > 0 && isAutoDisabledAcked(localStorage, instanceId, dshVersion)
+          const acked =
+            disabled.length > 0 && isAutoDisabledAcked(localStorage, instanceId, dshVersion)
           setAutoDisabled(disabled.length > 0 && !acked ? disabled : null)
           // 同一次自动禁用只提示一次：发送权记在 store 里（同步判定），
           // 因此并发的两次加载（dev StrictMode 会双调用挂载 effect）与组件重挂载都不会重复弹。
           if (disabled.length > 0 && !acked && notifyAutoDisabledOnce(instanceId, dshVersion)) {
             const list = disabled.map((item) => item.name).join(t('common.listSeparator'))
             logActivity(t('detail.plugin.log.autoDisabled', { dshVersion, list }))
-            toast('err', t('detail.plugin.autoDisabledTitle'), t('detail.plugin.autoDisabledBody', {
-              dshVersion,
-              list
-            }))
+            toast(
+              'err',
+              t('detail.plugin.autoDisabledTitle'),
+              t('detail.plugin.autoDisabledBody', {
+                dshVersion,
+                list
+              })
+            )
           }
         }
       } else {
@@ -206,10 +209,16 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     setChecks((prev) => ({ ...prev, [name]: { status: 'checking', result: null, error: null } }))
     const result = await BRIDGE.plugin.check(instanceId, name)
     if (result.ok) {
-      setChecks((prev) => ({ ...prev, [name]: { status: 'done', result: result.value, error: null } }))
+      setChecks((prev) => ({
+        ...prev,
+        [name]: { status: 'done', result: result.value, error: null }
+      }))
       logCheckOutcome(result.value)
     } else {
-      setChecks((prev) => ({ ...prev, [name]: { status: 'error', result: null, error: result.message } }))
+      setChecks((prev) => ({
+        ...prev,
+        [name]: { status: 'error', result: null, error: result.message }
+      }))
       logActivity(t('detail.plugin.log.checkFailed', { name, msg: result.message }))
     }
     setLastCheckedAt(new Date().toISOString())
@@ -227,7 +236,10 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     try {
       const targets = [...plugins]
       for (const plugin of targets) {
-        setChecks((prev) => ({ ...prev, [plugin.name]: { status: 'checking', result: null, error: null } }))
+        setChecks((prev) => ({
+          ...prev,
+          [plugin.name]: { status: 'checking', result: null, error: null }
+        }))
       }
       const updated: string[] = []
       const incompatible: string[] = []
@@ -241,7 +253,8 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
           }))
           const outcome = classifyCheckOutcome(result.value)
           if (outcome === 'update') updated.push(`${plugin.name} ${result.value.latest}`)
-          else if (outcome === 'incompatible') incompatible.push(`${plugin.name} ${result.value.latest}`)
+          else if (outcome === 'incompatible')
+            incompatible.push(`${plugin.name} ${result.value.latest}`)
         } else {
           setChecks((prev) => ({
             ...prev,
@@ -254,7 +267,10 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
       const separator = t('common.listSeparator')
       if (updated.length > 0) {
         logActivity(
-          t('detail.plugin.log.checkAllUpdates', { count: updated.length, list: updated.join(separator) })
+          t('detail.plugin.log.checkAllUpdates', {
+            count: updated.length,
+            list: updated.join(separator)
+          })
         )
       }
       if (incompatible.length > 0) {
@@ -267,7 +283,10 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
       }
       if (failed.length > 0) {
         logActivity(
-          t('detail.plugin.log.checkAllFailed', { count: failed.length, list: failed.join(separator) })
+          t('detail.plugin.log.checkAllFailed', {
+            count: failed.length,
+            list: failed.join(separator)
+          })
         )
       }
     } finally {
@@ -334,7 +353,9 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     if (!BRIDGE) return
     setRowBusy(name, { toggling: true })
     logActivity(
-      enabled ? t('detail.plugin.log.enabling', { name }) : t('detail.plugin.log.disabling', { name })
+      enabled
+        ? t('detail.plugin.log.enabling', { name })
+        : t('detail.plugin.log.disabling', { name })
     )
     const result = await BRIDGE.plugin.setEnabled(instanceId, name, enabled)
     setRowBusy(name, { toggling: false })
@@ -349,7 +370,9 @@ export default function PluginsCard(props: { t: Translator; instanceId: string }
     // 启用不兼容插件时主进程已授予精确版本豁免（用户接受风险）：信息栏留痕，并再次明示风险。
     if (enabled && result.value.exemptionGranted !== null) {
       const { pluginVersion, dshVersion } = result.value.exemptionGranted
-      logActivity(t('detail.plugin.log.exemptionGranted', { name, version: pluginVersion, dshVersion }))
+      logActivity(
+        t('detail.plugin.log.exemptionGranted', { name, version: pluginVersion, dshVersion })
+      )
       toast(
         'warn',
         t('detail.plugin.exemptionGrantedTitle'),
@@ -594,7 +617,9 @@ function PluginRow(props: {
     check.result === null
       ? ''
       : t(
-          showsUnknownCompatibility(check) ? 'detail.plugin.incompatibleUnknown' : 'detail.plugin.incompatible',
+          showsUnknownCompatibility(check)
+            ? 'detail.plugin.incompatibleUnknown'
+            : 'detail.plugin.incompatible',
           {
             latest: check.result.latest,
             peer: check.result.dshPeer ?? '—',
@@ -629,7 +654,10 @@ function PluginRow(props: {
           <span className="badge num">{plugin.version}</span>
           <span className="plugin-source">{t(pluginSourceKey(plugin.installSource))}</span>
           {disabled && (
-            <span className="badge plugin-disabled-badge" data-testid={`plugin-disabled-${plugin.name}`}>
+            <span
+              className="badge plugin-disabled-badge"
+              data-testid={`plugin-disabled-${plugin.name}`}
+            >
               {t('detail.plugin.disabled')}
             </span>
           )}
@@ -637,7 +665,10 @@ function PluginRow(props: {
         <div className="row plugin-actions" style={{ gap: 8 }}>
           {/* 检查结果内联在操作行最左，不换行占整行：已最新 / 不兼容警告 / 检查失败。 */}
           {showsUpToDate(check) && (
-            <span className="meta plugin-status-inline" data-testid={`plugin-uptodate-${plugin.name}`}>
+            <span
+              className="meta plugin-status-inline"
+              data-testid={`plugin-uptodate-${plugin.name}`}
+            >
               {t('detail.plugin.uptodate')}
             </span>
           )}
@@ -678,7 +709,11 @@ function PluginRow(props: {
             checked={!disabled}
             onChange={(next) => onToggleEnabled(next)}
             disabled={plugin.enabled === null || busy.toggling}
-            title={plugin.enabled === null ? t('detail.plugin.cannotDisable') : t('detail.plugin.enableToggle')}
+            title={
+              plugin.enabled === null
+                ? t('detail.plugin.cannotDisable')
+                : t('detail.plugin.enableToggle')
+            }
             ariaLabel={t('detail.plugin.enableToggle')}
             testId={`plugin-toggle-${plugin.name}`}
           />
@@ -727,9 +762,7 @@ function PluginRow(props: {
         </div>
       </div>
 
-      {expanded && (
-        <PluginDetail t={t} plugin={plugin} check={check} onOpenLink={onOpenLink} />
-      )}
+      {expanded && <PluginDetail t={t} plugin={plugin} check={check} onOpenLink={onOpenLink} />}
     </li>
   )
 }
@@ -785,14 +818,20 @@ function PluginDetail(props: {
         </>
       )}
       <dt>{t('detail.plugin.field.published')}</dt>
-      <dd className="num">{publishedAt !== null ? fmtLogTime(publishedAt) : t('detail.plugin.publishedUnknown')}</dd>
+      <dd className="num">
+        {publishedAt !== null ? fmtLogTime(publishedAt) : t('detail.plugin.publishedUnknown')}
+      </dd>
       <dt>{t('detail.plugin.field.compat')}</dt>
       <dd className="num">
         dsh {plugin.dshPeer ?? '—'}
         {plugin.nodeEngine ? ` · node ${plugin.nodeEngine}` : ''}
       </dd>
       <dt>{t('detail.plugin.field.deps')}</dt>
-      <dd>{plugin.dependencies.length > 0 ? plugin.dependencies.join(', ') : t('detail.plugin.depsNone')}</dd>
+      <dd>
+        {plugin.dependencies.length > 0
+          ? plugin.dependencies.join(', ')
+          : t('detail.plugin.depsNone')}
+      </dd>
     </dl>
   )
 }
@@ -816,7 +855,11 @@ function RemovePluginModal(props: {
           <button className="btn btn-secondary btn-sm" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn btn-danger btn-sm" onClick={onConfirm} data-testid="plugin-remove-confirm-btn">
+          <button
+            className="btn btn-danger btn-sm"
+            onClick={onConfirm}
+            data-testid="plugin-remove-confirm-btn"
+          >
             {t('detail.plugin.remove')}
           </button>
         </>
@@ -846,7 +889,11 @@ function RestartPromptModal(props: {
           <button className="btn btn-secondary btn-sm" onClick={onClose}>
             {t('detail.plugin.restartLater')}
           </button>
-          <button className="btn btn-primary btn-sm" onClick={onConfirm} data-testid="plugin-restart-now-btn">
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={onConfirm}
+            data-testid="plugin-restart-now-btn"
+          >
             {t('detail.plugin.restartNow')}
           </button>
         </>

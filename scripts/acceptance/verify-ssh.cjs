@@ -114,7 +114,9 @@ async function waitEvent(loadEvents, predicate, timeoutMs, label) {
 async function main() {
   try {
     sh(`pkill -f 'dsh-hub-ssh-' || true`)
-    sh(`find /var/folders -maxdepth 5 -name 'dsh-hub-ssh-*' -type d -exec rm -rf {} + 2>/dev/null || true`)
+    sh(
+      `find /var/folders -maxdepth 5 -name 'dsh-hub-ssh-*' -type d -exec rm -rf {} + 2>/dev/null || true`
+    )
     sh(`pkill -f 'ControlPath=.*verify-ssh' || true`)
     sh(`pkill -f 'sshd.*dsh-ssh-accept' || true`)
   } catch {
@@ -139,7 +141,7 @@ async function main() {
   await hub.evaluate(() => {
     window.__sshEvents = []
     window.dshHub.onInstanceStatus((event) => window.__sshEvents.push(event))
-  // 首次连接时自动信任测试主机指纹。
+    // 首次连接时自动信任测试主机指纹。
     window.__fingerprints = []
     window.dshHub.ssh.onHostKeyDecision((payload) => {
       window.__fingerprints.push(payload)
@@ -195,7 +197,11 @@ async function main() {
   const deadlineWin = Date.now() + 10000
   let instanceWindowUrl = null
   while (Date.now() < deadlineWin) {
-    instanceWindowUrl = app.windows().map((win) => win.url()).find((url) => url.startsWith('http://127.0.0.1:')) ?? null
+    instanceWindowUrl =
+      app
+        .windows()
+        .map((win) => win.url())
+        .find((url) => url.startsWith('http://127.0.0.1:')) ?? null
     if (instanceWindowUrl) break
     await new Promise((r) => setTimeout(r, 200))
   }
@@ -229,7 +235,12 @@ async function main() {
     '断线 error'
   )
   console.log(`[ok] 断线归因:${errorEvent.detail}`)
-  await waitEvent(() => cursorAfter(cursor), (event) => event.status === 'running', 25000, '自动重连 running')
+  await waitEvent(
+    () => cursorAfter(cursor),
+    (event) => event.status === 'running',
+    25000,
+    '自动重连 running'
+  )
   console.log('[ok] 看门狗自动重连成功')
   const reconnectDetail = (await cursorAfter(cursor))
     .filter((event) => event.status === 'starting')
@@ -244,11 +255,18 @@ async function main() {
   // —— 停止 → 隧道回收,ControlPath 清理 ——
   const stopCursor = (await eventsLoader()).length
   await hub.evaluate((id) => window.dshHub.runtime.stop(id), instanceId)
-  await waitEvent(() => cursorAfter(stopCursor), (event) => event.status === 'stopped', 10000, 'stopped')
+  await waitEvent(
+    () => cursorAfter(stopCursor),
+    (event) => event.status === 'stopped',
+    10000,
+    'stopped'
+  )
   await new Promise((r) => setTimeout(r, 1000))
   const sockAfter = findSocket()
   if (sockAfter) throw new Error(`ControlPath socket 未被清理:${sockAfter}`)
-  console.log('[debug] 停止后残留:\n' + (sh(`pgrep -fl -- ':127.0.0.1:${HTTP_PORT}' || true`) || '(无)'))
+  console.log(
+    '[debug] 停止后残留:\n' + (sh(`pgrep -fl -- ':127.0.0.1:${HTTP_PORT}' || true`) || '(无)')
+  )
   const leftover = sh(`pgrep -f -- ':127.0.0.1:${HTTP_PORT}' || true`)
   if (leftover) throw new Error(`停止后仍有隧道进程:${leftover}`)
   console.log('[ok] 停止后隧道进程与 ControlPath 均已回收')

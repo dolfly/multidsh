@@ -30,7 +30,10 @@ export function registerRendererAssets(options: {
     if (!options.isRendererOrigin(url)) return new Response('Forbidden', { status: 403 })
     const rel = url.pathname === '/' ? 'index.html' : url.pathname.replace(/^\/+/, '')
     const filePath = normalize(join(options.rendererRoot, rel))
-    if (filePath !== options.rendererRoot && !filePath.startsWith(`${options.rendererRoot}${sep}`)) {
+    if (
+      filePath !== options.rendererRoot &&
+      !filePath.startsWith(`${options.rendererRoot}${sep}`)
+    ) {
       return new Response('Forbidden', { status: 403 })
     }
     return net.fetch(pathToFileURL(filePath).toString())

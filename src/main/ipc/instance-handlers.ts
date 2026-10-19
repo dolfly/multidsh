@@ -96,18 +96,27 @@ export function registerInstanceHandlers(
     )
   )
 
-  ipcMain.handle(INSTANCE_IPC.get, (_event, id: unknown): Promise<IpcResult<InstanceRecord | null>> =>
-    wrap(() => store.get(parseId(id)))
+  ipcMain.handle(
+    INSTANCE_IPC.get,
+    (_event, id: unknown): Promise<IpcResult<InstanceRecord | null>> =>
+      wrap(() => store.get(parseId(id)))
   )
 
   async function localSpaces(): Promise<LocalSpaceSnapshot[]> {
-    if (!deps.listLocalSpaces) throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')
+    if (!deps.listLocalSpaces)
+      throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')
     const records = await store.list()
     const localsById = new Map(
-      records.filter((record) => record.transport === 'local').map((record) => [record.id, record.name])
+      records
+        .filter((record) => record.transport === 'local')
+        .map((record) => [record.id, record.name])
     )
     return (await deps.listLocalSpaces())
-      .map((space) => ({ ...space, inUse: localsById.has(space.id), instanceName: localsById.get(space.id) ?? null }))
+      .map((space) => ({
+        ...space,
+        inUse: localsById.has(space.id),
+        instanceName: localsById.get(space.id) ?? null
+      }))
       .sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt))
   }
 
@@ -118,51 +127,58 @@ export function registerInstanceHandlers(
       const instanceId = parseId(id)
       const space = (await localSpaces()).find((item) => item.id === instanceId)
       if (!space) throw new InstanceStoreError('not-found', '找不到该本机隔离空间')
-      if (space.inUse) throw new InstanceStoreError('invalid-state', '该隔离空间正被实例占用，无法删除')
-      if (!deps.trashLocalSpace) throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')
+      if (space.inUse)
+        throw new InstanceStoreError('invalid-state', '该隔离空间正被实例占用，无法删除')
+      if (!deps.trashLocalSpace)
+        throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')
       await deps.trashLocalSpace(instanceId)
       return { trashed: true }
     })
   )
 
-  ipcMain.handle(INSTANCE_IPC.create, (_event, input: unknown): Promise<IpcResult<InstanceRecord>> =>
-    wrap(async () => {
-      const parsed = CreateInstanceInputSchema.parse(input)
-      if (parsed.transport !== 'local') return store.create(parsed)
-      if (parsed.existingSpaceId) {
-        const space = (await localSpaces()).find((item) => item.id === parsed.existingSpaceId)
-        if (!space) throw new InstanceStoreError('not-found', '找不到该本机隔离空间')
-        if (space.inUse) throw new InstanceStoreError('invalid-state', '该隔离空间正被实例占用，无法删除')
-      }
-      const { useExistingExternal, externalPid, externalAccess, ...recordInput } = parsed
-      if (useExistingExternal !== true) return store.create(recordInput)
-      if (!deps.externalDshScanner) throw new InstanceStoreError('invalid-state', SCANNER_UNAVAILABLE)
-      const pid = z.number().int().positive().parse(externalPid)
-      const found = await deps.externalDshScanner.scan()
-      const match = found.find((item) => item.pid === pid)
-      if (!match) throw new InstanceStoreError('not-found', notFoundDshPid(pid))
-      if (match.port === null) throw new InstanceStoreError('invalid-state', LISTEN_PORT_UNDETERMINED)
-      const token = externalAccessToken(externalAccess, match.port)
-      const accessUrl = externalAccessUrl(token, match.port)
-      if (!(await (deps.verifyExternalAccess ?? defaultVerifyExternalAccess)(accessUrl))) {
-        throw new InstanceStoreError('invalid-state', EXTERNAL_ACCESS_TOKEN_INVALID)
-      }
-      const record = await store.create({ ...recordInput, port: match.port })
-      if (record.transport !== 'local') throw new Error('本机实例创建结果无效')
-      try {
-        await deps.vault.rememberExternalAccessToken(record.id, token)
-        await deps.runtime.adopt(record, { pid: match.pid, port: match.port, patch: match.patch })
-        externalAccessUrls.set(record.id, { pid: match.pid, port: match.port, url: accessUrl })
-        return record
-      } catch (error) {
-        // 创建外部接管实例是单个用例：后续安全存储或运行时接管失败时不能留下不可见孤儿记录。
-        externalAccessUrls.delete(record.id)
-        await deps.runtime.stop(record.id).catch(() => undefined)
-        await deps.vault.forgetExternalAccessToken(record.id).catch(() => undefined)
-        await store.remove(record.id).catch(() => undefined)
-        throw error
-      }
-    })
+  ipcMain.handle(
+    INSTANCE_IPC.create,
+    (_event, input: unknown): Promise<IpcResult<InstanceRecord>> =>
+      wrap(async () => {
+        const parsed = CreateInstanceInputSchema.parse(input)
+        if (parsed.transport !== 'local') return store.create(parsed)
+        if (parsed.existingSpaceId) {
+          const space = (await localSpaces()).find((item) => item.id === parsed.existingSpaceId)
+          if (!space) throw new InstanceStoreError('not-found', '找不到该本机隔离空间')
+          if (space.inUse)
+            throw new InstanceStoreError('invalid-state', '该隔离空间正被实例占用，无法删除')
+        }
+        const { useExistingExternal, externalPid, externalAccess, ...recordInput } = parsed
+        if (useExistingExternal !== true) return store.create(recordInput)
+        if (!deps.externalDshScanner)
+          throw new InstanceStoreError('invalid-state', SCANNER_UNAVAILABLE)
+        const pid = z.number().int().positive().parse(externalPid)
+        const found = await deps.externalDshScanner.scan()
+        const match = found.find((item) => item.pid === pid)
+        if (!match) throw new InstanceStoreError('not-found', notFoundDshPid(pid))
+        if (match.port === null)
+          throw new InstanceStoreError('invalid-state', LISTEN_PORT_UNDETERMINED)
+        const token = externalAccessToken(externalAccess, match.port)
+        const accessUrl = externalAccessUrl(token, match.port)
+        if (!(await (deps.verifyExternalAccess ?? defaultVerifyExternalAccess)(accessUrl))) {
+          throw new InstanceStoreError('invalid-state', EXTERNAL_ACCESS_TOKEN_INVALID)
+        }
+        const record = await store.create({ ...recordInput, port: match.port })
+        if (record.transport !== 'local') throw new Error('本机实例创建结果无效')
+        try {
+          await deps.vault.rememberExternalAccessToken(record.id, token)
+          await deps.runtime.adopt(record, { pid: match.pid, port: match.port, patch: match.patch })
+          externalAccessUrls.set(record.id, { pid: match.pid, port: match.port, url: accessUrl })
+          return record
+        } catch (error) {
+          // 创建外部接管实例是单个用例：后续安全存储或运行时接管失败时不能留下不可见孤儿记录。
+          externalAccessUrls.delete(record.id)
+          await deps.runtime.stop(record.id).catch(() => undefined)
+          await deps.vault.forgetExternalAccessToken(record.id).catch(() => undefined)
+          await store.remove(record.id).catch(() => undefined)
+          throw error
+        }
+      })
   )
 
   ipcMain.handle(
@@ -176,7 +192,10 @@ export function registerInstanceHandlers(
     (_event, id: unknown, options: unknown): Promise<IpcResult<{ removed: boolean }>> =>
       wrap(async () => {
         const instanceId = parseId(id)
-        const deleteOptions = z.object({ trashSpace: z.boolean().default(false) }).strict().parse(options ?? {})
+        const deleteOptions = z
+          .object({ trashSpace: z.boolean().default(false) })
+          .strict()
+          .parse(options ?? {})
         // 详情页文案承诺「删除运行中的实例会先停止其进程」:先回收进程树再移除记录,
         // 否则 dsh/ssh 进程继续存活(独占端口与 DSH_HOME),窗口也无 stopped 事件可回收
         const record = await store.get(instanceId)
@@ -189,7 +208,8 @@ export function registerInstanceHandlers(
         else if (record.transport === 'local') await deps.runtime.stop(instanceId)
         // 移入废纸篓是用户显式请求：失败必须上报（避免界面显示已删而磁盘数据仍在）。
         if (deleteOptions.trashSpace && record.transport === 'local' && !record.useDefaultSpace) {
-          if (!deps.trashLocalSpace) throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')
+          if (!deps.trashLocalSpace)
+            throw new InstanceStoreError('invalid-state', '本机隔离空间管理不可用')
           await deps.trashLocalSpace(instanceId)
         }
         deps.hideInstanceView?.()
@@ -198,10 +218,14 @@ export function registerInstanceHandlers(
         // 否则 vault 落盘（Windows 上可能因文件占用/权限偶发失败）会让用户「删不掉实例」。
         await deps.vault
           .forgetExternalAccessToken(instanceId)
-          .catch((error: unknown) => console.error('[ipc] 删除时忘记外部访问 token 失败：', instanceId, error))
+          .catch((error: unknown) =>
+            console.error('[ipc] 删除时忘记外部访问 token 失败：', instanceId, error)
+          )
         await deps.vault
           .forgetInstance(instanceId)
-          .catch((error: unknown) => console.error('[ipc] 删除时清理保险库条目失败：', instanceId, error))
+          .catch((error: unknown) =>
+            console.error('[ipc] 删除时清理保险库条目失败：', instanceId, error)
+          )
         await deps.clearPartitionSession?.(instanceId).catch(() => undefined)
         return { removed: await store.remove(instanceId) }
       })
@@ -230,22 +254,28 @@ export function registerInstanceHandlers(
     return record
   }
 
-  ipcMain.handle(INSTANCE_IPC.openDirectory, (_event, id: unknown): Promise<IpcResult<{ opened: boolean }>> =>
-    wrap(async () => {
-      const record = await requireLocalRecord(id)
-      if (!deps.openInstanceDir) throw new InstanceStoreError('invalid-state', '打开实例目录不可用')
-      await deps.openInstanceDir(record)
-      return { opened: true }
-    })
+  ipcMain.handle(
+    INSTANCE_IPC.openDirectory,
+    (_event, id: unknown): Promise<IpcResult<{ opened: boolean }>> =>
+      wrap(async () => {
+        const record = await requireLocalRecord(id)
+        if (!deps.openInstanceDir)
+          throw new InstanceStoreError('invalid-state', '打开实例目录不可用')
+        await deps.openInstanceDir(record)
+        return { opened: true }
+      })
   )
 
-  ipcMain.handle(INSTANCE_IPC.openLogDirectory, (_event, id: unknown): Promise<IpcResult<{ opened: boolean }>> =>
-    wrap(async () => {
-      const record = await requireLocalRecord(id)
-      if (!deps.openInstanceLogDir) throw new InstanceStoreError('invalid-state', '打开日志目录不可用')
-      await deps.openInstanceLogDir(record)
-      return { opened: true }
-    })
+  ipcMain.handle(
+    INSTANCE_IPC.openLogDirectory,
+    (_event, id: unknown): Promise<IpcResult<{ opened: boolean }>> =>
+      wrap(async () => {
+        const record = await requireLocalRecord(id)
+        if (!deps.openInstanceLogDir)
+          throw new InstanceStoreError('invalid-state', '打开日志目录不可用')
+        await deps.openInstanceLogDir(record)
+        return { opened: true }
+      })
   )
 
   ipcMain.handle(SSH_IPC.keyPreview, (_event, input: unknown) =>
@@ -271,19 +301,17 @@ export function registerInstanceHandlers(
       })
   )
 
-  ipcMain.handle(
-    SSH_IPC.hostKeyForget,
-    (_event, input: unknown): Promise<IpcResult<null>> =>
-      wrap(async () => {
-        // 只有用户主动「忘记该主机指纹」后,下一次连接才会重新走首次 TOFU 确认。
-        const parsed = z.object({ instanceId: z.uuid() }).parse(input)
-        const instance = await requireInstance(store, parsed.instanceId)
-        if (instance.transport !== 'ssh') {
-          throw new InstanceStoreError('invalid-input', '只有 SSH 隧道实例才有主机指纹')
-        }
-        await deps.tunnels.forgetHostKey(instance)
-        return null
-      })
+  ipcMain.handle(SSH_IPC.hostKeyForget, (_event, input: unknown): Promise<IpcResult<null>> =>
+    wrap(async () => {
+      // 只有用户主动「忘记该主机指纹」后,下一次连接才会重新走首次 TOFU 确认。
+      const parsed = z.object({ instanceId: z.uuid() }).parse(input)
+      const instance = await requireInstance(store, parsed.instanceId)
+      if (instance.transport !== 'ssh') {
+        throw new InstanceStoreError('invalid-input', '只有 SSH 隧道实例才有主机指纹')
+      }
+      await deps.tunnels.forgetHostKey(instance)
+      return null
+    })
   )
 
   ipcMain.handle(

@@ -17,7 +17,14 @@ describe('isAllowedInstancePermission', () => {
   })
 
   it('其余权限一律拒绝', () => {
-    for (const permission of ['notifications', 'geolocation', 'display-capture', 'clipboard-read', 'midi', 'unknown']) {
+    for (const permission of [
+      'notifications',
+      'geolocation',
+      'display-capture',
+      'clipboard-read',
+      'midi',
+      'unknown'
+    ]) {
       expect(isAllowedInstancePermission(permission)).toBe(false)
       expect(isAllowedInstancePermission(permission, ['audio'])).toBe(false)
     }

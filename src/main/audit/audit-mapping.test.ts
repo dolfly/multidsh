@@ -13,15 +13,15 @@ const runtime = (status: RuntimeStatusLike['status']): RuntimeStatusLike => ({ s
 
 describe('audit-mapping（ 状态迁移 → 事件枚举）', () => {
   it('进入 connected = login-success', () => {
-    expect(mapAuthTransition('i1', auth({ phase: 'await-otp' }), auth({ phase: 'connected' }))).toEqual([
-      { instanceId: 'i1', event: 'login-success', result: 'ok' }
-    ])
+    expect(
+      mapAuthTransition('i1', auth({ phase: 'await-otp' }), auth({ phase: 'connected' }))
+    ).toEqual([{ instanceId: 'i1', event: 'login-success', result: 'ok' }])
   })
 
   it('持续 connected 不重复记 login-success(幂等)', () => {
-    expect(mapAuthTransition('i1', auth({ phase: 'connected' }), auth({ phase: 'connected' }))).toEqual(
-      []
-    )
+    expect(
+      mapAuthTransition('i1', auth({ phase: 'connected' }), auth({ phase: 'connected' }))
+    ).toEqual([])
   })
 
   it('从 connected 掉回需要凭据 = session-revoked', () => {
@@ -42,7 +42,11 @@ describe('audit-mapping（ 状态迁移 → 事件枚举）', () => {
       mapAuthTransition(
         'i1',
         auth({ phase: 'await-credentials' }),
-        auth({ phase: 'await-credentials', lockedForMs: 60_000, lastErrorCode: 'too-many-attempts' })
+        auth({
+          phase: 'await-credentials',
+          lockedForMs: 60_000,
+          lastErrorCode: 'too-many-attempts'
+        })
       )
     ).toEqual([{ instanceId: 'i1', event: 'lockout', result: 'too-many-attempts' }])
   })
@@ -76,7 +80,11 @@ describe('audit-mapping（ 状态迁移 → 事件枚举）', () => {
       )
     ).toEqual([{ instanceId: 'i1', event: 'login-failed', result: 'invalid-credentials' }])
     expect(
-      mapAuthTransition('i1', auth({ phase: 'await-otp' }), auth({ phase: 'await-otp', lastErrorCode: 'invalid-credentials' }))
+      mapAuthTransition(
+        'i1',
+        auth({ phase: 'await-otp' }),
+        auth({ phase: 'await-otp', lastErrorCode: 'invalid-credentials' })
+      )
     ).toEqual([{ instanceId: 'i1', event: 'login-failed', result: 'invalid-credentials' }])
   })
 
@@ -92,8 +100,12 @@ describe('audit-mapping（ 状态迁移 → 事件枚举）', () => {
   })
 
   it('无错误码的状态变化不产生虚假失败事件', () => {
-    expect(mapAuthTransition('i1', auth({ phase: 'await-otp' }), auth({ phase: 'await-credentials' }))).toEqual([])
-    expect(mapAuthTransition('i1', auth({ phase: 'probe' }), auth({ phase: 'unknown' }))).toEqual([])
+    expect(
+      mapAuthTransition('i1', auth({ phase: 'await-otp' }), auth({ phase: 'await-credentials' }))
+    ).toEqual([])
+    expect(mapAuthTransition('i1', auth({ phase: 'probe' }), auth({ phase: 'unknown' }))).toEqual(
+      []
+    )
   })
 
   it('审计条目只有白名单字段(没有 message/status 等额外信息)', () => {

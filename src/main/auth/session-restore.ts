@@ -26,7 +26,10 @@ export interface SessionRestoreDeps {
  * Cookie 属性与注入侧保持一致:网关的 `dsh_auth` 是 `Path=/; HttpOnly; SameSite=Strict`
  * (无 Secure —— 纯 HTTP/LAN 场景),这里刻意沿用,避免两条路径属性分叉。
  */
-export function sessionCookieHeader(session: StoredSession, now: () => number = () => Date.now()): string {
+export function sessionCookieHeader(
+  session: StoredSession,
+  now: () => number = () => Date.now()
+): string {
   const parts = [`${session.name}=${session.value}`, 'Path=/', 'HttpOnly', 'SameSite=Strict']
   if (session.expiresAt !== null) {
     const maxAgeSeconds = Math.floor((session.expiresAt - now()) / 1000)

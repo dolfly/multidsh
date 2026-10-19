@@ -117,7 +117,10 @@ export default function KeyPreview(props: {
             : (firstIdentity ?? t('keyPreview.defaultKey'))}
         </span>
         {preview.identityFiles.length > 1 && (
-          <span className="meta"> · {t('keyPreview.alternates', { n: preview.identityFiles.length - 1 })}</span>
+          <span className="meta">
+            {' '}
+            · {t('keyPreview.alternates', { n: preview.identityFiles.length - 1 })}
+          </span>
         )}
         {preview.explicitIdentityFile && (
           <span className="meta"> · {t('keyPreview.explicit')}</span>

@@ -139,7 +139,10 @@ async function main() {
   if (!preview.value.identityFiles.includes(`${ACC}/client`)) {
     throw new Error(`keyPreview 未包含显式私钥:${JSON.stringify(preview.value.identityFiles)}`)
   }
-  if (JSON.stringify(preview.value).includes('PRIVATE KEY') || preview.value.agent.keys.some((key) => 'privateKey' in key)) {
+  if (
+    JSON.stringify(preview.value).includes('PRIVATE KEY') ||
+    preview.value.agent.keys.some((key) => 'privateKey' in key)
+  ) {
     throw new Error('密钥预览泄露了私钥字段')
   }
   console.log(
@@ -179,7 +182,9 @@ async function main() {
   if (!hostKeyPrompt.fingerprints[0]?.fingerprint?.startsWith('SHA256:')) {
     throw new Error('指纹格式异常')
   }
-  console.log(`[ok] 首次指纹确认弹窗:${hostKeyPrompt.target} ${hostKeyPrompt.fingerprints[0].fingerprint}`)
+  console.log(
+    `[ok] 首次指纹确认弹窗:${hostKeyPrompt.target} ${hostKeyPrompt.fingerprints[0].fingerprint}`
+  )
   await hub.evaluate(
     (requestId) => window.dshHub.ssh.replyHostKey(requestId, 'trust'),
     hostKeyPrompt.requestId
@@ -204,7 +209,9 @@ async function main() {
   // 3) 隧道就绪 + 穿透验证
   const running = await waitFor(
     async () =>
-      (await loadT5()).statuses.filter((e) => e.status === 'running' && e.id === instanceId).pop() ?? null,
+      (await loadT5()).statuses
+        .filter((e) => e.status === 'running' && e.id === instanceId)
+        .pop() ?? null,
     (value) => value,
     20000,
     'running'
@@ -236,7 +243,9 @@ async function main() {
   await hub.evaluate((id) => window.dshHub.runtime.stop(id), instanceId)
   await waitFor(
     async () =>
-      (await loadT5()).statuses.filter((e) => e.status === 'stopped' && e.id === instanceId).pop() ?? null,
+      (await loadT5()).statuses
+        .filter((e) => e.status === 'stopped' && e.id === instanceId)
+        .pop() ?? null,
     (value) => value,
     10000,
     'stopped'
@@ -268,9 +277,8 @@ async function main() {
   )
   const refused = await waitFor(
     async () =>
-      (await loadT5())
-        .statuses.filter((e) => e.status === 'error' && e.id === instanceId)
-        .pop() ?? null,
+      (await loadT5()).statuses.filter((e) => e.status === 'error' && e.id === instanceId).pop() ??
+      null,
     (value) => value,
     10000,
     '拒绝连接 error'
@@ -298,7 +306,10 @@ run()
       try {
         const hub = await app.firstWindow()
         const t5 = await hub.evaluate(() => window.__t5 || null)
-        require('node:fs').writeFileSync('/tmp/verify-ssh-t5-events.json', JSON.stringify(t5, null, 2))
+        require('node:fs').writeFileSync(
+          '/tmp/verify-ssh-t5-events.json',
+          JSON.stringify(t5, null, 2)
+        )
         console.error('[dump] /tmp/verify-ssh-t5-events.json')
       } catch {
         /* 忽略 */

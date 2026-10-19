@@ -13,8 +13,7 @@ export function buildVersionOptions(
 ): string[] {
   const base = versions.slice(0, limit)
   const extras = [localVersion, selected].filter(
-    (value): value is string =>
-      value !== undefined && value !== '' && !base.includes(value)
+    (value): value is string => value !== undefined && value !== '' && !base.includes(value)
   )
   return [...new Set([...base, ...extras])]
 }

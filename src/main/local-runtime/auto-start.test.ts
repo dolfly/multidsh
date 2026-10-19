@@ -66,7 +66,8 @@ describe('startAutoStartInstances(启动时自动拉起的执行)', () => {
       release = resolve
     })
     const deps = {
-      list: async () => [local({ id: 'a' }), local({ id: 'b', autoStart: false })] as InstanceRecord[],
+      list: async () =>
+        [local({ id: 'a' }), local({ id: 'b', autoStart: false })] as InstanceRecord[],
       start: vi.fn(async (instance: LocalInstance) => {
         started.push(instance.id)
         await gate

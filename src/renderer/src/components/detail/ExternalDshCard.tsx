@@ -35,12 +35,16 @@ export default function ExternalDshCard(props: ExternalDshCardProps): ReactNode 
               style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis' }}
               title={item.command}
             >
-              {item.patch ? `${t('detail.externalPatch')} ${item.patch}` : t('detail.externalNoPatch')}
+              {item.patch
+                ? `${t('detail.externalPatch')} ${item.patch}`
+                : t('detail.externalNoPatch')}
             </div>
             <input
               className="input num mt8"
               value={accessById[item.pid] ?? ''}
-              onChange={(event) => setAccess((current) => ({ ...current, [item.pid]: event.target.value }))}
+              onChange={(event) =>
+                setAccess((current) => ({ ...current, [item.pid]: event.target.value }))
+              }
               autoComplete="off"
               type="password"
               aria-label={t('wizard.externalAccessLabel')}
@@ -53,7 +57,8 @@ export default function ExternalDshCard(props: ExternalDshCardProps): ReactNode 
             disabled={adopting !== null}
             onClick={() => onAdopt(item.pid, item.port)}
           >
-            <Icon name="external" /> {adopting === item.pid ? t('detail.adopting') : t('detail.adopt')}
+            <Icon name="external" />{' '}
+            {adopting === item.pid ? t('detail.adopting') : t('detail.adopt')}
           </button>
         </div>
       ))}

@@ -9,7 +9,17 @@ export default function Toasts(): React.ReactNode {
     <div className="toasts" aria-live="polite" aria-atomic="false">
       {toasts.map((toast) => (
         <div key={toast.id} className={`toast t-${toast.kind}`} data-testid="toast">
-          <Icon name={toast.kind === 'ok' ? 'check' : toast.kind === 'err' ? 'alert' : toast.kind === 'warn' ? 'alert' : 'info'} />
+          <Icon
+            name={
+              toast.kind === 'ok'
+                ? 'check'
+                : toast.kind === 'err'
+                  ? 'alert'
+                  : toast.kind === 'warn'
+                    ? 'alert'
+                    : 'info'
+            }
+          />
           <div>
             <b>{toast.title}</b>
             {toast.detail && <p>{toast.detail}</p>}

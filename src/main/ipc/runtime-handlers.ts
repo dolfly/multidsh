@@ -129,7 +129,10 @@ export function registerRuntimeHandlers(
         throw new InstanceStoreError('invalid-state', '实例未在运行，无法重启')
       }
       if (status.runtimeSource === 'external') {
-        throw new InstanceStoreError('invalid-state', '外部接管的 dsh 进程归用户所有，不能由 hub 重启')
+        throw new InstanceStoreError(
+          'invalid-state',
+          '外部接管的 dsh 进程归用户所有，不能由 hub 重启'
+        )
       }
       // 先完全停止（等待进程退出并发出 stopped），再按当前注册表配置重新拉起。
       // 重启前刷新登录环境缓存：用户新装的工具（如 git）无需重启 app，重启实例即可解析到。
@@ -158,7 +161,9 @@ export function registerRuntimeHandlers(
         const probe = wires.probe(instance.id)
         const cachedUrl = deps.instanceViewUrl?.(instance.id) ?? undefined
         if (shouldReuseLoadedView(cachedUrl, url)) {
-          void probe.catch((error: unknown) => console.error('[register] 后台认证探测失败：', error))
+          void probe.catch((error: unknown) =>
+            console.error('[register] 后台认证探测失败：', error)
+          )
         } else {
           await probe
         }
@@ -188,12 +193,17 @@ export function registerRuntimeHandlers(
       const external = deps.externalDshScanner ? await deps.externalDshScanner.scan() : []
       const savedAccess = externalAccessUrls.get(instanceId)
       if (savedAccess) {
-        const match = external.find((item) => item.pid === savedAccess.pid && item.port === savedAccess.port)
+        const match = external.find(
+          (item) => item.pid === savedAccess.pid && item.port === savedAccess.port
+        )
         if (!match) {
           externalAccessUrls.delete(instanceId)
           await deps.runtime.stop(instanceId)
           await deps.vault.forgetExternalAccessToken(instanceId)
-          throw new InstanceStoreError('invalid-state', '本机 dsh 已重启，请在实例详情中更新访问 token')
+          throw new InstanceStoreError(
+            'invalid-state',
+            '本机 dsh 已重启，请在实例详情中更新访问 token'
+          )
         }
         return savedAccess.url
       }
@@ -201,12 +211,18 @@ export function registerRuntimeHandlers(
       if (match && match.port !== null) {
         const token = deps.vault.getExternalAccessToken(instanceId)
         if (!token) {
-          throw new InstanceStoreError('invalid-state', '本机 dsh 需要访问 token，请在实例详情中更新')
+          throw new InstanceStoreError(
+            'invalid-state',
+            '本机 dsh 需要访问 token，请在实例详情中更新'
+          )
         }
         const accessUrl = externalAccessUrl(token, match.port)
         if (!(await (deps.verifyExternalAccess ?? defaultVerifyExternalAccess)(accessUrl))) {
           await deps.vault.forgetExternalAccessToken(instanceId)
-          throw new InstanceStoreError('invalid-state', '本机 dsh 的访问 token 已失效，请在实例详情中更新')
+          throw new InstanceStoreError(
+            'invalid-state',
+            '本机 dsh 的访问 token 已失效，请在实例详情中更新'
+          )
         }
         await deps.runtime.adopt(instance, { pid: match.pid, port: match.port, patch: match.patch })
         externalAccessUrls.set(instanceId, { pid: match.pid, port: match.port, url: accessUrl })
@@ -225,7 +241,10 @@ export function registerRuntimeHandlers(
         : instance.transport === 'http'
           ? deps.http.statusOf(instanceId)
           : deps.runtime.statusOf(instanceId)
-    if (status?.status === 'running' && !(instance.transport === 'local' && status.runtimeSource === 'external')) {
+    if (
+      status?.status === 'running' &&
+      !(instance.transport === 'local' && status.runtimeSource === 'external')
+    ) {
       const url = instance.transport === 'local' ? deps.runtime.urlOf(instanceId) : status.url
       if (!url) throw new Error('workspace-url-unavailable')
       await openIfCurrent(instance, url)
@@ -269,48 +288,52 @@ export function registerRuntimeHandlers(
     })
   )
 
-  ipcMain.handle(INSTANCE_RUNTIME_IPC.openInBrowser, (_event, id: unknown): Promise<IpcResult<null>> =>
-    wrap(async () => {
-      const instanceId = parseId(id)
-      const instance = await requireInstance(store, instanceId)
-      // 目标 URL 由主进程解析：渲染层只提供实例 id，无法指定任意打开地址。
-      // http/https 直接打开远程端点；本机实例打开带 token 的就绪 URL（token 不经渲染层）。
-      let url: string
-      if (instance.transport === 'http') {
-        url = httpDirectEndpoint(instance)
-      } else if (instance.transport === 'local') {
-        // 外部接管的实例用已验证的访问地址；hub 托管的实例用就绪 URL（含 BrowserAuth token）。
-        const savedAccess = externalAccessUrls.get(instanceId)
-        const resolved = savedAccess?.url ?? deps.runtime.urlOf(instanceId)
-        if (!resolved) {
-          throw new InstanceStoreError('invalid-state', '实例未在运行，无法在浏览器中打开')
+  ipcMain.handle(
+    INSTANCE_RUNTIME_IPC.openInBrowser,
+    (_event, id: unknown): Promise<IpcResult<null>> =>
+      wrap(async () => {
+        const instanceId = parseId(id)
+        const instance = await requireInstance(store, instanceId)
+        // 目标 URL 由主进程解析：渲染层只提供实例 id，无法指定任意打开地址。
+        // http/https 直接打开远程端点；本机实例打开带 token 的就绪 URL（token 不经渲染层）。
+        let url: string
+        if (instance.transport === 'http') {
+          url = httpDirectEndpoint(instance)
+        } else if (instance.transport === 'local') {
+          // 外部接管的实例用已验证的访问地址；hub 托管的实例用就绪 URL（含 BrowserAuth token）。
+          const savedAccess = externalAccessUrls.get(instanceId)
+          const resolved = savedAccess?.url ?? deps.runtime.urlOf(instanceId)
+          if (!resolved) {
+            throw new InstanceStoreError('invalid-state', '实例未在运行，无法在浏览器中打开')
+          }
+          url = resolved
+        } else {
+          throw new InstanceStoreError('invalid-input', '只有本机实例和远程实例支持在浏览器中打开')
         }
-        url = resolved
-      } else {
-        throw new InstanceStoreError('invalid-input', '只有本机实例和远程实例支持在浏览器中打开')
-      }
-      if (!deps.openExternalUrl) {
-        throw new InstanceStoreError('internal', '在浏览器中打开不可用')
-      }
-      await deps.openExternalUrl(url)
-      return null
-    })
+        if (!deps.openExternalUrl) {
+          throw new InstanceStoreError('internal', '在浏览器中打开不可用')
+        }
+        await deps.openExternalUrl(url)
+        return null
+      })
   )
 
-  ipcMain.handle(INSTANCE_RUNTIME_IPC.probeLocalDsh, (): Promise<IpcResult<LocalLauncherSnapshot[]>> =>
-    wrap(async () => {
-      const launchers = await Promise.all(
-        LAUNCHERS.map(async (launcher) => {
-          const found = deps.pathProbe?.probeLauncher
-            ? await deps.pathProbe.probeLauncher(launcher)
-            : launcher === 'dsh'
-              ? await deps.pathProbe?.probe()
-              : null
-          return found ? { launcher, version: found.version } : null
-        })
-      )
-      return launchers.filter((snapshot): snapshot is LocalLauncherSnapshot => snapshot !== null)
-    })
+  ipcMain.handle(
+    INSTANCE_RUNTIME_IPC.probeLocalDsh,
+    (): Promise<IpcResult<LocalLauncherSnapshot[]>> =>
+      wrap(async () => {
+        const launchers = await Promise.all(
+          LAUNCHERS.map(async (launcher) => {
+            const found = deps.pathProbe?.probeLauncher
+              ? await deps.pathProbe.probeLauncher(launcher)
+              : launcher === 'dsh'
+                ? await deps.pathProbe?.probe()
+                : null
+            return found ? { launcher, version: found.version } : null
+          })
+        )
+        return launchers.filter((snapshot): snapshot is LocalLauncherSnapshot => snapshot !== null)
+      })
   )
 
   ipcMain.handle(
@@ -362,10 +385,12 @@ export function registerRuntimeHandlers(
         }
         const rawAccess = typeof access === 'string' ? access.trim() : ''
         const usingStoredToken = rawAccess === ''
-        const token = usingStoredToken
-          ? previousToken
-          : externalAccessToken(access, match.port)
-        if (!token) throw new InstanceStoreError('invalid-state', '本机 dsh 需要访问 token，请在实例详情中更新')
+        const token = usingStoredToken ? previousToken : externalAccessToken(access, match.port)
+        if (!token)
+          throw new InstanceStoreError(
+            'invalid-state',
+            '本机 dsh 需要访问 token，请在实例详情中更新'
+          )
         const accessUrl = externalAccessUrl(token, match.port)
         if (!(await (deps.verifyExternalAccess ?? defaultVerifyExternalAccess)(accessUrl))) {
           if (usingStoredToken) await deps.vault.forgetExternalAccessToken(instanceId)
@@ -386,7 +411,10 @@ export function registerRuntimeHandlers(
           await deps.runtime.stop(instanceId).catch(() => undefined)
           // 恢复旧 token 与已接管的用户进程，避免失败操作毁掉先前可用的会话。
           if (!usingStoredToken) {
-            if (previousToken) await deps.vault.rememberExternalAccessToken(instanceId, previousToken).catch(() => undefined)
+            if (previousToken)
+              await deps.vault
+                .rememberExternalAccessToken(instanceId, previousToken)
+                .catch(() => undefined)
             else await deps.vault.forgetExternalAccessToken(instanceId).catch(() => undefined)
           }
           if (previousAccess) {
@@ -407,20 +435,24 @@ export function registerRuntimeHandlers(
       })
   )
 
-  ipcMain.handle(INSTANCE_RUNTIME_IPC.updateViewBounds, (_event, bounds: unknown): Promise<IpcResult<null>> =>
-    wrap(() => {
-      const parsed = WorkspaceViewBoundsSchema.parse(bounds)
-      deps.setInstanceViewBounds?.(parsed)
-      return null
-    })
+  ipcMain.handle(
+    INSTANCE_RUNTIME_IPC.updateViewBounds,
+    (_event, bounds: unknown): Promise<IpcResult<null>> =>
+      wrap(() => {
+        const parsed = WorkspaceViewBoundsSchema.parse(bounds)
+        deps.setInstanceViewBounds?.(parsed)
+        return null
+      })
   )
 
-  ipcMain.handle(INSTANCE_RUNTIME_IPC.showTooltip, (_event, tooltip: unknown): Promise<IpcResult<null>> =>
-    wrap(async () => {
-      const parsed = WorkspaceTooltipSchema.parse(tooltip)
-      await deps.showInstanceTooltip?.(parsed)
-      return null
-    })
+  ipcMain.handle(
+    INSTANCE_RUNTIME_IPC.showTooltip,
+    (_event, tooltip: unknown): Promise<IpcResult<null>> =>
+      wrap(async () => {
+        const parsed = WorkspaceTooltipSchema.parse(tooltip)
+        await deps.showInstanceTooltip?.(parsed)
+        return null
+      })
   )
 
   ipcMain.handle(INSTANCE_RUNTIME_IPC.hideTooltip, (): Promise<IpcResult<null>> =>
@@ -440,14 +472,16 @@ export function registerRuntimeHandlers(
     })
   )
 
-  ipcMain.handle(INSTANCE_RUNTIME_IPC.disconnectView, (_event, id: unknown): Promise<IpcResult<null>> =>
-    wrap(async () => {
-      const instanceId = parseId(id)
-      await requireInstance(store, instanceId)
-      if (workspaceTargetId === instanceId) workspaceTargetId = null
-      deps.hideInstanceTooltip?.()
-      deps.closeInstanceView?.(instanceId)
-      return null
-    })
+  ipcMain.handle(
+    INSTANCE_RUNTIME_IPC.disconnectView,
+    (_event, id: unknown): Promise<IpcResult<null>> =>
+      wrap(async () => {
+        const instanceId = parseId(id)
+        await requireInstance(store, instanceId)
+        if (workspaceTargetId === instanceId) workspaceTargetId = null
+        deps.hideInstanceTooltip?.()
+        deps.closeInstanceView?.(instanceId)
+        return null
+      })
   )
 }

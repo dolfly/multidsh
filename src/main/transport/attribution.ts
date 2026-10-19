@@ -33,12 +33,22 @@ const FEATURES: Array<{ kind: SshExitKind; patterns: RegExp[]; label: string }> 
   },
   {
     kind: 'resolve',
-    patterns: [/could not resolve hostname/i, /no address associated/i, /temporary failure in name resolution/i],
+    patterns: [
+      /could not resolve hostname/i,
+      /no address associated/i,
+      /temporary failure in name resolution/i
+    ],
     label: '主机名解析失败'
   },
   {
     kind: 'connect',
-    patterns: [/connection refused/i, /connection reset/i, /no route to host/i, /network is unreachable/i, /connection closed by remote host/i],
+    patterns: [
+      /connection refused/i,
+      /connection reset/i,
+      /no route to host/i,
+      /network is unreachable/i,
+      /connection closed by remote host/i
+    ],
     label: '连接被拒绝或中断'
   },
   {
@@ -67,14 +77,21 @@ const FEATURES: Array<{ kind: SshExitKind; patterns: RegExp[]; label: string }> 
   },
   {
     kind: 'closed',
-    patterns: [/connection to .* closed/i, /closed by remote host/i, /server unexpectedly closed network connection/i],
+    patterns: [
+      /connection to .* closed/i,
+      /closed by remote host/i,
+      /server unexpectedly closed network connection/i
+    ],
     label: '连接被远端关闭'
   }
 ]
 
 /** 截断 stderr 原文供状态详情展示（保留特征行） */
 function featureLine(stderr: string): string | null {
-  const lines = stderr.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  const lines = stderr
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
   if (lines.length === 0) return null
   // 取「关键词最多的最后一行」附近：OpenSSH 的错误通常在尾部
   return lines.slice(-3).join(' | ').slice(0, 280)

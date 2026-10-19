@@ -74,18 +74,18 @@ export function DshVersionPanel({ control }: { control: DshVersionControl | null
             versionCheck.hasUpdate &&
             checkError === null &&
             !active && (
-            <p className="meta" data-testid="version-check-result">
-              {foundText}
-            </p>
-          )}
+              <p className="meta" data-testid="version-check-result">
+                {foundText}
+              </p>
+            )}
           {progress !== null &&
             (progress.phase === 'checking' ||
               progress.phase === 'downloading' ||
               progress.phase === 'installing') && (
-            <p className="meta" data-testid="upgrade-progress">
-              {t(PHASE_KEYS[progress.phase])}
-            </p>
-          )}
+              <p className="meta" data-testid="upgrade-progress">
+                {t(PHASE_KEYS[progress.phase])}
+              </p>
+            )}
         </div>
       )}
 
@@ -94,19 +94,19 @@ export function DshVersionPanel({ control }: { control: DshVersionControl | null
         checkError === null &&
         !active &&
         !(versionCheck.canUpgrade && versionCheck.hasUpdate) && (
-        <p className="meta" data-testid="version-check-result">
-          {versionCheck.canUpgrade ? (
-            t('detail.version.upToDate')
-          ) : (
-            <>
-              {versionCheck.hasUpdate && <>{foundText} · </>}
-              <span className="dsh-version-control__reason">
-                {t(REASON_KEYS[versionCheck.reason ?? 'not-local'])}
-              </span>
-            </>
-          )}
-        </p>
-      )}
+          <p className="meta" data-testid="version-check-result">
+            {versionCheck.canUpgrade ? (
+              t('detail.version.upToDate')
+            ) : (
+              <>
+                {versionCheck.hasUpdate && <>{foundText} · </>}
+                <span className="dsh-version-control__reason">
+                  {t(REASON_KEYS[versionCheck.reason ?? 'not-local'])}
+                </span>
+              </>
+            )}
+          </p>
+        )}
 
       {/* 检查失败：错误 + 重试。 */}
       {checkError !== null && !active && (
@@ -133,9 +133,7 @@ export function DshVersionPanel({ control }: { control: DshVersionControl | null
       {/* 失败：错误 + 重试；隔离目录保留旧版，可直接重跑升级。 */}
       {!active && upgradeFail !== null && (
         <div className="mt8" data-testid="upgrade-error">
-          <p className="meta err-text">
-            {t('detail.version.upgradeFailed', { msg: upgradeFail })}
-          </p>
+          <p className="meta err-text">{t('detail.version.upgradeFailed', { msg: upgradeFail })}</p>
           <button
             className="btn btn-secondary btn-sm mt8"
             onClick={() => void control.runUpgrade()}

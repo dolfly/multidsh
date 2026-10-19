@@ -259,4 +259,3 @@ export function createGatewayClient(options: GatewayClientOptions): GatewayClien
 
   return client
 }
-

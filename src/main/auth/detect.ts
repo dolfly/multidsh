@@ -34,7 +34,10 @@ function pathnameOf(location: string | null | undefined): string {
 }
 
 /** 是否 JSON 响应 */
-function looksJson(contentType: string | null | undefined, body: string | null | undefined): boolean {
+function looksJson(
+  contentType: string | null | undefined,
+  body: string | null | undefined
+): boolean {
   if (contentType?.toLowerCase().includes('json')) return true
   const trimmed = (body ?? '').trim()
   return trimmed.startsWith('{') || trimmed.startsWith('[')
@@ -164,7 +167,10 @@ export interface DetectOptions {
 /**
  * 网络层失败 → unreachable（传输未就绪，交给重连/看门狗），不抛异常。
  */
-export async function detectAuthMode(endpointUrl: string, options: DetectOptions = {}): Promise<AuthDetection> {
+export async function detectAuthMode(
+  endpointUrl: string,
+  options: DetectOptions = {}
+): Promise<AuthDetection> {
   const fetchImpl = options.fetchImpl ?? fetch
   const timeoutMs = options.timeoutMs ?? 5_000
   const now = options.now ?? (() => Date.now())

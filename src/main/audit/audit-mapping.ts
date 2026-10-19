@@ -99,9 +99,7 @@ export function mapRuntimeTransition(
 
   if (next.status === 'starting' && prev !== null && prev.status !== 'starting') {
     // 仅在「曾失败/曾停止后重新拉起」时记为重连
-    return prev.status === 'stopped' || prev.status === 'error'
-      ? entry('ssh-reconnect', 'ok')
-      : []
+    return prev.status === 'stopped' || prev.status === 'error' ? entry('ssh-reconnect', 'ok') : []
   }
 
   if (next.status === 'error') {

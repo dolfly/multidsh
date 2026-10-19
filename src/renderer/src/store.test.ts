@@ -138,7 +138,9 @@ describe('store settings', () => {
   it('updateSettings 失败时抛出错误', async () => {
     const useAppStore = await freshStore()
     updateResult = { ok: false, message: '磁盘满' }
-    await expect(useAppStore.getState().updateSettings({ language: 'en' })).rejects.toThrow('磁盘满')
+    await expect(useAppStore.getState().updateSettings({ language: 'en' })).rejects.toThrow(
+      '磁盘满'
+    )
     // 失败不得污染本地偏好
     expect(useAppStore.getState().settings.language).toBe('system')
   })
@@ -239,7 +241,9 @@ describe('store settings', () => {
     })
 
     await useAppStore.getState().refreshList()
-    expect(toStatusInfo(useAppStore.getState().statuses['running-instance']?.status).dotClass).toBe('s-connected')
+    expect(toStatusInfo(useAppStore.getState().statuses['running-instance']?.status).dotClass).toBe(
+      's-connected'
+    )
   })
 
   it('打开向导前先隐藏工作区，避免原生视图覆盖弹窗；关闭后恢复同一缓存视图', async () => {
@@ -319,11 +323,15 @@ describe('store settings', () => {
       workspaceConnected: { running: false }
     })
 
-    expect(toStatusInfo('running', useAppStore.getState().workspaceConnected.running).labelKey).toBe('state.idle')
+    expect(
+      toStatusInfo('running', useAppStore.getState().workspaceConnected.running).labelKey
+    ).toBe('state.idle')
     await useAppStore.getState().openWorkspace('running')
     expect(openView).toHaveBeenCalledWith('running')
     expect(useAppStore.getState().workspaceConnected.running).toBe(true)
-    expect(toStatusInfo('running', useAppStore.getState().workspaceConnected.running).labelKey).toBe('state.connected')
+    expect(
+      toStatusInfo('running', useAppStore.getState().workspaceConnected.running).labelKey
+    ).toBe('state.connected')
   })
 
   it('重新登录后重新打开工作区并刷新：先 openView 再 reloadView', async () => {
@@ -349,7 +357,11 @@ describe('store settings', () => {
 
   it('重新打开工作区失败时不刷新（openView 失败则不 reloadView）', async () => {
     const useAppStore = await freshStore()
-    const openView = vi.fn(async () => ({ ok: false as const, code: 'invalid-state', message: '未运行' }))
+    const openView = vi.fn(async () => ({
+      ok: false as const,
+      code: 'invalid-state',
+      message: '未运行'
+    }))
     const reloadView = vi.fn(async () => ({ ok: true as const, value: null }))
     vi.stubGlobal('window', {
       ...window,
@@ -422,7 +434,9 @@ describe('store settings', () => {
     useAppStore.setState({
       selection: 'instance-1',
       workspaceOpening: true,
-      statuses: { 'instance-1': { id: 'instance-1', status: 'starting', at: '2026-09-18T00:00:00.000Z' } }
+      statuses: {
+        'instance-1': { id: 'instance-1', status: 'starting', at: '2026-09-18T00:00:00.000Z' }
+      }
     })
 
     const opening = useAppStore.getState().openWorkspace('instance-1')
@@ -790,11 +804,12 @@ describe('store settings', () => {
     let resolveA!: (value: { ok: true; value: null }) => void
     let resolveB!: (value: { ok: true; value: null }) => void
     const hideView = vi.fn(async () => ({ ok: true as const, value: null }))
-    const openView = vi.fn((id: string) =>
-      new Promise<{ ok: true; value: null }>((resolve) => {
-        if (id === 'instance-a') resolveA = resolve
-        else resolveB = resolve
-      })
+    const openView = vi.fn(
+      (id: string) =>
+        new Promise<{ ok: true; value: null }>((resolve) => {
+          if (id === 'instance-a') resolveA = resolve
+          else resolveB = resolve
+        })
     )
     vi.stubGlobal('window', {
       ...window,
@@ -1031,20 +1046,29 @@ describe('store 活动日志（详情页底部信息栏）', () => {
   it('追加运行状态与升级进度行，连续重复行去重', async () => {
     const store = await freshStore()
     const id = 'activity-dedupe'
-    store
-      .getState()
-      .appendActivity(id, { source: 'runtime', at: '2026-09-23T00:00:00.000Z', detail: '准备 dsh 0.1.6 运行时' })
-    store
-      .getState()
-      .appendActivity(id, { source: 'runtime', at: '2026-09-23T00:00:01.000Z', detail: '准备 dsh 0.1.6 运行时' })
-    store
-      .getState()
-      .appendActivity(id, { source: 'runtime', at: '2026-09-23T00:00:02.000Z', detail: '分配端口并启动进程（端口 3080）' })
+    store.getState().appendActivity(id, {
+      source: 'runtime',
+      at: '2026-09-23T00:00:00.000Z',
+      detail: '准备 dsh 0.1.6 运行时'
+    })
+    store.getState().appendActivity(id, {
+      source: 'runtime',
+      at: '2026-09-23T00:00:01.000Z',
+      detail: '准备 dsh 0.1.6 运行时'
+    })
+    store.getState().appendActivity(id, {
+      source: 'runtime',
+      at: '2026-09-23T00:00:02.000Z',
+      detail: '分配端口并启动进程（端口 3080）'
+    })
     expect(store.getState().activityLog[id]).toHaveLength(2)
 
     const checking = { instanceId: id, phase: 'checking' as const, at: '2026-09-23T00:00:03.000Z' }
     store.getState().appendActivity(id, { source: 'version', event: checking })
-    store.getState().appendActivity(id, { source: 'version', event: { ...checking, at: '2026-09-23T00:00:04.000Z' } })
+    store.getState().appendActivity(id, {
+      source: 'version',
+      event: { ...checking, at: '2026-09-23T00:00:04.000Z' }
+    })
     expect(store.getState().activityLog[id]).toHaveLength(3)
   })
 
@@ -1052,7 +1076,9 @@ describe('store 活动日志（详情页底部信息栏）', () => {
     const store = await freshStore()
     const id = 'activity-cap'
     for (let index = 0; index < 205; index += 1) {
-      store.getState().appendActivity(id, { source: 'runtime', at: `t${index}`, detail: `行 ${index}` })
+      store
+        .getState()
+        .appendActivity(id, { source: 'runtime', at: `t${index}`, detail: `行 ${index}` })
     }
     const lines = store.getState().activityLog[id]
     expect(lines).toHaveLength(200)
@@ -1068,12 +1094,16 @@ describe('store 活动日志（详情页底部信息栏）', () => {
     const id = 'activity-seq'
     // 先追加满 200 行
     for (let index = 0; index < 200; index += 1) {
-      store.getState().appendActivity(id, { source: 'runtime', at: `t${index}`, detail: `行 ${index}` })
+      store
+        .getState()
+        .appendActivity(id, { source: 'runtime', at: `t${index}`, detail: `行 ${index}` })
     }
     const before = store.getState().activityLog[id]!
     // 记录截尾前尾部若干行的 seq（它们在下次追加后仍在窗口内）
     const tailSeqBefore = before.slice(-3).map((line) => line.seq)
-    const tailDetailBefore = before.slice(-3).map((line) => (line.source === 'runtime' ? line.detail : ''))
+    const tailDetailBefore = before
+      .slice(-3)
+      .map((line) => (line.source === 'runtime' ? line.detail : ''))
 
     // 再追加一行 → 触发截尾（首行被丢），窗口整体左移
     store.getState().appendActivity(id, { source: 'runtime', at: 't200', detail: '行 200' })
@@ -1083,7 +1113,9 @@ describe('store 活动日志（详情页底部信息栏）', () => {
     // 原尾部三行现在位于倒数 4..2，seq 未变（若用 index 作 key 会全部左移一位 → 全量重挂）
     const relocated = after.slice(-4, -1)
     expect(relocated.map((line) => line.seq)).toEqual(tailSeqBefore)
-    expect(relocated.map((line) => (line.source === 'runtime' ? line.detail : ''))).toEqual(tailDetailBefore)
+    expect(relocated.map((line) => (line.source === 'runtime' ? line.detail : ''))).toEqual(
+      tailDetailBefore
+    )
     // seq 全局唯一，无重复
     expect(new Set(after.map((line) => line.seq)).size).toBe(after.length)
   })
@@ -1218,7 +1250,8 @@ describe('自动禁用提示的发送权', () => {
 
   it('同一实例同一 dsh 版本只发一次；并发调用也只有先到的一次通过', async () => {
     const useAppStore = await freshStore()
-    const once = (): boolean => useAppStore.getState().notifyAutoDisabledOnce('inst-1', '0.2.0-rc.2')
+    const once = (): boolean =>
+      useAppStore.getState().notifyAutoDisabledOnce('inst-1', '0.2.0-rc.2')
 
     // 两次「并发」领取（模拟 StrictMode 双调用挂载 effect 的两次加载）：只有第一次拿到发送权。
     expect(once()).toBe(true)
@@ -1320,7 +1353,10 @@ describe('刷新后的视图恢复', () => {
       ...window,
       dshHub: {
         ...window.dshHub,
-        instances: { ...window.dshHub.instances, get: async () => ({ ok: false, code: 'not-found', message: '找不到' }) }
+        instances: {
+          ...window.dshHub.instances,
+          get: async () => ({ ok: false, code: 'not-found', message: '找不到' })
+        }
       }
     })
     sessionValues['dshhub-view'] = JSON.stringify({ selection: INSTANCE_ID, settingsOpen: false })

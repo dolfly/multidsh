@@ -97,7 +97,12 @@ describe('consolidatePluginOperationLogs', () => {
 
   it('超保留期的目录直接删除，不归并（不产生按天文件）', async () => {
     const home = await root()
-    const old = await makeOperation(home, 'operation-old', (PLUGIN_LOG_MAX_AGE_DAYS + 1) * DAY_MS, 'ancient error')
+    const old = await makeOperation(
+      home,
+      'operation-old',
+      (PLUGIN_LOG_MAX_AGE_DAYS + 1) * DAY_MS,
+      'ancient error'
+    )
 
     const summary = await consolidatePluginOperationLogs(home, { now })
 
@@ -110,7 +115,10 @@ describe('consolidatePluginOperationLogs', () => {
   it('按天合并文件按保留期清理：旧的删、近的留', async () => {
     const home = await root()
     await mkdir(logsRoot(home), { recursive: true })
-    const stale = join(logsRoot(home), `plugin-operations.${localDay(NOW - (PLUGIN_LOG_MAX_AGE_DAYS + 1) * DAY_MS)}.log`)
+    const stale = join(
+      logsRoot(home),
+      `plugin-operations.${localDay(NOW - (PLUGIN_LOG_MAX_AGE_DAYS + 1) * DAY_MS)}.log`
+    )
     const fresh = join(logsRoot(home), `plugin-operations.${localDay(NOW - 1 * DAY_MS)}.log`)
     await writeFile(stale, 'old')
     await writeFile(fresh, 'recent')

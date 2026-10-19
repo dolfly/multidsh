@@ -171,10 +171,16 @@ describe('createLocalRuntime', () => {
   })
 
   it('refreshEnv 冷缓存（没有 peek 结果）先解析一次建立基线，再失效重解析', async () => {
-    const loginPath = Object.assign(vi.fn(async () => '/usr/bin'), { invalidate: vi.fn() })
-    const shellEnv = Object.assign(vi.fn(async () => new Map<string, string>()), {
-      invalidate: vi.fn()
-    })
+    const loginPath = Object.assign(
+      vi.fn(async () => '/usr/bin'),
+      { invalidate: vi.fn() }
+    )
+    const shellEnv = Object.assign(
+      vi.fn(async () => new Map<string, string>()),
+      {
+        invalidate: vi.fn()
+      }
+    )
 
     const manager = createLocalRuntime({
       store: storeStub,
@@ -342,13 +348,7 @@ describe('createLocalRuntime', () => {
       expect(spawnImpl).toHaveBeenCalledWith(
         expect.objectContaining({
           command: `/tmp/bin/${launcher}`,
-          args: [
-            '--profile',
-            'web',
-            '--port',
-            expect.stringMatching(/^\d+$/),
-            '--no-open'
-          ],
+          args: ['--profile', 'web', '--port', expect.stringMatching(/^\d+$/), '--no-open'],
           // wrapper 实际加载哪份 dsh 由 hub 指定:注入 DSH_BIN,而不是放任它回退 PATH。
           env: expect.objectContaining({ DSH_BIN: '/tmp/system/dsh' })
         })
@@ -457,9 +457,9 @@ describe('createLocalRuntime', () => {
 
         // 探测必须按记录的启动器名进行，且优先用探到的绝对路径执行。
         expect(probeLauncher).toHaveBeenCalledWith(launcher)
-        const invocation = (spawnImpl.mock.calls[0] as unknown as [
-          { env: NodeJS.ProcessEnv; command: string }
-        ])[0]
+        const invocation = (
+          spawnImpl.mock.calls[0] as unknown as [{ env: NodeJS.ProcessEnv; command: string }]
+        )[0]
         expect(invocation.command).toBe(`/tmp/${launcher}`)
         expect(invocation.env.DUSH_PATCH_FILE).toBeUndefined()
         expect(invocation.env.DSH_BIN).toBe('/tmp/system/dsh')
@@ -656,7 +656,10 @@ describe('createLocalRuntime', () => {
     // 实现用 path.join 拼 home,期望值也用 join 构造,避免分隔符随平台漂移
     const defaultSpaceHome = join('/tmp/default-space-home', '.dsh')
     expect(spawnImpl).toHaveBeenCalledWith(
-      expect.objectContaining({ cwd: defaultSpaceHome, env: expect.objectContaining({ DSH_HOME: defaultSpaceHome }) })
+      expect.objectContaining({
+        cwd: defaultSpaceHome,
+        env: expect.objectContaining({ DSH_HOME: defaultSpaceHome })
+      })
     )
   })
 
@@ -1450,11 +1453,19 @@ describe('运行时来源与下载确认', () => {
   const PATH_DSH = { command: '/usr/local/bin/dsh', version: '0.9.9' }
 
   it('接管外部 dsh 的状态事件不包含访问 URL', async () => {
-    const manager = createLocalRuntime({ store: storeStub, installer: makeFakeInstaller(), dataRoot: '/tmp/hub-data' })
+    const manager = createLocalRuntime({
+      store: storeStub,
+      installer: makeFakeInstaller(),
+      dataRoot: '/tmp/hub-data'
+    })
     const events: InstanceStatusEvent[] = []
     manager.onStatus((event) => events.push(event))
     await manager.adopt(localInstance(), { pid: 77, port: 3080, patch: null })
-    expect(events.at(-1)).toMatchObject({ status: 'running', runtimeSource: 'external', port: 3080 })
+    expect(events.at(-1)).toMatchObject({
+      status: 'running',
+      runtimeSource: 'external',
+      port: 3080
+    })
     expect(events.at(-1)?.url).toBeUndefined()
   })
 
@@ -1481,9 +1492,11 @@ describe('运行时来源与下载确认', () => {
     // 不走安装(未固定 + PATH 优先):ensureInstalled 绝不能被调
     expect(installer.ensureInstalled).not.toHaveBeenCalled()
     // spawn 经 nodeInvocation + PATH 上的 dsh bin(而不是隔离目录入口)
-    const invocation = (spawnImpl.mock.calls[0] as unknown as [
-      { command: string; args: string[]; env: NodeJS.ProcessEnv }
-    ])[0]
+    const invocation = (
+      spawnImpl.mock.calls[0] as unknown as [
+        { command: string; args: string[]; env: NodeJS.ProcessEnv }
+      ]
+    )[0]
     expect(invocation.args).toContain(PATH_DSH.command)
     expect(invocation.args.some((arg) => arg.includes('runtimes/dsh-'))).toBe(false)
     // running 事件带版本与来源
@@ -1523,9 +1536,9 @@ describe('运行时来源与下载确认', () => {
     await waitForStatus(manager, instance.id, 'running')
 
     expect(confirm).not.toHaveBeenCalled() // hub 命中 → 不需下载 → 不需确认
-    const invocation = (spawnImpl.mock.calls[0] as unknown as [
-      { command: string; args: string[] }
-    ])[0]
+    const invocation = (
+      spawnImpl.mock.calls[0] as unknown as [{ command: string; args: string[] }]
+    )[0]
     expect(invocation.args.some((arg) => arg.includes('dsh-0.1.4-rc.1'))).toBe(true)
     expect(manager.statusOf(instance.id)?.runtimeSource).toBe('hub')
   })
@@ -1725,7 +1738,8 @@ describe('凭据脱敏', () => {
       },
       // 本机启动器是 #!/usr/bin/env node 脚本:必须交给真实 node,
       // 用 Electron(ELECTRON_RUN_AS_NODE)会被 dsh 原生插件的运行时指纹拒绝而 code=1。
-      resolveNode: (scriptPath) => (scriptPath.endsWith('/dsh') ? '/Users/example/.local/bin/node' : null),
+      resolveNode: (scriptPath) =>
+        scriptPath.endsWith('/dsh') ? '/Users/example/.local/bin/node' : null,
       readyTimeoutMs: 2_000
     })
 
@@ -1734,9 +1748,11 @@ describe('凭据脱敏', () => {
     child.stdout.write(readyLine())
     await starting
 
-    const invocation = (spawnImpl.mock.calls[0] as unknown as [
-      { command: string; args: string[]; env: NodeJS.ProcessEnv }
-    ])[0]
+    const invocation = (
+      spawnImpl.mock.calls[0] as unknown as [
+        { command: string; args: string[]; env: NodeJS.ProcessEnv }
+      ]
+    )[0]
     expect(invocation.command).toBe('/Users/example/.local/bin/node')
     expect(invocation.args.slice(0, 2)).toEqual([
       '--expose-internals',
@@ -1895,9 +1911,9 @@ describe('凭据脱敏', () => {
     child.stdout.write(readyLine())
     await starting
 
-    const invocation = (spawnImpl.mock.calls[0] as unknown as [
-      { command: string; args: string[] }
-    ])[0]
+    const invocation = (
+      spawnImpl.mock.calls[0] as unknown as [{ command: string; args: string[] }]
+    )[0]
     expect(invocation.command).toBe('/Users/example/.local/bin/dsh')
     expect(invocation.args).not.toContain('--expose-internals')
   })
@@ -2049,10 +2065,12 @@ describe('upgradeInstance 升级编排', () => {
     const store = { update: vi.fn(async () => localInstance()) }
     const installer = makeFakeInstaller({
       resolveLatestVersion: async () => '0.1.6',
-      ensureInstalled: vi.fn(async (version: string, onProgress?: (progress: InstallProgress) => void) => {
-        onProgress?.({ phase: 'installing', version, detail: '下载依赖 (10)：pkg' })
-        return installedRuntime(version)
-      })
+      ensureInstalled: vi.fn(
+        async (version: string, onProgress?: (progress: InstallProgress) => void) => {
+          onProgress?.({ phase: 'installing', version, detail: '下载依赖 (10)：pkg' })
+          return installedRuntime(version)
+        }
+      )
     })
     const spawnImpl = vi.fn(() => {
       throw new Error('停止态升级不应拉起进程')
@@ -2071,8 +2089,17 @@ describe('upgradeInstance 升级编排', () => {
     const instance = localInstance({ dshVersion: '0.1.4' })
     await manager.upgradeInstance(instance)
 
-    expect(events.map((event) => event.phase)).toEqual(['checking', 'downloading', 'installing', 'done'])
-    expect(events.at(-1)).toMatchObject({ instanceId: instance.id, phase: 'done', version: '0.1.6' })
+    expect(events.map((event) => event.phase)).toEqual([
+      'checking',
+      'downloading',
+      'installing',
+      'done'
+    ])
+    expect(events.at(-1)).toMatchObject({
+      instanceId: instance.id,
+      phase: 'done',
+      version: '0.1.6'
+    })
     // 每个事件都必须带可解析的 ISO 时间戳（弱断言「至少一个合法」曾让坏 at 溜过）。
     expect(events.every((event) => !Number.isNaN(Date.parse(event.at)))).toBe(true)
     // checking 只表示「正在检查」，不携带下载详情。
@@ -2093,10 +2120,12 @@ describe('upgradeInstance 升级编排', () => {
     const store = { update: vi.fn(async () => localInstance()) }
     const installer = makeFakeInstaller({
       resolveLatestVersion: async () => '0.1.6',
-      ensureInstalled: vi.fn(async (version: string, onProgress?: (progress: InstallProgress) => void) => {
-        onProgress?.({ phase: 'installing', version, detail: '下载依赖 (30)：pkg' })
-        return installedRuntime(version)
-      })
+      ensureInstalled: vi.fn(
+        async (version: string, onProgress?: (progress: InstallProgress) => void) => {
+          onProgress?.({ phase: 'installing', version, detail: '下载依赖 (30)：pkg' })
+          return installedRuntime(version)
+        }
+      )
     })
     const manager = createLocalRuntime({
       store,
@@ -2123,10 +2152,17 @@ describe('upgradeInstance 升级编排', () => {
     manager.onUpgradeProgress((event) => events.push(event))
     await manager.upgradeInstance(instance)
 
-    expect(events.map((event) => event.phase)).toEqual(['checking', 'downloading', 'installing', 'done'])
+    expect(events.map((event) => event.phase)).toEqual([
+      'checking',
+      'downloading',
+      'installing',
+      'done'
+    ])
     expect(events.at(-1)).toMatchObject({ phase: 'done', version: '0.1.6' })
     expect(stopSpy).toHaveBeenCalledWith(instance.id)
-    expect(startSpy).toHaveBeenCalledWith(expect.objectContaining({ id: instance.id, dshVersion: '0.1.6' }))
+    expect(startSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: instance.id, dshVersion: '0.1.6' })
+    )
     expect(store.update).toHaveBeenCalledWith(instance.id, { dshVersion: '0.1.6' })
     const stopOrder = stopSpy.mock.invocationCallOrder[0] as number
     const installOrder = installer.ensureInstalled.mock.invocationCallOrder.at(-1) as number
@@ -2159,7 +2195,10 @@ describe('upgradeInstance 升级编排', () => {
 
     await manager.upgradeInstance(localInstance({ dshVersion: '0.1.4' }))
 
-    expect(events.at(-1)).toMatchObject({ phase: 'error', error: expect.stringContaining('registry 不可达') })
+    expect(events.at(-1)).toMatchObject({
+      phase: 'error',
+      error: expect.stringContaining('registry 不可达')
+    })
     expect(store.update).not.toHaveBeenCalled()
     expect(spawnImpl).not.toHaveBeenCalled()
   })
@@ -2170,10 +2209,12 @@ describe('upgradeInstance 升级编排', () => {
     const installer = makeFakeInstaller({
       listInstalled,
       resolveLatestVersion: async () => '0.1.6',
-      ensureInstalled: vi.fn(async (version: string, onProgress?: (progress: InstallProgress) => void) => {
-        onProgress?.({ phase: 'installing', version, detail: '下载依赖 (10)：pkg' })
-        return installedRuntime(version)
-      }),
+      ensureInstalled: vi.fn(
+        async (version: string, onProgress?: (progress: InstallProgress) => void) => {
+          onProgress?.({ phase: 'installing', version, detail: '下载依赖 (10)：pkg' })
+          return installedRuntime(version)
+        }
+      ),
       installGlobal: vi.fn(async () => {
         throw new Error('计划为 hub 运行时，不应触发全局升级')
       })
@@ -2202,7 +2243,12 @@ describe('upgradeInstance 升级编排', () => {
     expect(confirmSystemUpgrade).not.toHaveBeenCalled()
     expect(installer.installGlobal).not.toHaveBeenCalled()
     expect(listInstalled).toHaveBeenCalled()
-    expect(events.map((event) => event.phase)).toEqual(['checking', 'downloading', 'installing', 'done'])
+    expect(events.map((event) => event.phase)).toEqual([
+      'checking',
+      'downloading',
+      'installing',
+      'done'
+    ])
     expect(installer.ensureInstalled).toHaveBeenCalledWith('0.1.6', expect.any(Function))
     expect(store.update).toHaveBeenCalledWith(instance.id, { dshVersion: '0.1.6' })
   })
@@ -2253,7 +2299,11 @@ describe('upgradeInstance 升级编排', () => {
       resolveLatestVersion: async () => '0.1.6',
       resolveGlobalPrefix: async (command) => (command === '/tmp/system/dsh' ? '/usr/local' : null),
       installGlobal: vi.fn(
-        async (_prefix: string, version: string, onProgress?: (progress: InstallProgress) => void) => {
+        async (
+          _prefix: string,
+          version: string,
+          onProgress?: (progress: InstallProgress) => void
+        ) => {
           onProgress?.({ phase: 'installing', version, detail: '下载依赖 (10)：pkg' })
         }
       )
@@ -2282,10 +2332,19 @@ describe('upgradeInstance 升级编排', () => {
 
     // 二次确认带上目标版本与当前系统版本；确认后才出现进度事件。
     expect(confirmSystemUpgrade).toHaveBeenCalledWith('0.1.6', '0.1.5')
-    expect(installer.installGlobal).toHaveBeenCalledWith('/usr/local', '0.1.6', expect.any(Function))
+    expect(installer.installGlobal).toHaveBeenCalledWith(
+      '/usr/local',
+      '0.1.6',
+      expect.any(Function)
+    )
     expect(installer.ensureInstalled).not.toHaveBeenCalled()
     expect(store.update).toHaveBeenCalledWith(instance.id, { dshVersion: '0.1.6' })
-    expect(events.map((event) => event.phase)).toEqual(['checking', 'downloading', 'installing', 'done'])
+    expect(events.map((event) => event.phase)).toEqual([
+      'checking',
+      'downloading',
+      'installing',
+      'done'
+    ])
     expect(events.at(-1)).toMatchObject({ phase: 'done', version: '0.1.6' })
   })
 
@@ -2332,7 +2391,9 @@ describe('upgradeInstance 升级编排', () => {
     await manager.upgradeInstance(instance)
 
     expect(stopSpy).toHaveBeenCalledWith(instance.id)
-    expect(startSpy).toHaveBeenCalledWith(expect.objectContaining({ id: instance.id, dshVersion: '0.1.6' }))
+    expect(startSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: instance.id, dshVersion: '0.1.6' })
+    )
     const stopOrder = stopSpy.mock.invocationCallOrder[0] as number
     const installOrder = installer.installGlobal.mock.invocationCallOrder[0] as number
     const startOrder = startSpy.mock.invocationCallOrder[0] as number
@@ -2453,7 +2514,10 @@ describe('upgradeInstance 升级编排', () => {
     const installer = makeFakeInstaller({
       resolveLatestVersion: async () => '0.1.6',
       ensureInstalled: vi.fn(
-        async (version: string, onProgress?: (progress: InstallProgress) => void): Promise<InstalledRuntime> => {
+        async (
+          version: string,
+          onProgress?: (progress: InstallProgress) => void
+        ): Promise<InstalledRuntime> => {
           onProgress?.({ phase: 'installing', version, detail: '下载依赖 (10)：pkg' })
           return {
             version,
@@ -2499,8 +2563,15 @@ describe('upgradeInstance 升级编排', () => {
     expect(installer.ensureInstalled).toHaveBeenCalledWith('0.1.6', expect.any(Function))
     expect(store.update).toHaveBeenCalledWith(instance.id, { dshVersion: '0.1.6' })
     expect(stopSpy).toHaveBeenCalledWith(instance.id)
-    expect(startSpy).toHaveBeenCalledWith(expect.objectContaining({ id: instance.id, dshVersion: '0.1.6' }))
-    expect(events.map((event) => event.phase)).toEqual(['checking', 'downloading', 'installing', 'done'])
+    expect(startSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: instance.id, dshVersion: '0.1.6' })
+    )
+    expect(events.map((event) => event.phase)).toEqual([
+      'checking',
+      'downloading',
+      'installing',
+      'done'
+    ])
   })
 })
 
@@ -2582,7 +2653,10 @@ describe('hub 来源启动优先真实 node', () => {
     expect(spawnImpl).toHaveBeenCalledTimes(1)
     expect(spawned).toMatchObject({
       command: '/fake/bin/node',
-      args: expect.arrayContaining(['--expose-internals', '/tmp/runtimes/dsh-0.1.5-rc.1/lib/bin.js'])
+      args: expect.arrayContaining([
+        '--expose-internals',
+        '/tmp/runtimes/dsh-0.1.5-rc.1/lib/bin.js'
+      ])
     })
     expect(spawned?.env['DSH_HOME']).toContain('homes')
     expect(spawned?.env['ELECTRON_RUN_AS_NODE']).toBeUndefined()

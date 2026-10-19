@@ -119,7 +119,10 @@ export const DEFAULT_SETTINGS: Settings = SettingsSchema.parse({})
  * (中文环境 → zh,其余 → en)。单独抽出来是为了让「系统语言推断」可被穷举单测,
  * 而不是散落在渲染层的三元表达式里。
  */
-export function resolveLanguage(preference: LanguagePreference | null | undefined, systemLocale?: string | null): Language {
+export function resolveLanguage(
+  preference: LanguagePreference | null | undefined,
+  systemLocale?: string | null
+): Language {
   if (preference === 'zh' || preference === 'en') return preference
   const locale = (systemLocale ?? '').toLowerCase()
   return locale.startsWith('zh') ? 'zh' : 'en'

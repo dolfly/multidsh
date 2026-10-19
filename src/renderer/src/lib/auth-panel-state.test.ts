@@ -87,11 +87,7 @@ describe('auth-panel-state', () => {
 
   it('未锁定时 lockUntil 为 null 且不残留上次锁定', () => {
     const opened = openAuthPanel(initialAuthPanelModel, { id: 'inst-a', name: '甲' })
-    const locked = applyAuthState(
-      opened,
-      event('inst-a', snapshot({ lockedForMs: 30_000 })),
-      T0
-    )
+    const locked = applyAuthState(opened, event('inst-a', snapshot({ lockedForMs: 30_000 })), T0)
     expect(locked.lockUntil).not.toBeNull()
     const unlocked = applyAuthState(
       locked,
@@ -146,9 +142,9 @@ describe('auth-panel-state', () => {
   })
 
   it('工作区认证信号不把全局认证面板从关闭状态打开', () => {
-    expect(applyAuthState(initialAuthPanelModel, event('inst-a', snapshot({ phase: 'needs-auth' })), T0)).toEqual(
-      initialAuthPanelModel
-    )
+    expect(
+      applyAuthState(initialAuthPanelModel, event('inst-a', snapshot({ phase: 'needs-auth' })), T0)
+    ).toEqual(initialAuthPanelModel)
   })
 })
 

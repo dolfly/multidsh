@@ -1,7 +1,13 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { STATUS_INFO, compactWorkspaceAddress, fmtLogTime, toDisplayStatus, toStatusInfo } from './format'
+import {
+  STATUS_INFO,
+  compactWorkspaceAddress,
+  fmtLogTime,
+  toDisplayStatus,
+  toStatusInfo
+} from './format'
 import type { DisplayStatus } from './format'
 
 /**
@@ -77,9 +83,9 @@ describe('状态 → 展示圆点映射', () => {
 
 describe('工作区标题地址', () => {
   it('远程端点仅显示简短的主机与端口，不能显示认证探测详情', () => {
-    expect(compactWorkspaceAddress('https://dsh.crazydb.com:8443/workspaces/team-a?ignored=value')).toBe(
-      'dsh.crazydb.com:8443'
-    )
+    expect(
+      compactWorkspaceAddress('https://dsh.crazydb.com:8443/workspaces/team-a?ignored=value')
+    ).toBe('dsh.crazydb.com:8443')
   })
 
   it('本地地址保留端口，不能让长路径撑开标题栏', () => {
@@ -97,8 +103,13 @@ describe('日志时间戳格式', () => {
 describe('向导与状态语义色', () => {
   it('选择态和信息提示使用 info 语义色，而非风险色', () => {
     // Windows 检出是 CRLF,先归一化再比对跨行片段
-    const css = readFileSync(join(process.cwd(), 'src/renderer/src/styles.css'), 'utf8').replace(/\r\n/g, '\n')
-    expect(css).toContain(".type-card[aria-pressed='true'] {\n  border-color: var(--info);\n  background: var(--selection-soft);")
+    const css = readFileSync(join(process.cwd(), 'src/renderer/src/styles.css'), 'utf8').replace(
+      /\r\n/g,
+      '\n'
+    )
+    expect(css).toContain(
+      ".type-card[aria-pressed='true'] {\n  border-color: var(--info);\n  background: var(--selection-soft);"
+    )
     expect(css).toContain('.n-info {\n  background: var(--info-soft);')
   })
 
@@ -108,7 +119,6 @@ describe('向导与状态语义色', () => {
     expect(css).toContain('--ok-ink: #166534;')
   })
 })
-
 
 export interface SourceFile {
   path: string
@@ -163,9 +173,7 @@ describe('状态圆点 className', () => {
         text: '<span className={`status-dot ${props.info.dotClass}`} aria-hidden="true" />\n'
       }
     ]
-    expect(findHardcodedStatusDots(synthetic)).toEqual([
-      'src/renderer/src/components/Broken.tsx:1'
-    ])
+    expect(findHardcodedStatusDots(synthetic)).toEqual(['src/renderer/src/components/Broken.tsx:1'])
   })
 
   it('渲染层所有 status-dot 的类名都来自共享映射(不得写死)', () => {

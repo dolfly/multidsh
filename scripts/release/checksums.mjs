@@ -48,7 +48,9 @@ async function main() {
   const distDir = resolve(process.argv[2] ?? 'dist')
   const files = await collectArtifacts(distDir)
   if (files.length === 0) {
-    console.error(`[release] ${distDir} 下没有可校验的产物 —— 先执行 pnpm dist:mac:zip / pnpm dist:win`)
+    console.error(
+      `[release] ${distDir} 下没有可校验的产物 —— 先执行 pnpm dist:mac:zip / pnpm dist:win`
+    )
     process.exit(1)
   }
   const lines = []

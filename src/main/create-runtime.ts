@@ -241,5 +241,14 @@ export function createRuntimeController(deps: RuntimeControllerDeps): RuntimeCon
     })
   }
 
-  return { runtime, promptBroker, tunnels, httpEndpoints, installer, pathProbe, pluginManager, startAutoStart }
+  return {
+    runtime,
+    promptBroker,
+    tunnels,
+    httpEndpoints,
+    installer,
+    pathProbe,
+    pluginManager,
+    startAutoStart
+  }
 }

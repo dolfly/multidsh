@@ -51,8 +51,12 @@ describe('withBundledPnpmPath', () => {
   })
 
   it('非 Windows 后置自带 pnpm（系统 pnpm 优先，自带仅兜底）', () => {
-    expect(withBundledPnpmPath('/node:/usr/bin', '/pnpm-bin', 'darwin')).toBe('/node:/usr/bin:/pnpm-bin')
-    expect(withBundledPnpmPath('/node:/usr/bin', '/pnpm-bin', 'linux')).toBe('/node:/usr/bin:/pnpm-bin')
+    expect(withBundledPnpmPath('/node:/usr/bin', '/pnpm-bin', 'darwin')).toBe(
+      '/node:/usr/bin:/pnpm-bin'
+    )
+    expect(withBundledPnpmPath('/node:/usr/bin', '/pnpm-bin', 'linux')).toBe(
+      '/node:/usr/bin:/pnpm-bin'
+    )
   })
 
   it('pnpmBinDir 为空时原样返回 basePath', () => {

@@ -150,7 +150,11 @@ function defaultNodeInvocation(): { command: string; args: string[]; env: NodeJS
   // macOS 用 Helper 二进制并带 ELECTRON_RUN_AS_NODE 退化为纯 Node 执行 dsh（避免 Dock 图标闪现；见 node-mode）。
   // `--expose-internals` 是 dsh web profile 的硬性要求（cordis-plugin-hmr 需要），缺失时就绪后即崩
 
-  return { command: nodeModeExecutable(), args: ['--expose-internals'], env: { ELECTRON_RUN_AS_NODE: '1' } }
+  return {
+    command: nodeModeExecutable(),
+    args: ['--expose-internals'],
+    env: { ELECTRON_RUN_AS_NODE: '1' }
+  }
 }
 
 /**
@@ -188,7 +192,8 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
   const nodeInvocation = options.nodeInvocation ?? defaultNodeInvocation()
   const profile = options.profile ?? 'web'
   const homeDir = options.homeDir ?? homedir
-  const resolveNode = options.resolveNode ?? ((scriptPath: string) => resolveNodeFor(scriptPath, homeDir()))
+  const resolveNode =
+    options.resolveNode ?? ((scriptPath: string) => resolveNodeFor(scriptPath, homeDir()))
   const loginPath = options.loginPath ?? resolveLoginPathOnce
   const shellEnv = options.shellEnv ?? resolveShellEnvOnce
   const inheritShellEnv = options.inheritShellEnv ?? ((): boolean => true)
@@ -257,7 +262,8 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
     }
     if (lines.length > 0) {
       entry.log.push(...lines)
-      if (entry.log.length > LOG_BUFFER_LINES) entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
+      if (entry.log.length > LOG_BUFFER_LINES)
+        entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
     }
     return lines
   }
@@ -448,7 +454,10 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
         // 其余情况（隔离空间，或公共空间实际跑 hub 副本）都升级 hub 自己的运行时。
         const runtimeSource = this.statusOf(id)?.runtimeSource
         if (isExternalRuntime(runtimeSource)) {
-          throw new InstanceStoreError('invalid-state', '外部接管的 dsh 进程归用户所有，hub 不能代管升级')
+          throw new InstanceStoreError(
+            'invalid-state',
+            '外部接管的 dsh 进程归用户所有，hub 不能代管升级'
+          )
         }
         const decision = await resolveSystemDshUsage({
           transport: instance.transport,
@@ -478,12 +487,16 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
           const confirmed = await options.confirmSystemUpgrade?.(newest, system.version)
           if (confirmed !== true) return
           emitUpgrade({ instanceId: id, phase: 'checking', at: at() })
-          await runUpgrade(newest, (onProgress) => options.installer.installGlobal(prefix, newest, onProgress))
+          await runUpgrade(newest, (onProgress) =>
+            options.installer.installGlobal(prefix, newest, onProgress)
+          )
           return
         }
         emitUpgrade({ instanceId: id, phase: 'checking', at: at() })
         const latest = await options.installer.resolveLatestVersion()
-        await runUpgrade(latest, (onProgress) => options.installer.ensureInstalled(latest, onProgress))
+        await runUpgrade(latest, (onProgress) =>
+          options.installer.ensureInstalled(latest, onProgress)
+        )
       } catch (error) {
         emitUpgrade({
           instanceId: id,

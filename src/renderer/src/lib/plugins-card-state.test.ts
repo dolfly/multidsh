@@ -65,13 +65,15 @@ describe('showsUnknownCompatibility', () => {
     ).toBe(true)
   })
   it('不兼容但 dsh 版本已知 → false', () => {
-    expect(
-      showsUnknownCompatibility(done(check({ hasUpdate: true, compatible: false })))
-    ).toBe(false)
+    expect(showsUnknownCompatibility(done(check({ hasUpdate: true, compatible: false })))).toBe(
+      false
+    )
   })
   it('兼容（即使版本未知）→ false', () => {
     expect(
-      showsUnknownCompatibility(done(check({ hasUpdate: true, compatible: true, dshVersion: null })))
+      showsUnknownCompatibility(
+        done(check({ hasUpdate: true, compatible: true, dshVersion: null }))
+      )
     ).toBe(false)
   })
 })
@@ -240,7 +242,9 @@ describe('pluginApplyNotice（改动后的提示方案）', () => {
   })
 
   it('运行中 + restart-required（profile 无 HMR）→ 需重启', () => {
-    expect(pluginApplyNotice({ running: true, application: 'restart-required' })).toBe('restart-required')
+    expect(pluginApplyNotice({ running: true, application: 'restart-required' })).toBe(
+      'restart-required'
+    )
   })
 })
 

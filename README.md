@@ -38,23 +38,23 @@ Windows 安装包当前**未经代码签名**，首次运行会出现 SmartScree
   含 host 端代码的插件改动后提醒重启实例；元信息按界面语言本地化
 - **托盘 / 通知 / 自启**：可配置
 
-| | |
-|:---:|:---:|
-| ![亮色主题](docs/images/home-overview.png) | ![实例详情](docs/images/instance-details.png) |
-| *实例总览* | *实例详情 · 插件管理* |
+|                                            |                                                  |
+| :----------------------------------------: | :----------------------------------------------: |
+| ![亮色主题](docs/images/home-overview.png) |  ![实例详情](docs/images/instance-details.png)   |
+|                 _实例总览_                 |              _实例详情 · 插件管理_               |
 | ![实例详情](docs/images/instance-show.png) | ![收起侧边栏](docs/images/sidebar-collapsed.png) |
-| *实例详情页* | *侧边栏收起 · 图标模式* |
+|                _实例详情页_                |             _侧边栏收起 · 图标模式_              |
 
 ## 技术栈
 
-| 层 | 选型 |
-|---|---|
-| 桌面框架 | Electron 44 + electron-vite 5 + Vite 7 |
-| UI | React 18 + zustand + 手写 CSS（OKLch 明暗双主题） |
-| 语言 | TypeScript 5.9（strict + `noUncheckedIndexedAccess`） |
-| 校验 | zod 4.6.5（唯一新增运行时依赖） |
-| 测试 | Vitest 4（单测）· Playwright `_electron`（E2E）· 契约测试（对真实网关） |
-| 工具链 | ESLint 9 flat + Prettier 3 · pnpm 11 · Node 22 |
+| 层       | 选型                                                                    |
+| -------- | ----------------------------------------------------------------------- |
+| 桌面框架 | Electron 44 + electron-vite 5 + Vite 7                                  |
+| UI       | React 18 + zustand + 手写 CSS（OKLch 明暗双主题）                       |
+| 语言     | TypeScript 5.9（strict + `noUncheckedIndexedAccess`）                   |
+| 校验     | zod 4.6.5（唯一新增运行时依赖）                                         |
+| 测试     | Vitest 4（单测）· Playwright `_electron`（E2E）· 契约测试（对真实网关） |
+| 工具链   | ESLint 9 flat + Prettier 3 · pnpm 11 · Node 22                          |
 
 > 刻意避开 vite 8 / TS 7 / React 19（版本线评审结论，勿升级）。
 
@@ -112,14 +112,14 @@ ELECTRON_CACHE=/tmp/electron-cache node node_modules/electron/install.js  # post
 
 ## 常用命令
 
-| 命令 | 说明 |
-|---|---|
-| `pnpm dev` | dev server + Electron 窗口 |
-| `pnpm typecheck` | node + web + e2e 三工程类型检查 |
-| `pnpm lint` | ESLint（flat config） |
-| `pnpm test` | 单测（vitest） |
-| `pnpm build` | 三端产物（E2E 前置） |
-| `pnpm test:e2e` | Playwright `_electron` |
+| 命令                 | 说明                                                                                                  |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm dev`           | dev server + Electron 窗口                                                                            |
+| `pnpm typecheck`     | node + web + e2e 三工程类型检查                                                                       |
+| `pnpm lint`          | ESLint（flat config）                                                                                 |
+| `pnpm test`          | 单测（vitest）                                                                                        |
+| `pnpm build`         | 三端产物（E2E 前置）                                                                                  |
+| `pnpm test:e2e`      | Playwright `_electron`                                                                                |
 | `pnpm test:contract` | 对本地 dsh-auth-gateway 源码运行认证契约测试；需设置 `DSH_AUTH_GATEWAY_SRC=/path/to/dsh-auth-gateway` |
 
 **测试说明**：E2E 用例使用 `DSH_HUB_DATA_DIR` 指向的隔离临时目录，实例与凭据均为测试环境构造的数据。CI 失败时收集的产物只包含 Playwright 错误上下文、trace、界面截图与审计日志；凭据保险库文件（`vault/credentials.json`）即使内容是密文也不上传。若未来某条测试必须预置保险库数据，必须使用测试环境构造的 mock 数据并在此处记录其构造方式。

@@ -5,3 +5,11 @@ coverage
 hub-data
 design
 docs
+# 随包分发的 vendored 副本（npm/pnpm），格式化会污染上游代码
+build
+# pnpm 生成的锁文件：prettier 改写会造成无意义 diff，安装时也会被 pnpm 重写
+pnpm-lock.yaml
+# Playwright 运行产物
+test-results
+playwright-report
+*.tsbuildinfo

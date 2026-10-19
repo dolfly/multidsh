@@ -50,7 +50,9 @@ export interface AuthRegistry {
   login(instanceId: string, password: string, otp?: string): Promise<AuthState | null>
   logout(instanceId: string): Promise<AuthState | null>
   /** 会话 Cookie(供分区注入);无会话返回 null */
-  sessionCookie(instanceId: string): { name: string; value: string; expiresAt: number | null } | null
+  sessionCookie(
+    instanceId: string
+  ): { name: string; value: string; expiresAt: number | null } | null
   clientIds(): string[]
 }
 

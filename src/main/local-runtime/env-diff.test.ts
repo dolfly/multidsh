@@ -24,7 +24,11 @@ describe('diffEnvironment（登录环境刷新前后差异）', () => {
     expect(removed.pathRemoved).toEqual(['/opt/homebrew/bin'])
     expect(removed.pathAdded).toEqual([])
 
-    const reordered = diffEnvironment(before, snapshot('/opt/homebrew/bin:/usr/bin', null), 'darwin')
+    const reordered = diffEnvironment(
+      before,
+      snapshot('/opt/homebrew/bin:/usr/bin', null),
+      'darwin'
+    )
     expect(reordered.pathAdded).toEqual([])
     expect(reordered.pathRemoved).toEqual([])
   })

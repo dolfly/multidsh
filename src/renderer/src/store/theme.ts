@@ -38,7 +38,12 @@ export function initialLanguage(): Language {
 export function derivedSettingsState(
   settings: Settings,
   systemLocale: string
-): { settings: Settings; language: Language; theme: 'light' | 'dark'; t: ReturnType<typeof createTranslator> } {
+): {
+  settings: Settings
+  language: Language
+  theme: 'light' | 'dark'
+  t: ReturnType<typeof createTranslator>
+} {
   const theme = resolveTheme(settings.theme)
   const language = resolveLanguage(settings.language, systemLocale)
   applyTheme(theme)

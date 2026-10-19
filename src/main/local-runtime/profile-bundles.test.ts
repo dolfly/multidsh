@@ -27,7 +27,10 @@ describe('createProfileBundleStore', () => {
   it('read：解析 bundles 与 dependencies；缺失/损坏时返回空', async () => {
     const store = createProfileBundleStore()
     const dir = await profileDir(MANIFEST)
-    expect(await store.read(dir)).toEqual({ bundles: ['@deepseek-ai/dsh-base', 'a', 'b'], dependencies: ['a', 'b'] })
+    expect(await store.read(dir)).toEqual({
+      bundles: ['@deepseek-ai/dsh-base', 'a', 'b'],
+      dependencies: ['a', 'b']
+    })
 
     const empty = await mkdtemp(join(tmpdir(), 'profile-bundles-'))
     dirs.push(empty)
@@ -48,14 +51,20 @@ describe('createProfileBundleStore', () => {
 
   it('启用：按原索引插回（保持 patch 覆盖优先级）', async () => {
     const store = createProfileBundleStore()
-    const dir = await profileDir({ ...MANIFEST, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', 'b'] } } })
+    const dir = await profileDir({
+      ...MANIFEST,
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', 'b'] } }
+    })
     // a 原本在索引 1
     expect(await store.setEnabled(dir, 'a', true, 1)).toEqual(['@deepseek-ai/dsh-base', 'a', 'b'])
   })
 
   it('启用：索引越界时追加到末尾（与 dsh 官方行为一致）', async () => {
     const store = createProfileBundleStore()
-    const dir = await profileDir({ ...MANIFEST, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base'] } } })
+    const dir = await profileDir({
+      ...MANIFEST,
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base'] } }
+    })
     expect(await store.setEnabled(dir, 'a', true, 99)).toEqual(['@deepseek-ai/dsh-base', 'a'])
   })
 
