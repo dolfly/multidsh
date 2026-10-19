@@ -47,6 +47,7 @@ import type {
   PluginPublishedSnapshot,
   PluginStateStore
 } from './plugin-state'
+import { createRegistryMetadataReader } from './plugin-registry-meta'
 import { createProfileBundleStore } from './profile-bundles'
 import { withBundledPnpmPath } from '../shell/bundled-pnpm'
 import { userLayerDisablesHmr } from './profile-hmr'
@@ -230,6 +231,13 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
    * 渲染层回来时据此重新显示「检查中…」。
    */
   const inFlightChecks = new Map<string, Set<string>>()
+
+  /** registry 元数据读取（peer / 发布时间 / 仓库地址）；命令执行与默认安装源由这里注入。 */
+  const registryMeta = createRegistryMetadataReader({
+    runPlugin,
+    defaultRegistry,
+    isRegistryNotFound
+  })
 
   /** 实例的 DSH_HOME 与 profile（与启动路径同一推导）。 */
   function homeAndProfile(instance: LocalInstance): { home: string; profile: string } {
@@ -506,31 +514,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
    * 版本不一致时也用它补一次（否则 peer 与发布时间会是另一个版本的口径）。
    * registry 未收录该版本按 not-found 报错；输出不可解析按 internal。
    */
-  async function viewVersionMeta(
-    instance: LocalInstance,
-    name: string,
-    version: string,
-    resolved: { entry: string; version: string },
-    registry: PluginRegistryOption
-  ): Promise<{ peers: Record<string, string>; publishedAt: string | null }> {
-    let result: CommandResult
-    try {
-      result = await runPlugin(
-        instance,
-        ['view', `${name}@${version}`, 'peerDependencies', 'time', '--json'],
-        resolved,
-        registry
-      )
-    } catch (error) {
-      if (isRegistryNotFound(error))
-        throw new InstanceStoreError('not-found', `版本不存在：${name}@${version}`)
-      throw error
-    }
-    return {
-      peers: peerMapOf(parseViewMeta(result.stdout)),
-      publishedAt: publishedAtOf(publishedTimeMap(result.stdout), version)
-    }
-  }
 
   /** 与 check 同口径：全部 dsh peer 都满足运行时版本才算兼容。 */
   function peersCompatible(peers: Record<string, string>, dshVersion: string): boolean {
@@ -541,26 +524,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
    * 从 registry 元数据推导插件仓库地址（渲染层不传 URL）：`view <name>@<version> repository homepage`。
    * 命令失败与解析失败都按「没有仓库」处理：确认区只需降级到 npm 包页，不需要错误。
    */
-  async function resolveRepositoryUrl(
-    instance: LocalInstance,
-    name: string,
-    version: string,
-    resolved: { entry: string; version: string }
-  ): Promise<string | null> {
-    try {
-      const result = await runPlugin(
-        instance,
-        ['view', `${name}@${version}`, 'repository', 'homepage', '--json'],
-        resolved,
-        defaultRegistry()
-      )
-      const parsed: unknown = JSON.parse(result.stdout || '{}')
-      const meta = recordOf(parsed)
-      return githubUrlFrom(meta.repository ?? meta.homepage ?? null)
-    } catch {
-      return null
-    }
-  }
 
   /**
    * 从安装路径读 package.json 装配 PluginInfo。
@@ -657,6 +620,116 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
    *
    * `known` 复用调用方已解析的运行时与插件列表（安装后对齐启用态时避免重复起进程）。
    */
+  /**
+   * 解析 npm spec 的安装目标：查 registry 得到目标版本、peer 范围与发布时间。
+   *
+   * 用户写死精确版本时只查该版本；裸名与 dist-tag 走一次多字段查询，按「dist-tag latest
+   * 与最大稳定版的较大者」取目标——dist-tag 滞后时不能装到旧版。目标版本与查询返回的版本
+   * 不一致时补查一次，保证 peer 与发布时间都是目标版本的口径。
+   */
+  async function planNpmInstall(
+    instance: LocalInstance,
+    input: string,
+    registry: PluginRegistryOption
+  ): Promise<PluginInstallPlan> {
+    const resolved = await resolveDshEntry(instance)
+    const { name, requested } = splitNpmSpec(input)
+    const installedVersion = installedVersionOf(await listPlugins(instance, 'zh', resolved), name)
+
+    // 用户显式指定了精确版本：只查该版本的 peer 与发布时间（同时校验它确实存在）。
+    if (requested !== null && isVersionLiteral(requested)) {
+      const { peers, publishedAt } = await registryMeta.viewVersionMeta(
+        instance,
+        name,
+        requested,
+        resolved,
+        registry
+      )
+      return {
+        installSpec: `${name}@${requested}`,
+        input,
+        kind: 'npm',
+        packageName: name,
+        targetVersion: requested,
+        latestVersion: null,
+        versionSource: 'requested',
+        publishedAt,
+        dshPeer: dshPeerRange(peers),
+        dshVersion: resolved.version,
+        compatible: peersCompatible(peers, resolved.version),
+        installedVersion
+      }
+    }
+
+    // 裸名或 dist-tag：一次查询拿版本集合、dist-tags、peer 与发布时间（多字段时 time 嵌套在
+    // `time` 键下，publishedTimeMap 兼容两种形状）。
+    let result: CommandResult
+    try {
+      result = await runPlugin(
+        instance,
+        ['view', name, 'version', 'versions', 'dist-tags', 'peerDependencies', 'time', '--json'],
+        resolved,
+        registry
+      )
+    } catch (error) {
+      if (isRegistryNotFound(error)) {
+        throw new InstanceStoreError(
+          'not-found',
+          `无法解析版本：插件 ${name} 未发布到 npm registry`
+        )
+      }
+      throw error
+    }
+    const meta = parseViewMeta(result.stdout)
+    const distTags = recordOf(meta['dist-tags'])
+    const latestVersion =
+      typeof distTags.latest === 'string' && distTags.latest !== '' ? distTags.latest : null
+    const viewed = typeof meta.version === 'string' && meta.version !== '' ? meta.version : null
+
+    let target: string
+    let versionSource: PluginVersionSource
+    if (requested !== null && requested !== 'latest') {
+      // 具名 dist-tag（next / beta…）：装该标签指向的版本，用户要的就是这个渠道。
+      const tagged = distTags[requested]
+      if (typeof tagged !== 'string' || tagged === '') {
+        throw new InstanceStoreError('not-found', `registry 没有标签 ${requested}：${name}`)
+      }
+      target = tagged
+      versionSource = 'requested'
+    } else {
+      // 未指定版本，或写的就是 `latest`：`latest` 只是「最新」的惯用写法，与裸名同口径
+      // 取「dist-tag latest 与最大稳定版的较大者」——dist-tag 滞后时不能装到旧版。
+      const picked = pickTargetVersion(stringArrayOf(meta.versions), latestVersion, viewed)
+      if (picked === null) throw new InstanceStoreError('internal', '无法解析插件版本信息输出')
+      target = picked
+      versionSource = requested === null ? 'resolved-latest' : 'requested'
+    }
+
+    // peer 与发布时间必须是目标版本的口径：与本次查询返回的版本不一致时补一次查询。
+    let peers = peerMapOf(meta)
+    let publishedAt = publishedAtOf(publishedTimeMap(result.stdout), target)
+    if (target !== viewed) {
+      const detail = await registryMeta.viewVersionMeta(instance, name, target, resolved, registry)
+      peers = detail.peers
+      publishedAt = detail.publishedAt
+    }
+
+    return {
+      installSpec: `${name}@${target}`,
+      input,
+      kind: 'npm',
+      packageName: name,
+      targetVersion: target,
+      latestVersion,
+      versionSource,
+      publishedAt,
+      dshPeer: dshPeerRange(peers),
+      dshVersion: resolved.version,
+      compatible: peersCompatible(peers, resolved.version),
+      installedVersion
+    }
+  }
+
   async function applyEnabled(
     instance: LocalInstance,
     profileDir: string,
@@ -870,102 +943,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       }
 
       const registry = options.registry ?? defaultRegistry()
-      const resolved = await resolveDshEntry(instance)
-      const { name, requested } = splitNpmSpec(input)
-      const installedVersion = installedVersionOf(await listPlugins(instance, 'zh', resolved), name)
-
-      // 用户显式指定了精确版本：只查该版本的 peer 与发布时间（同时校验它确实存在）。
-      if (requested !== null && isVersionLiteral(requested)) {
-        const { peers, publishedAt } = await viewVersionMeta(
-          instance,
-          name,
-          requested,
-          resolved,
-          registry
-        )
-        return {
-          installSpec: `${name}@${requested}`,
-          input,
-          kind: 'npm',
-          packageName: name,
-          targetVersion: requested,
-          latestVersion: null,
-          versionSource: 'requested',
-          publishedAt,
-          dshPeer: dshPeerRange(peers),
-          dshVersion: resolved.version,
-          compatible: peersCompatible(peers, resolved.version),
-          installedVersion
-        }
-      }
-
-      // 裸名或 dist-tag：一次查询拿版本集合、dist-tags、peer 与发布时间（多字段时 time 嵌套在
-      // `time` 键下，publishedTimeMap 兼容两种形状）。
-      let result: CommandResult
-      try {
-        result = await runPlugin(
-          instance,
-          ['view', name, 'version', 'versions', 'dist-tags', 'peerDependencies', 'time', '--json'],
-          resolved,
-          registry
-        )
-      } catch (error) {
-        if (isRegistryNotFound(error)) {
-          throw new InstanceStoreError(
-            'not-found',
-            `无法解析版本：插件 ${name} 未发布到 npm registry`
-          )
-        }
-        throw error
-      }
-      const meta = parseViewMeta(result.stdout)
-      const distTags = recordOf(meta['dist-tags'])
-      const latestVersion =
-        typeof distTags.latest === 'string' && distTags.latest !== '' ? distTags.latest : null
-      const viewed = typeof meta.version === 'string' && meta.version !== '' ? meta.version : null
-
-      let target: string
-      let versionSource: PluginVersionSource
-      if (requested !== null && requested !== 'latest') {
-        // 具名 dist-tag（next / beta…）：装该标签指向的版本，用户要的就是这个渠道。
-        const tagged = distTags[requested]
-        if (typeof tagged !== 'string' || tagged === '') {
-          throw new InstanceStoreError('not-found', `registry 没有标签 ${requested}：${name}`)
-        }
-        target = tagged
-        versionSource = 'requested'
-      } else {
-        // 未指定版本，或写的就是 `latest`：`latest` 只是「最新」的惯用写法，与裸名同口径
-        // 取「dist-tag latest 与最大稳定版的较大者」——dist-tag 滞后时不能装到旧版。
-        const picked = pickTargetVersion(stringArrayOf(meta.versions), latestVersion, viewed)
-        if (picked === null) throw new InstanceStoreError('internal', '无法解析插件版本信息输出')
-        target = picked
-        versionSource = requested === null ? 'resolved-latest' : 'requested'
-      }
-
-      // peer 与发布时间必须是目标版本的口径：与本次查询返回的版本不一致时补一次查询。
-      let peers = peerMapOf(meta)
-      let publishedAt = publishedAtOf(publishedTimeMap(result.stdout), target)
-      if (target !== viewed) {
-        const detail = await viewVersionMeta(instance, name, target, resolved, registry)
-        peers = detail.peers
-        publishedAt = detail.publishedAt
-      }
-
-      return {
-        installSpec: `${name}@${target}`,
-        input,
-        kind: 'npm',
-        packageName: name,
-        targetVersion: target,
-        latestVersion,
-        versionSource,
-        publishedAt,
-        dshPeer: dshPeerRange(peers),
-        dshVersion: resolved.version,
-        compatible: peersCompatible(peers, resolved.version),
-        installedVersion
-      }
+      return planNpmInstall(instance, input, registry)
     },
 
     async packageInfo(instance, name, version): Promise<PluginPackageInfo> {
@@ -974,7 +952,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       // 仓库地址与下载量互不依赖，并发取；两者取不到都按「没有」处理，不影响安装确认。
       const [downloads, repoUrl] = await Promise.all([
         packageInfoFetchers.fetchDownloads(name),
-        resolveRepositoryUrl(instance, name, version, resolved)
+        registryMeta.resolveRepositoryUrl(instance, name, version, resolved)
       ])
       const releaseNotes =
         repoUrl === null

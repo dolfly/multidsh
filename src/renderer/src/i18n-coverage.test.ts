@@ -375,7 +375,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     "if (picked === null) throw new InstanceStoreError('internal', '无法解析插件版本信息输出')"
   ),
   debt(
-    'src/main/local-runtime/plugin-manager.ts',
+    'src/main/local-runtime/plugin-registry-meta.ts',
     "throw new InstanceStoreError('not-found', `版本不存在：${name}@${version}`)"
   ),
   debt(
