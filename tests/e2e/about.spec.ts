@@ -2,6 +2,7 @@ import { _electron as electron, expect, test } from '@playwright/test'
 import { e2eDataDir, e2eEnv } from './data-dir'
 import { buildLaunchArgs } from './launch-args'
 import {
+  closeAboutWithButton,
   closeAboutWithEscape,
   expectAboutClosed,
   openAboutViaMenu,
@@ -72,10 +73,7 @@ test('应用菜单的「关于」项打开叠加窗口,并展示版本与运行�
   await about.screenshot({ path: join(SHOT_DIR, 'about-window.png'), animations: 'disabled' })
 
   // 关闭按钮收起的是整个叠加窗口
-  await about
-    .getByTestId('about-dialog')
-    .getByRole('button', { name: /关闭|Close/ })
-    .click()
+  await closeAboutWithButton(about)
   await expectAboutClosed(app)
 })
 

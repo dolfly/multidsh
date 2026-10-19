@@ -84,7 +84,10 @@ test.afterAll(async () => {
 })
 
 test('创建后启动触发下载确认：hub 风格对话框，取消即收敛到停止态', async () => {
-  test.setTimeout(90_000)
+  // 本用例要等主进程走完「本机探测无 dsh → 拉 registry latest」才弹确认框，
+  // 实测依赖一次 npm registry 往返：网络抖动时单这一步就可能吃掉 40s 以上，
+  // 故总预算放宽，避免后续点击与状态轮询被挤掉（本地正常路径约 3s 完成）。
+  test.setTimeout(150_000)
   await expect(win.getByTestId('app-shell')).toBeVisible({ timeout: 10_000 })
 
   // 向导三步创建本地实例（默认启动器 dsh、未固定版本）
@@ -100,7 +103,7 @@ test('创建后启动触发下载确认：hub 风格对话框，取消即收敛�
 
   // hub 与 PATH 都无可用 dsh → 解析 registry latest → 下载确认等待用户拍板
   const dialog = win.getByTestId('runtime-confirm-dialog')
-  await expect(dialog).toBeVisible({ timeout: 45_000 })
+  await expect(dialog).toBeVisible({ timeout: 90_000 })
   await expect(dialog).toContainText('未找到可复用的 dsh 运行时')
   await expect(win.getByTestId('runtime-confirm-body')).toContainText('@deepseek-ai/dsh@')
   await expect(win.getByTestId('runtime-confirm-registry')).toContainText(
@@ -119,7 +122,7 @@ test('创建后启动触发下载确认：hub 风格对话框，取消即收敛�
           const listed = await window.dshHub.instances.list()
           return listed.ok ? (listed.value[0]?.runtimeStatus ?? null) : 'unknown'
         }),
-      { timeout: 15_000 }
+      { timeout: 30_000 }
     )
     .toBe('stopped')
 })
