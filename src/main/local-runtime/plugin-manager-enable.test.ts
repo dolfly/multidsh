@@ -8,14 +8,14 @@ import {
   memoryStore,
   okResult,
   stateWith,
-  stubRun,
+  fakeRun,
   toPosix,
   GIT_PANEL_MANIFEST
 } from './plugin-manager.testkit'
 
 describe('createPluginManager.setEnabled', () => {
   it('setEnabled(禁用)：只从 bundles 移除，dependencies 不动，并记下原索引', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const bundles = fakeBundles({
       bundles: ['@deepseek-ai/dsh-base', '@xbzbing/dsh-git-panel', 'dsh-free-search'],
       dependencies: ['@xbzbing/dsh-git-panel', 'dsh-free-search']
@@ -42,7 +42,7 @@ describe('createPluginManager.setEnabled', () => {
   })
 
   it('setEnabled(启用)：按记录的原索引插回', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const bundles = fakeBundles({
       bundles: ['@deepseek-ai/dsh-base', 'dsh-free-search'],
       dependencies: ['@xbzbing/dsh-git-panel', 'dsh-free-search']
@@ -65,7 +65,7 @@ describe('createPluginManager.setEnabled', () => {
   })
 
   it('setEnabled(启用)：不兼容插件的启用先授予 allow-version --accept-risk 豁免，再放进清单', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const bundles = fakeBundles({
       bundles: ['@deepseek-ai/dsh-base', 'dsh-free-search'],
       dependencies: ['@xbzbing/dsh-git-panel', 'dsh-free-search']
@@ -104,7 +104,7 @@ describe('createPluginManager.setEnabled', () => {
   })
 
   it('setEnabled(启用)：豁免键取 manifest 版本（列表版本可能与加载判据不一致）', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const bundles = fakeBundles({
       bundles: ['@deepseek-ai/dsh-base'],
       dependencies: ['@xbzbing/dsh-git-panel']
@@ -133,7 +133,7 @@ describe('createPluginManager.setEnabled', () => {
   })
 
   it('setEnabled(启用)：兼容插件不授予豁免，不执行 allow-version', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const bundles = fakeBundles({
       bundles: ['@deepseek-ai/dsh-base', 'dsh-free-search'],
       dependencies: ['@xbzbing/dsh-git-panel', 'dsh-free-search']
@@ -147,7 +147,7 @@ describe('createPluginManager.setEnabled', () => {
   })
 
   it('setEnabled(启用)：豁免授予失败 → 报错且不加进加载清单', async () => {
-    const run = stubRun((args) =>
+    const run = fakeRun((args) =>
       args.includes('allow-version')
         ? {
             code: 1,
@@ -181,7 +181,7 @@ describe('createPluginManager.setEnabled', () => {
   })
 
   it('setEnabled(启用)：清除该插件的 autoDisabled 标记（提示条不再残留）', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const bundles = fakeBundles({
       bundles: ['@deepseek-ai/dsh-base'],
       dependencies: ['@xbzbing/dsh-git-panel']
@@ -209,7 +209,7 @@ describe('createPluginManager.setEnabled', () => {
   })
 
   it('setEnabled：列表里已装但非本 profile 依赖的插件被拒', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const bundles = fakeBundles({ bundles: [], dependencies: ['other-plugin'] })
     const manager = createPluginManager({
       ...baseOptions(run),

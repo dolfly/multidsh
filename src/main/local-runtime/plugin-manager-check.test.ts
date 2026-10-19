@@ -7,7 +7,7 @@ import {
   memoryStore,
   okResult,
   stateWith,
-  stubRun
+  fakeRun
 } from './plugin-manager.testkit'
 
 describe('createPluginManager.check', () => {
@@ -24,7 +24,7 @@ describe('createPluginManager.check', () => {
   })
 
   it('兼容判定：latest peer 满足实例 dsh 版本', async () => {
-    const run = stubRun(VIEW_JSON)
+    const run = fakeRun(VIEW_JSON)
     const manager = createPluginManager(baseOptions(run))
     const check = await manager.check(localInstance(), '@xbzbing/dsh-git-panel')
     expect(check.current).toBe('1.1.0')
@@ -36,7 +36,7 @@ describe('createPluginManager.check', () => {
   })
 
   it('命令拼装：view 取 version / peerDependencies / time（版本发布时间映射），固定默认安装源', async () => {
-    const run = stubRun(VIEW_JSON)
+    const run = fakeRun(VIEW_JSON)
     const manager = createPluginManager(baseOptions(run))
     await manager.check(localInstance({ profile: 'tui' }), '@xbzbing/dsh-git-panel')
     expect(run.mock.calls[1]![1]).toEqual([
@@ -57,7 +57,7 @@ describe('createPluginManager.check', () => {
 
   it('registry 未收录已装版本：publishedAt=null，不覆盖已有快照', async () => {
     // 已装 1.1.0 不在 time 里（本地 file: 安装 / 版本已下架）。
-    const run = stubRun(JSON.stringify({ version: '1.2.0', time: { '1.2.0': 'x' } }))
+    const run = fakeRun(JSON.stringify({ version: '1.2.0', time: { '1.2.0': 'x' } }))
     const stateStore = memoryStore()
     await stateStore.write(
       'inst-1',
@@ -78,7 +78,7 @@ describe('createPluginManager.check', () => {
 
   it('插件未发布到 npm（404）：抛出明确文案，非裸 pnpm stderr', async () => {
     // pnpm view 对未发布包返回 exit 1，stderr 含 404 标记。
-    const run = stubRun({
+    const run = fakeRun({
       code: 1,
       stdout: '',
       stderr:
@@ -91,7 +91,7 @@ describe('createPluginManager.check', () => {
   })
 
   it('不兼容：latest peer 要求高于实例 dsh 版本', async () => {
-    const run = stubRun(
+    const run = fakeRun(
       JSON.stringify({
         version: '2.0.0',
         peerDependencies: { '@deepseek-ai/dsh': '>=0.2.0' }
@@ -107,7 +107,7 @@ describe('createPluginManager.check', () => {
   })
 
   it('不兼容：主包满足但 dsh 子包锁 ^0.2.0-rc.1（better-sidebar 0.24.1 真实场景）', async () => {
-    const run = stubRun(
+    const run = fakeRun(
       JSON.stringify({
         version: '0.24.1',
         peerDependencies: {
@@ -129,7 +129,7 @@ describe('createPluginManager.check', () => {
   })
 
   it('检查到有新版：结果落盘，checkState 可读回（切走再回来仍有标记）', async () => {
-    const run = stubRun(
+    const run = fakeRun(
       JSON.stringify({
         version: '2.0.0',
         peerDependencies: { '@deepseek-ai/dsh': '>=0.1.7-rc.2' },
@@ -159,7 +159,7 @@ describe('createPluginManager.check', () => {
 
   it('已装版本高于 registry latest（手动装了更新版）→ 不算有更新，也不落盘标记', async () => {
     // 已装 1.1.0，registry latest 1.0.9（更旧）→ 不应报「有更新」。
-    const run = stubRun(
+    const run = fakeRun(
       JSON.stringify({
         version: '1.0.9',
         peerDependencies: { '@deepseek-ai/dsh': '>=0.1.7-rc.2' }
@@ -174,7 +174,7 @@ describe('createPluginManager.check', () => {
 
   it('已是最新：清掉可升级标记，但发布时间快照留下（同一版本发布时间恒定）', async () => {
     // 已装 1.1.0，registry latest 也是 1.1.0 → 无更新
-    const run = stubRun(
+    const run = fakeRun(
       JSON.stringify({
         version: '1.1.0',
         peerDependencies: {},
@@ -211,7 +211,7 @@ describe('createPluginManager.check', () => {
   })
 
   it('快照版本与已装版本不一致：不回填发布时间（升级后等下次检查）', async () => {
-    const run = stubRun(LIST_JSON)
+    const run = fakeRun(LIST_JSON)
     const stateStore = memoryStore()
     await stateStore.write(
       'inst-1',
@@ -249,7 +249,7 @@ describe('createPluginManager.check', () => {
       }
     ])
     let upgraded = false
-    const run = stubRun(
+    const run = fakeRun(
       (args) => {
         // add 之后已装版本切到 2.0.0：list 随之反映新版本。
         if (args.includes('add')) {
@@ -305,7 +305,7 @@ describe('createPluginManager.check', () => {
       }
     ])
     let upgraded = false
-    const run = stubRun(
+    const run = fakeRun(
       (args) => {
         if (args.includes('add')) {
           upgraded = true
@@ -329,7 +329,7 @@ describe('createPluginManager.check', () => {
 
   it('升级后取不到新版本发布时间（如离线）：清掉旧版本的陈旧快照', async () => {
     // view 无输出（取不到发布时间）。
-    const run = stubRun()
+    const run = fakeRun()
     const stateStore = memoryStore()
     await stateStore.write(
       'inst-1',
@@ -356,7 +356,7 @@ describe('createPluginManager.check', () => {
   })
 
   it('卸载后清掉该插件的发布时间快照', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const stateStore = memoryStore()
     await stateStore.write(
       'inst-1',
@@ -380,7 +380,7 @@ describe('createPluginManager.check', () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve
     })
-    const run = stubRun(async () => {
+    const run = fakeRun(async () => {
       await gate
       return okResult(JSON.stringify({ version: '2.0.0', peerDependencies: {} }))
     })
@@ -397,13 +397,13 @@ describe('createPluginManager.check', () => {
   })
 
   it('未安装的插件 → 抛错', async () => {
-    const run = stubRun(LIST_JSON)
+    const run = fakeRun(LIST_JSON)
     const manager = createPluginManager(baseOptions(run))
     await expect(manager.check(localInstance(), 'nope')).rejects.toThrow(/未安装/)
   })
 
   it('兼容判定按实际执行命令的 dsh 版本（注册表固定版本未装、回落到 hub 副本时不再误报兼容）', async () => {
-    const run = stubRun(
+    const run = fakeRun(
       JSON.stringify({
         version: '0.24.1',
         peerDependencies: { '@deepseek-ai/dsh-llm': '^0.2.0-rc.1' }
@@ -421,7 +421,7 @@ describe('createPluginManager.check', () => {
   })
 
   it('公共空间 + 自定义启动器：按系统 dsh 版本判兼容（0.2.0-rc.1 满足 ^0.2.0-rc.1）', async () => {
-    const run = stubRun(
+    const run = fakeRun(
       JSON.stringify({
         version: '0.24.1',
         peerDependencies: { '@deepseek-ai/dsh-llm': '^0.2.0-rc.1' }

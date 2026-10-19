@@ -9,7 +9,7 @@ import {
   fakeBundles,
   fakeInstaller,
   localInstance,
-  stubRun,
+  fakeRun,
   toPosix,
   GIT_PANEL_MANIFEST
 } from './plugin-manager.testkit'
@@ -221,7 +221,7 @@ describe('createPluginManager.list', () => {
   })
 
   it('list：按 bundles 给出 enabled（无 host 半的插件为 null）', async () => {
-    const run = stubRun()
+    const run = fakeRun()
     const bundles = fakeBundles({
       bundles: ['@xbzbing/dsh-git-panel'],
       dependencies: ['@xbzbing/dsh-git-panel', 'dsh-free-search']

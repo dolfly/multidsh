@@ -26,7 +26,7 @@ type StubValue = string | CommandResult
  * 需要覆盖某侧时传字符串 / CommandResult / 按 args 决定的函数；
  * 调用记录在 `run.mock.calls` 里，供命令拼装断言。
  */
-export function stubRun(view: StubAnswer = '', list: StubAnswer = LIST_JSON): Mock<CommandRunner> {
+export function fakeRun(view: StubAnswer = '', list: StubAnswer = LIST_JSON): Mock<CommandRunner> {
   const answer = async (spec: StubAnswer, args: string[]): Promise<CommandResult> => {
     const value = typeof spec === 'function' ? await spec(args) : spec
     return typeof value === 'string' ? okResult(value) : value
