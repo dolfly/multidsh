@@ -766,8 +766,8 @@ const SOURCE_EXCLUSIONS_PIN: readonly string[] = ['src/shared/i18n/messages.ts']
 
 const isExcluded = (path: string): boolean => SOURCE_EXCLUSIONS.includes(path)
 
-/** 测试文件不参与判定:里面的中文是测试名与断言数据,不是界面文案,也不进打包产物 */
-const isTestFile = (path: string): boolean => /\.test\.tsx?$/.test(path)
+/** 测试文件与 testkit 不参与判定:里面的中文是测试名、fixture 与断言数据,不是界面文案,也不进打包产物 */
+const isTestFile = (path: string): boolean => /\.test(?:kit)?\.tsx?$/.test(path)
 
 /** 整树收集（`src/**`,递归,含渲染层 `index.html` 与 `src/shared`/`src/preload`） */
 function collectScannedFiles(): SourceFile[] {
