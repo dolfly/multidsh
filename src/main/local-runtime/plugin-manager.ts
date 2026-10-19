@@ -11,11 +11,10 @@
  * 不 import Electron：dsh 可执行入口的解析复用安装器（隔离目录）与 PATH 探测，与启动同一判据。
  */
 import { existsSync } from 'node:fs'
-import { delimiter, dirname, join, resolve as resolvePath } from 'node:path'
+import { dirname, join } from 'node:path'
 import { homedir } from 'node:os'
 import type {
   LocalInstance,
-  PluginCheckRecord,
   PluginCheckSnapshot,
   PluginEnableResult,
   PluginInfo,
@@ -25,62 +24,40 @@ import type {
   PluginPackageInfo,
   PluginRegistryOption,
   PluginRegistryOptions,
-  PluginUpdateCheck,
-  PluginVersionSource
+  PluginUpdateCheck
 } from '@shared/contracts'
-import { DEFAULT_PLUGIN_REGISTRY, pluginRegistryUrl } from '@shared/settings'
-import { redactLine } from '@shared/redact'
+import { DEFAULT_PLUGIN_REGISTRY } from '@shared/settings'
 import { execFileResult } from './exec-file'
 import type { CommandResult, CommandRunner } from './exec-file'
-import type { InstalledRuntime, RuntimeInstaller } from './runtime-installer'
-import { planRuntimeSource, type PathProbe } from './runtime-source'
-import { followsSystemDsh } from './dsh-source-policy'
+import type { RuntimeInstaller } from './runtime-installer'
+import type { PathProbe } from './runtime-source'
 import { compareDshVersions } from './version-compare'
 import { InstanceStoreError } from '../registry/instance-store'
-import { mergeLoginPath, resolveLoginPathOnce } from './login-path'
-import { mergeShellEnv, resolveShellEnvOnce } from './shell-env'
-import { dshPeerRange, evaluateDshPeers, githubUrlFrom, npmUrlFrom } from './peer-compatibility'
+import { resolveLoginPathOnce } from './login-path'
+import { resolveShellEnvOnce } from './shell-env'
+import { dshPeerRange, evaluateDshPeers, npmUrlFrom, peersCompatible } from './peer-compatibility'
 import { createPluginStateStore } from './plugin-state'
-import type {
-  AutoDisabledPlugin,
-  PluginCheckState,
-  PluginPublishedSnapshot,
-  PluginStateStore
-} from './plugin-state'
+import type { AutoDisabledPlugin, PluginPublishedSnapshot, PluginStateStore } from './plugin-state'
 import { createRegistryMetadataReader } from './plugin-registry-meta'
+import { createDshEntryResolver } from './plugin-dsh-entry'
+import { createCheckStateWriter } from './plugin-check-state'
+import { createPluginCommandRunner } from './plugin-command'
+import { createInstallPlanResolver } from './plugin-install-plan'
 import { createProfileBundleStore } from './profile-bundles'
-import { withBundledPnpmPath } from '../shell/bundled-pnpm'
 import { userLayerDisablesHmr } from './profile-hmr'
 import type { ProfileBundleStore } from './profile-bundles'
 import { createPackageInfoFetchers } from './plugin-package-info'
 import type { PackageInfoFetchers } from './plugin-package-info'
-import {
-  classifyPluginSpec,
-  installedVersionOf,
-  isVersionLiteral,
-  pickTargetVersion,
-  splitNpmSpec,
-  specMatchesName
-} from './plugin-spec'
-import {
-  isRegistryNotFound,
-  parseViewMeta,
-  peerMapOf,
-  publishedAtOf,
-  publishedTimeMap,
-  recordOf,
-  stringArrayOf
-} from './plugin-view-meta'
+import { classifyPluginSpec, specMatchesName } from './plugin-spec'
+import { isRegistryNotFound, publishedTimeMap } from './plugin-view-meta'
 import { defaultApplication, profileHasHmr } from './plugin-hmr'
 import {
-  authorName,
   defaultReadIcon,
   defaultReadLocale,
   defaultReadManifest,
-  installSourceOf,
-  svgDataUri
+  infoFromPath as assembleInfo
 } from './plugin-info'
-import type { PluginManifest, ProfileListEntry } from './plugin-info'
+import type { PluginLocale, PluginManifest, ProfileListEntry } from './plugin-info'
 import { nodeModeExecutable } from '../node-mode'
 
 /** HMR 判定与生效口径已抽出；此处再导出以保留既有导入路径。 */
@@ -90,8 +67,8 @@ export type { PluginApplication } from './plugin-hmr'
 /** 插件命令执行超时：pnpm 安装可能较慢，给足余量（与安装器同量级）。 */
 const PLUGIN_COMMAND_TIMEOUT_MS = 10 * 60_000
 
-/** 界面语言：与 app 的 Language 一致（system 已解析为 zh|en）。 */
-export type PluginLocale = 'zh' | 'en'
+/** 界面语言类型已随装配逻辑移到 plugin-info；此处再导出以保留既有导入路径。 */
+export type { PluginLocale } from './plugin-info'
 
 export interface PluginManagerOptions {
   installer: RuntimeInstaller
@@ -211,6 +188,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   const homeDir = options.homeDir ?? homedir
   const defaultProfile = options.profile ?? 'web'
   const resolveNode = options.resolveNode ?? defaultResolveNode
+  /** PluginInfo 装配：读取器按注入项组装，装配逻辑在 plugin-info。 */
+  const infoFromPath = assembleInfo.bind(null, { readManifest, readIcon, readLocale })
   const nodeInvocation = options.nodeInvocation ?? {
     command: nodeModeExecutable(),
     args: [],
@@ -220,7 +199,25 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   const shellEnv = options.shellEnv ?? resolveShellEnvOnce
   const loginPath = options.loginPath ?? resolveLoginPathOnce
   const stateStore = options.stateStore ?? createPluginStateStore(options.dataRoot)
+  /** 检查状态落盘（合并逻辑见 plugin-check-state）。 */
+  const checkStateWriter = createCheckStateWriter(stateStore)
   const bundleStore = options.bundleStore ?? createProfileBundleStore()
+  /** dsh 可执行入口解析（判据见 plugin-dsh-entry）。 */
+  const resolveDshEntry = createDshEntryResolver({
+    installer: options.installer,
+    ...(options.pathProbe ? { pathProbe: options.pathProbe } : {})
+  })
+  /** 插件命令执行（构造 + 转发 + 脱敏报错，见 plugin-command）。 */
+  const { runPlugin } = createPluginCommandRunner({
+    run,
+    homeAndProfile,
+    resolveNode,
+    nodeInvocation,
+    ...(options.pnpmBinDir ? { pnpmBinDir: options.pnpmBinDir } : {}),
+    inheritShellEnv,
+    shellEnv,
+    loginPath
+  })
   const packageInfoFetchers = options.packageInfoFetchers ?? createPackageInfoFetchers()
   /** 未显式指定安装源时的默认档位（由设置项注入；缺省国内镜像）。 */
   const defaultRegistry =
@@ -237,6 +234,14 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     runPlugin,
     defaultRegistry,
     isRegistryNotFound
+  })
+  /** npm 安装目标规划（见 plugin-install-plan）；peer 判据已移到 peer-compatibility。 */
+  const planNpmInstall = createInstallPlanResolver({
+    resolveDshEntry,
+    listPlugins,
+    runPlugin,
+    viewVersionMeta: (instance, name, version, resolved, registry) =>
+      registryMeta.viewVersionMeta(instance, name, version, resolved, registry)
   })
 
   /** 实例的 DSH_HOME 与 profile（与启动路径同一推导）。 */
@@ -294,69 +299,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     return { pluginVersion, dshVersion: resolved.version }
   }
 
-  /** 状态落盘失败不影响本次检查/改动结果：只是重启后看不到标记。 */
-  async function writeState(instanceId: string, state: PluginCheckState): Promise<void> {
-    await stateStore.write(instanceId, state).catch((error: unknown) => {
-      console.error('[plugin] 写入插件检查状态失败：', error)
-    })
-  }
-
-  /**
-   * 把一次检查结果并入持久化状态：
-   * - 有新版则记下候选信息，已是最新则删掉该项（标记「直到用户再次检查或升级才变」由此保证）；
-   * - 取到已装版本的发布时间则写入版本快照（发布后不变，之后一直复用，下次检查再刷新）；
-   *   registry 未收录该版本时（published 为 null）保留原快照，显示端只在版本号一致时才读它。
-   */
-  async function persistCheck(
-    instanceId: string,
-    name: string,
-    record: PluginCheckRecord | null,
-    published: PluginPublishedSnapshot | null
-  ): Promise<void> {
-    const state = await stateStore.read(instanceId)
-    const updates = { ...state.updates }
-    if (record === null) delete updates[name]
-    else updates[name] = record
-    const snapshots = { ...state.published }
-    if (published !== null) snapshots[name] = published
-    await writeState(instanceId, {
-      ...state,
-      lastCheckedAt: new Date().toISOString(),
-      updates,
-      published: snapshots
-    })
-  }
-
-  /** 该插件的检查痕迹随升级/卸载失效：可升级标记与发布时间快照一并丢弃（不刷新「上次检查」时刻）。 */
-  async function dropCheck(instanceId: string, name: string): Promise<void> {
-    const state = await stateStore.read(instanceId)
-    const updates = { ...state.updates }
-    delete updates[name]
-    const snapshots = { ...state.published }
-    delete snapshots[name]
-    await writeState(instanceId, { ...state, updates, published: snapshots })
-  }
-
-  /**
-   * 升级完成后同步该插件的检查痕迹：清掉可升级标记（已装版本已是目标版本），并把新版本的
-   * 发布时间落成快照，无需用户再次检查即可显示发布时间。取不到发布时间（如离线）时清掉
-   * 旧版本的陈旧快照，由下次检查补齐（不刷新「上次检查」时刻）。
-   */
-  async function syncCheckAfterUpgrade(
-    instance: LocalInstance,
-    name: string,
-    resolved: { entry: string; version: string }
-  ): Promise<void> {
-    const published = await resolveInstalledPublished(instance, name, resolved).catch(() => null)
-    const state = await stateStore.read(instance.id)
-    const updates = { ...state.updates }
-    delete updates[name]
-    const snapshots = { ...state.published }
-    if (published !== null) snapshots[name] = published
-    else delete snapshots[name]
-    await writeState(instance.id, { ...state, updates, published: snapshots })
-  }
-
   /**
    * 取该插件已装版本在注册表里的发布时间快照；读不到已装版本或 registry 未收录该版本时返回 null。
    * 与 check 同口径：发布时间取 view 的 time 映射中「已装版本」那一项。
@@ -393,190 +335,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     return profileHasHmr(profile, bundles)
   }
 
-  /**
-   * 解析插件命令要用的 dsh 入口及其版本。判据与启动路径共用 dsh-source-policy：
-   * 公共空间 + 自定义启动器（dush/duush）固定跟随系统 dsh（PATH 实测），其余走 planRuntimeSource。
-   *
-   * 版本必须与真正执行命令的副本一致：dsh 的插件安装闸按自身版本判定 peer，若检查阶段用注册表
-   * 版本、执行阶段却落到另一个 hub 副本，就会出现「检查说可升级、安装被 dsh 拒绝」。
-   */
-  async function resolveDshEntry(
-    instance: LocalInstance
-  ): Promise<{ entry: string; version: string }> {
-    const followSystemDsh = followsSystemDsh(instance.useDefaultSpace, instance.launcher)
-    const [installed, pathRuntime] = await Promise.all([
-      // 跟随系统 dsh 时 hub 副本不参与决策（与启动路径一致：不装副本、不理会固定版本）。
-      followSystemDsh
-        ? Promise.resolve([] as InstalledRuntime[])
-        : options.installer.listInstalled().catch(() => [] as InstalledRuntime[]),
-      options.pathProbe ? options.pathProbe.probe().catch(() => null) : Promise.resolve(null)
-    ])
-    const plan = followSystemDsh
-      ? pathRuntime === null
-        ? null
-        : { kind: 'path' as const, command: pathRuntime.command, version: pathRuntime.version }
-      : planRuntimeSource({
-          desiredVersion: instance.dshVersion,
-          hubInstalled: installed.map((item) => item.version),
-          pathRuntime
-        })
-    if (plan?.kind === 'path') return { entry: plan.command, version: plan.version }
-    if (plan?.kind === 'hub') {
-      const hit = installed.find((item) => item.version === plan.version)
-      if (hit) return { entry: hit.entry, version: hit.version }
-    }
-    // download（固定版本未安装）或系统 dsh 未探到：插件命令不触发运行时下载，
-    // 回落 hub 已装的最新副本（与实例的 hub 归属一致，判定宁可拦下不误放行），再回落 PATH 实测。
-    const newest = [...installed].sort((a, b) => compareDshVersions(a.version, b.version)).at(-1)
-    if (newest !== undefined) return { entry: newest.entry, version: newest.version }
-    if (pathRuntime !== null) return { entry: pathRuntime.command, version: pathRuntime.version }
-    throw new InstanceStoreError(
-      'invalid-state',
-      '未找到可用的 dsh：hub 隔离目录与 PATH 上都没有已安装的运行时'
-    )
-  }
-
-  /**
-   * 解析子进程的基础环境：默认合并登录 shell 完整环境（含 .zshrc/.bashrc export），
-   * 关闭开关 / 解析失败时回退到仅合并登录 PATH。与本机实例启动同源——保证打包后 GUI
-   * 启动也能解析到 pnpm/node（`dsh plugin` 转发 pnpm 需要它们在 PATH 上）。
-   */
-  async function resolveBaseEnv(): Promise<NodeJS.ProcessEnv> {
-    const shellEnvMap = inheritShellEnv() ? await shellEnv().catch(() => null) : null
-    if (shellEnvMap !== null) return mergeShellEnv(process.env, shellEnvMap)
-    const loginEnvPath = await loginPath().catch(() => null)
-    return { ...process.env, PATH: mergeLoginPath(process.env.PATH ?? '', loginEnvPath) }
-  }
-
-  /**
-   * 构造并执行一次插件命令；非零退出抛 invalid-state（消息为脱敏后的 stderr 尾部）。
-   * dsh 拒绝安装（不兼容闸、pnpm 失败等）时，这段说明是用户唯一能看到的失败原因，
-   * 必须透出而不是收敛成「内部错误」。
-   *
-   * registry 由主进程按档位映射后追加 `--registry <url>`：dsh 把余下参数逐字转给 profile 内的
-   * pnpm，因此 view（解析）与 add（安装）能落在同一个源上。
-   */
-  async function runPlugin(
-    instance: LocalInstance,
-    args: string[],
-    resolved: { entry: string; version: string },
-    registry?: PluginRegistryOption | null
-  ): Promise<CommandResult> {
-    const { home, profile } = homeAndProfile(instance)
-    const fullArgs =
-      registry === undefined || registry === null
-        ? args
-        : [...args, '--registry', pluginRegistryUrl(registry)]
-    const pluginArgs = ['plugin', '--profile', profile, ...fullArgs]
-    const node = resolveNode(resolved.entry)
-    // 登录 shell 完整环境 / 仅登录 PATH（见 resolveBaseEnv）：打包后 GUI 启动缺 pnpm/node 目录，
-    // dsh plugin 转发 pnpm 会失败；node 目录始终前置，dsh 自己 spawn 的 pnpm 也解析到同一个 node。
-    const baseEnv = await resolveBaseEnv()
-    const basePath = baseEnv.PATH ?? ''
-    const nodePath = node !== null ? dirname(node) : null
-    // node 目录前置；随包 pnpm 启动器目录按平台并入：Windows 前置（系统 pnpm 全局 shim 已损坏，
-    // 自带 pnpm 必须胜出），其余平台后置兜底（系统 pnpm 与用户既有 profile 的 store 大版本匹配，
-    // 优先用它，避免 pnpm 10 操作 pnpm 12 建的 profile 触发 ERR_PNPM_UNEXPECTED_STORE）。
-    const nodeAndBase = nodePath !== null ? `${nodePath}${delimiter}${basePath}` : basePath
-    const env: NodeJS.ProcessEnv = {
-      ...baseEnv,
-      PATH: withBundledPnpmPath(nodeAndBase, options.pnpmBinDir),
-      DSH_HOME: home,
-      // pnpm v12 全局命令默认走「上下文感知 shim」（globalShims）：转发 pnpm 时该 shim 会做
-      // 签名完整性校验并二次派发，nvm 等按需切换 node 的 Windows 环境下校验失败
-      // （shim integrity check failed）。插件命令把 pnpm 当普通工具直接调用，设 PNPM_SHIM_BYPASS=1
-      // 绕过 shim 派发（与启动路径一致；无 shim 的环境下为无副作用的空操作）。
-      PNPM_SHIM_BYPASS: '1'
-    }
-    const invocation =
-      node !== null
-        ? { command: node, args: [...nodeInvocation.args, resolved.entry, ...pluginArgs], env }
-        : resolved.entry.endsWith('.js')
-          ? {
-              command: nodeInvocation.command,
-              args: [...nodeInvocation.args, resolved.entry, ...pluginArgs],
-              env: { ...env, ...nodeInvocation.env, DSH_HOME: home }
-            }
-          : { command: resolved.entry, args: pluginArgs, env }
-    const result = await run(invocation.command, invocation.args, { env: invocation.env })
-    if (result.code !== 0) {
-      const tail = redactLine(result.stderr.trim()).split('\n').slice(-8).join('\n')
-      throw new InstanceStoreError(
-        'invalid-state',
-        `dsh plugin ${fullArgs.join(' ')} 失败（exit ${result.code}）：${tail || '无 stderr'}`
-      )
-    }
-    return result
-  }
-
-  /**
-   * 查 `name@version` 的 peer 与发布时间：用户显式版本走这里，解析出的目标版本与首次查询的
-   * 版本不一致时也用它补一次（否则 peer 与发布时间会是另一个版本的口径）。
-   * registry 未收录该版本按 not-found 报错；输出不可解析按 internal。
-   */
-
-  /** 与 check 同口径：全部 dsh peer 都满足运行时版本才算兼容。 */
-  function peersCompatible(peers: Record<string, string>, dshVersion: string): boolean {
-    return Object.keys(evaluateDshPeers(peers, dshVersion)).length === 0
-  }
-
-  /**
-   * 从 registry 元数据推导插件仓库地址（渲染层不传 URL）：`view <name>@<version> repository homepage`。
-   * 命令失败与解析失败都按「没有仓库」处理：确认区只需降级到 npm 包页，不需要错误。
-   */
-
-  /**
-   * 从安装路径读 package.json 装配 PluginInfo。
-   * 优先用 profile 顶层 node_modules/<name>（pnpm 布局下 scoped 包的可靠位置），
-   * 回退 list --json 给出的 entry.path（可能指向 .pnpm 虚拟 store，scoped 包读不到）。
-   * locale：读 <dir>/locale/<lang>.json 的 meta，本地化标题与简介覆盖 package.json 的英文原值。
-   */
-  function infoFromPath(
-    name: string,
-    entry: { from?: string; version?: string; resolved?: string; path?: string },
-    profileNodeModules: string,
-    locale: PluginLocale,
-    bundles: readonly string[] | null
-  ): PluginInfo {
-    const topLevelDir = join(profileNodeModules, ...name.split('/'))
-    const manifestDir =
-      readManifest(topLevelDir) !== null ? topLevelDir : (entry.path ?? topLevelDir)
-    const manifest = readManifest(manifestDir) ?? {}
-    const dsh = manifest.dsh ?? {}
-    const iconBase64 =
-      typeof manifest.icon === 'string' ? readIcon(resolvePath(manifestDir, manifest.icon)) : null
-    // locale/<lang>.json 的 meta：title 本地化插件名，description 本地化简介；缺失回落 package.json。
-    const localeMeta = readLocale(join(manifestDir, 'locale', `${locale}.json`))?.meta
-    const localizedTitle = localeMeta?.title?.trim() || null
-    const localizedDescription =
-      localeMeta?.description?.trim() || manifest.description?.trim() || null
-    return {
-      name,
-      version: entry.version ?? manifest.version ?? '—',
-      title: localizedTitle,
-      description: localizedDescription,
-      author: authorName(manifest.author),
-      license: manifest.license?.trim() || null,
-      npmUrl: npmUrlFrom(name),
-      githubUrl: githubUrlFrom(manifest.repository ?? manifest.homepage ?? null),
-      iconDataUri: svgDataUri(iconBase64),
-      dependencies: Object.keys(manifest.dependencies ?? {}),
-      dshPeer: dshPeerRange(manifest.peerDependencies),
-      nodeEngine: manifest.engines?.node ?? null,
-      hasHostSide: typeof dsh.bundle?.patch === 'string' && dsh.bundle.patch !== '',
-      hasClientSide: dsh.client !== undefined && dsh.client !== null,
-      installSource: installSourceOf(entry),
-      // 只有含 host 半（dsh.bundle.patch）的插件才由 bundles 决定加载与否；
-      // 纯 client 插件随宿主 bundle 加载，无法单独禁用 → null。
-      enabled:
-        typeof dsh.bundle?.patch === 'string' && dsh.bundle.patch !== ''
-          ? bundles === null || bundles.includes(name)
-          : null,
-      // 发布时间来自 registry，由 list() 用检查快照回填（这里只给出默认值）。
-      publishedAt: null
-    }
-  }
-
   /** 判定一个包名当前是否含 host 半（改动后决定是否提醒重启）。 */
   async function hostSideOf(
     instance: LocalInstance,
@@ -611,123 +369,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     return Object.entries(deps)
       .map(([name, entry]) => infoFromPath(name, entry, profileNodeModules, locale, bundles))
       .sort((a, b) => a.name.localeCompare(b.name))
-  }
-
-  /**
-   * 按 profile 加载清单对齐单个插件的启用态（setEnabled 与「安装后不启用」共用同一条路径）：
-   * 校验确属本 profile 的依赖 → 判 host 半 → 记原索引 → 写 bundles → 清自动禁用标记 → 算生效方式。
-   * 启用前先按将执行命令的 dsh 版本评估兼容性并授予精确版本豁免（见 grantEnableExemption）。
-   *
-   * `known` 复用调用方已解析的运行时与插件列表（安装后对齐启用态时避免重复起进程）。
-   */
-  /**
-   * 解析 npm spec 的安装目标：查 registry 得到目标版本、peer 范围与发布时间。
-   *
-   * 用户写死精确版本时只查该版本；裸名与 dist-tag 走一次多字段查询，按「dist-tag latest
-   * 与最大稳定版的较大者」取目标——dist-tag 滞后时不能装到旧版。目标版本与查询返回的版本
-   * 不一致时补查一次，保证 peer 与发布时间都是目标版本的口径。
-   */
-  async function planNpmInstall(
-    instance: LocalInstance,
-    input: string,
-    registry: PluginRegistryOption
-  ): Promise<PluginInstallPlan> {
-    const resolved = await resolveDshEntry(instance)
-    const { name, requested } = splitNpmSpec(input)
-    const installedVersion = installedVersionOf(await listPlugins(instance, 'zh', resolved), name)
-
-    // 用户显式指定了精确版本：只查该版本的 peer 与发布时间（同时校验它确实存在）。
-    if (requested !== null && isVersionLiteral(requested)) {
-      const { peers, publishedAt } = await registryMeta.viewVersionMeta(
-        instance,
-        name,
-        requested,
-        resolved,
-        registry
-      )
-      return {
-        installSpec: `${name}@${requested}`,
-        input,
-        kind: 'npm',
-        packageName: name,
-        targetVersion: requested,
-        latestVersion: null,
-        versionSource: 'requested',
-        publishedAt,
-        dshPeer: dshPeerRange(peers),
-        dshVersion: resolved.version,
-        compatible: peersCompatible(peers, resolved.version),
-        installedVersion
-      }
-    }
-
-    // 裸名或 dist-tag：一次查询拿版本集合、dist-tags、peer 与发布时间（多字段时 time 嵌套在
-    // `time` 键下，publishedTimeMap 兼容两种形状）。
-    let result: CommandResult
-    try {
-      result = await runPlugin(
-        instance,
-        ['view', name, 'version', 'versions', 'dist-tags', 'peerDependencies', 'time', '--json'],
-        resolved,
-        registry
-      )
-    } catch (error) {
-      if (isRegistryNotFound(error)) {
-        throw new InstanceStoreError(
-          'not-found',
-          `无法解析版本：插件 ${name} 未发布到 npm registry`
-        )
-      }
-      throw error
-    }
-    const meta = parseViewMeta(result.stdout)
-    const distTags = recordOf(meta['dist-tags'])
-    const latestVersion =
-      typeof distTags.latest === 'string' && distTags.latest !== '' ? distTags.latest : null
-    const viewed = typeof meta.version === 'string' && meta.version !== '' ? meta.version : null
-
-    let target: string
-    let versionSource: PluginVersionSource
-    if (requested !== null && requested !== 'latest') {
-      // 具名 dist-tag（next / beta…）：装该标签指向的版本，用户要的就是这个渠道。
-      const tagged = distTags[requested]
-      if (typeof tagged !== 'string' || tagged === '') {
-        throw new InstanceStoreError('not-found', `registry 没有标签 ${requested}：${name}`)
-      }
-      target = tagged
-      versionSource = 'requested'
-    } else {
-      // 未指定版本，或写的就是 `latest`：`latest` 只是「最新」的惯用写法，与裸名同口径
-      // 取「dist-tag latest 与最大稳定版的较大者」——dist-tag 滞后时不能装到旧版。
-      const picked = pickTargetVersion(stringArrayOf(meta.versions), latestVersion, viewed)
-      if (picked === null) throw new InstanceStoreError('internal', '无法解析插件版本信息输出')
-      target = picked
-      versionSource = requested === null ? 'resolved-latest' : 'requested'
-    }
-
-    // peer 与发布时间必须是目标版本的口径：与本次查询返回的版本不一致时补一次查询。
-    let peers = peerMapOf(meta)
-    let publishedAt = publishedAtOf(publishedTimeMap(result.stdout), target)
-    if (target !== viewed) {
-      const detail = await registryMeta.viewVersionMeta(instance, name, target, resolved, registry)
-      peers = detail.peers
-      publishedAt = detail.publishedAt
-    }
-
-    return {
-      installSpec: `${name}@${target}`,
-      input,
-      kind: 'npm',
-      packageName: name,
-      targetVersion: target,
-      latestVersion,
-      versionSource,
-      publishedAt,
-      dshPeer: dshPeerRange(peers),
-      dshVersion: resolved.version,
-      compatible: peersCompatible(peers, resolved.version),
-      installedVersion
-    }
   }
 
   async function applyEnabled(
@@ -840,7 +481,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         const publishedAt = typeof published === 'string' && published !== '' ? published : null
         // 落盘：有新版留下标记，已是最新清掉该项（标记只在再次检查或升级时变化）；
         // 发布时间按「已装版本」存快照，未收录该版本时保留原快照。
-        await persistCheck(
+        await checkStateWriter.persistCheck(
           instance.id,
           name,
           hasUpdate ? { current: current.version, latest, compatible, dshPeer, dshVersion } : null,
@@ -1002,7 +643,9 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       // 升级默认与 check 同源（同一默认档位，随设置）；用户可在升级确认对话框改选安装源。
       await runPlugin(instance, ['add', `${name}@${version}`], resolved, registry)
       // 升级换了版本：清掉可升级标记，并同步落下新版本的发布时间快照（无需再次检查即可显示）。
-      await syncCheckAfterUpgrade(instance, name, resolved)
+      // 取不到发布时间（如离线）时返回 null，由 writer 清掉旧版本的陈旧快照，下次检查补齐。
+      const published = await resolveInstalledPublished(instance, name, resolved).catch(() => null)
+      await checkStateWriter.syncCheckAfterUpgrade(instance.id, name, published)
       // 与 dsh 同口径：升级（替换已装包）同样热生效——dsh-hmr 按磁盘身份换模块代，
       // 只看 HMR 是否可用，不因换版本而无条件要求重启。
       const after = await bundleStore.read(profileDir)
@@ -1022,7 +665,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       const hasHostSide = await hostSideOf(instance, name, resolved)
       await runPlugin(instance, ['remove', name], resolved)
       // 卸载后该插件的检查痕迹（可升级标记、发布时间快照）不再有意义。
-      await dropCheck(instance.id, name)
+      await checkStateWriter.dropCheck(instance.id, name)
       // 卸载走 dsh 的默认规则：有 HMR 即热卸载，否则需重启。
       const hmr = await hmrAvailable(instance, profileDir, before?.bundles ?? null)
       return { hasHostSide, application: defaultApplication(hmr) }

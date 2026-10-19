@@ -172,6 +172,11 @@ export function evaluateDshPeers(
   return incompatible
 }
 
+/** 全部 dsh peer 都满足运行时版本才算兼容（检查、安装规划与启用豁免共用同一判据）。 */
+export function peersCompatible(peers: Record<string, string>, dshVersion: string): boolean {
+  return Object.keys(evaluateDshPeers(peers, dshVersion)).length === 0
+}
+
 /** 从 npm `repository` 字段派生 GitHub 网页地址；非 github 或无法解析返回 null。 */
 export function githubUrlFrom(repository: unknown): string | null {
   const raw =
