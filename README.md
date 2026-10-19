@@ -49,12 +49,12 @@ Windows 安装包当前**未经代码签名**，首次运行会出现 SmartScree
 
 | 层       | 选型                                                                    |
 | -------- | ----------------------------------------------------------------------- |
-| 桌面框架 | Electron 44 + electron-vite 5 + Vite 7                                  |
+| 桌面框架 | Electron 44 + electron-vite 6 + Vite 7                                  |
 | UI       | React 18 + zustand + 手写 CSS（OKLch 明暗双主题）                       |
 | 语言     | TypeScript 5.9（strict + `noUncheckedIndexedAccess`）                   |
-| 校验     | zod 4.6.5（唯一新增运行时依赖）                                         |
-| 测试     | Vitest 4（单测）· Playwright `_electron`（E2E）· 契约测试（对真实网关） |
-| 工具链   | ESLint 9 flat + Prettier 3 · pnpm 11 · Node 22                          |
+| 校验     | zod 4.6.7（唯一新增运行时依赖）                                         |
+| 测试     | Vitest 5（单测）· Playwright `_electron`（E2E）· 契约测试（对真实网关） |
+| 工具链   | ESLint 10 flat + Prettier 3 · pnpm 12 · Node 22                         |
 
 > 刻意避开 vite 8 / TS 7 / React 19（版本线评审结论，勿升级）。
 
@@ -96,7 +96,7 @@ design/             UI 视觉基线（HTML 原型）+ 品牌 token
 
 ## 快速开始
 
-前置：Node 22+、pnpm 11。
+前置：Node 22+、pnpm 12。
 
 ```bash
 pnpm install
@@ -142,7 +142,7 @@ Electron 44 起二进制按需下载：`pnpm install` 之后 `node_modules/elect
 
 发布前运行 `CI=true pnpm release:check -- --pre`，确认发布说明的分发模式与资产清单自洽。演练按声明的模式（`source-only` 或 `windows-unsigned`）输出对应的人工收口步骤：建 Draft Release，人工确认资产后再 Publish；详见 [`docs/release-policy.md`](docs/release-policy.md)。macOS 二进制分发仍需先满足该文档中的签名、公证与验证门槛。
 
-> 无 TTY 环境跑 `pnpm <script>` 需带 `CI=true`（pnpm 11 依赖检查在无 TTY 时会中止）。
+> 无 TTY 环境跑 `pnpm <script>` 需带 `CI=true`（依赖检查在无 TTY 时会中止）。
 
 ## 数据目录
 

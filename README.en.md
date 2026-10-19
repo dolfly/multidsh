@@ -44,12 +44,12 @@ Privacy policy: [PRIVACY.md](PRIVACY.md) — this app collects no personal data,
 
 | Layer             | Choice                                                                                 |
 | ----------------- | -------------------------------------------------------------------------------------- |
-| Desktop Framework | Electron 43 + electron-vite 5 + Vite 7                                                 |
+| Desktop Framework | Electron 44 + electron-vite 6 + Vite 7                                                 |
 | UI                | React 18 + zustand + hand-written CSS (OKLch light/dark themes)                        |
 | Language          | TypeScript 5.9 (strict + `noUncheckedIndexedAccess`)                                   |
-| Validation        | zod 4.6.5 (sole runtime dependency)                                                    |
-| Testing           | Vitest 4 (unit) · Playwright `_electron` (E2E) · Contract tests (against real gateway) |
-| Toolchain         | ESLint 9 flat + Prettier 3 · pnpm 11 · Node 22                                         |
+| Validation        | zod 4.6.7 (sole runtime dependency)                                                    |
+| Testing           | Vitest 5 (unit) · Playwright `_electron` (E2E) · Contract tests (against real gateway) |
+| Toolchain         | ESLint 10 flat + Prettier 3 · pnpm 12 · Node 22                                        |
 
 > Vite 8 / TypeScript 7 / React 19 are intentionally avoided (per version line review — do not upgrade).
 
@@ -89,7 +89,7 @@ design/             UI visual baseline (HTML prototype) + brand tokens
 
 ## Quick Start
 
-Prerequisites: Node 22+, pnpm 11.
+Prerequisites: Node 22+, pnpm 12.
 
 ```bash
 pnpm install
@@ -131,7 +131,7 @@ pnpm release:check     # Release rehearsal; validates distribution mode and arti
 
 Before a public release, run `CI=true pnpm release:check -- --pre` and confirm the release notes' distribution mode and artifact list are self-consistent. The rehearsal prints mode-specific closure steps (`source-only` or `windows-unsigned`): create a draft Release, confirm the assets, then Publish; see [`docs/release-policy.md`](docs/release-policy.md). macOS binary distribution still requires Apple Developer ID signing, notarization, clean-machine verification, and auditable update metadata checksums.
 
-> In non-TTY environments, `pnpm <script>` requires `CI=true` (pnpm 11 dependency checks abort without a TTY).
+> In non-TTY environments, `pnpm <script>` requires `CI=true` (dependency checks abort without a TTY).
 
 ## Data Directory
 
