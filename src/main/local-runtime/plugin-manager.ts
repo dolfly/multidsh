@@ -19,7 +19,6 @@ import type {
   PluginCheckSnapshot,
   PluginEnableResult,
   PluginInfo,
-  PluginInstallKind,
   PluginInstallOptions,
   PluginInstallPlan,
   PluginMutationResult,
@@ -54,6 +53,23 @@ import { userLayerDisablesHmr } from './profile-hmr'
 import type { ProfileBundleStore } from './profile-bundles'
 import { createPackageInfoFetchers } from './plugin-package-info'
 import type { PackageInfoFetchers } from './plugin-package-info'
+import {
+  classifyPluginSpec,
+  installedVersionOf,
+  isVersionLiteral,
+  pickTargetVersion,
+  splitNpmSpec,
+  specMatchesName
+} from './plugin-spec'
+import {
+  isRegistryNotFound,
+  parseViewMeta,
+  peerMapOf,
+  publishedAtOf,
+  publishedTimeMap,
+  recordOf,
+  stringArrayOf
+} from './plugin-view-meta'
 import { nodeModeExecutable } from '../node-mode'
 
 /** 插件命令执行超时：pnpm 安装可能较慢，给足余量（与安装器同量级）。 */
@@ -281,104 +297,6 @@ function installSourceOf(entry: {
 /** SVG 文本 base64 → data-uri（图标恒为 svg，其它扩展一律忽略）。 */
 function svgDataUri(base64: string | null): string | null {
   return base64 === null ? null : `data:image/svg+xml;base64,${base64}`
-}
-
-/** spec 形态分类：github/file 交给 pnpm 按原样安装，不做 registry 版本解析。 */
-function classifyPluginSpec(spec: string): PluginInstallKind {
-  if (/^(github:|git\+https:\/\/|git@)/.test(spec)) return 'github'
-  if (/^file:/.test(spec)) return 'file'
-  return 'npm'
-}
-
-/** 拆 npm spec 为包名与可选的版本/标签段；scoped 包名的首个 `@` 属于包名。 */
-function splitNpmSpec(spec: string): { name: string; requested: string | null } {
-  const at = spec.startsWith('@') ? spec.indexOf('@', 1) : spec.indexOf('@')
-  if (at < 0) return { name: spec, requested: null }
-  const requested = spec.slice(at + 1)
-  return { name: spec.slice(0, at), requested: requested === '' ? null : requested }
-}
-
-/** 版本段形态：数字开头或含点 = 精确版本；其余（latest/next/beta…）按 dist-tag 处理。 */
-function isVersionLiteral(requested: string): boolean {
-  return /^\d/.test(requested) || requested.includes('.')
-}
-
-/** 候选版本里的最大者（数字感知）；空集合返回 null。 */
-function maxVersion(versions: readonly string[]): string | null {
-  return [...versions].sort(compareDshVersions).at(-1) ?? null
-}
-
-/**
- * 选出不带版本段的 npm spec 要安装的版本：dist-tags.latest 与最大稳定版取较大者
- * （dist-tag 滞后时不装旧版），全为预发布时取最大预发布；候选为空回落 dist-tag latest 字段。
- * versions 数组不保证按版本序排列，因此必须用 compareDshVersions 求最大而不是取末位。
- */
-function pickTargetVersion(
-  versions: readonly string[],
-  latest: string | null,
-  fallback: string | null
-): string | null {
-  const stable = versions.filter((version) => !version.includes('-'))
-  const candidates = stable.length > 0 ? [latest, maxVersion(stable)] : [...versions]
-  const best = maxVersion(
-    candidates.filter((item): item is string => typeof item === 'string' && item !== '')
-  )
-  return best ?? fallback
-}
-
-/** 已装插件列表里同名插件的版本（列表用 '—' 表示版本未知）。 */
-function installedVersionOf(plugins: readonly PluginInfo[], name: string): string | null {
-  const version = plugins.find((plugin) => plugin.name === name)?.version
-  return version === undefined || version === '—' ? null : version
-}
-
-/** registry 未收录（与 check 同判据）：pnpm view 对未发布的包/不存在的版本返回 404。 */
-function isRegistryNotFound(error: unknown): boolean {
-  return (
-    error instanceof InstanceStoreError && /404|Not Found|ERR_PNPM_FETCH_404/i.test(error.message)
-  )
-}
-
-/** 解析 view 的 JSON 输出；输出不可解析时给不出计划，按内部错误报错。 */
-function parseViewMeta(stdout: string): Record<string, unknown> {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(stdout || '{}')
-  } catch {
-    throw new InstanceStoreError('internal', '无法解析插件版本信息输出')
-  }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new InstanceStoreError('internal', '无法解析插件版本信息输出')
-  }
-  return parsed as Record<string, unknown>
-}
-
-/** 取 peerDependencies；字段缺失或形态异常按空处理（无约束）。 */
-function peerMapOf(meta: Record<string, unknown>): Record<string, string> {
-  const peers = meta.peerDependencies
-  return typeof peers === 'object' && peers !== null && !Array.isArray(peers)
-    ? (peers as Record<string, string>)
-    : {}
-}
-
-/** 取字符串数组字段（versions）；空串与非字符串项忽略。 */
-function stringArrayOf(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string' && item !== '')
-    : []
-}
-
-/** 取对象字段（dist-tags / repository 等）；形态不符按空对象。 */
-function recordOf(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {}
-}
-
-/** 发布时间映射里该版本的时刻；缺失或非字符串按 null。 */
-function publishedAtOf(timeMap: Record<string, string> | null, version: string): string | null {
-  const at = timeMap?.[version]
-  return typeof at === 'string' && at !== '' ? at : null
 }
 
 export function createPluginManager(options: PluginManagerOptions): PluginManager {
@@ -1236,37 +1154,6 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       return { hasHostSide, application: defaultApplication(hmr) }
     }
   }
-}
-
-/**
- * 解析 `dsh plugin view … time --json` 的输出为「版本 → 发布时刻」映射；解析失败或不是对象返回 null。
- * 输出形状随查询字段而变：多字段查询（check）嵌套在 `time` 键下，仅查 time 时是裸映射
- * （额外含 created/modified 两项，按键取版本值时天然跳过）。
- */
-function publishedTimeMap(stdout: string): Record<string, string> | null {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(stdout || '{}')
-  } catch {
-    return null
-  }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
-  const nested = (parsed as { time?: unknown }).time
-  if (typeof nested === 'object' && nested !== null && !Array.isArray(nested)) {
-    return nested as Record<string, string>
-  }
-  return parsed as Record<string, string>
-}
-
-/** spec 是否指向给定包名（近似：spec 前缀去掉 @version / 协议后与包名相等或以其结尾）。 */
-function specMatchesName(spec: string, name: string): boolean {
-  const trimmed = spec.trim()
-  if (trimmed === name) return true
-  // name@version：剥掉版本段（保留 scoped 前缀的 @）。
-  const at = trimmed.lastIndexOf('@')
-  if (at > 0 && trimmed.slice(0, at) === name) return true
-  // github:owner/repo 或 file:path：无法从 spec 精确得包名，宽松匹配结尾。
-  return trimmed.endsWith(name)
 }
 
 /** 脚本同目录探测真实 node；找不到返回 null（由调用方回退 Electron 兜底）。 */
