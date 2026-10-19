@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { InstanceStatusEvent, SshInstance } from '@shared/contracts'
 import { controlSlug, createSshTunnels, ensureSocketsDir, socketsDirFor } from './ssh-tunnel'
 import type { SpawnedProcess } from './spawn'
-import { makeFakeChild, waitForStatus } from './ssh-tunnel.testkit'
+import { makeFakeChild, waitForStatus, type FakeChild } from './ssh-tunnel.testkit'
 
 // 进程组回收的平台机制（POSIX 负 pid / Windows taskkill）在 spawn.test.ts 单测；
 // 这里只关心「何时、以何信号回收」，故把 killProcessGroup 固定为直接 kill 子进程，
