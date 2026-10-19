@@ -10,7 +10,7 @@
  *
  * 不 import Electron：dsh 可执行入口的解析复用安装器（隔离目录）与 PATH 探测，与启动同一判据。
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { delimiter, dirname, join, resolve as resolvePath } from 'node:path'
 import { homedir } from 'node:os'
 import type {
@@ -70,36 +70,27 @@ import {
   recordOf,
   stringArrayOf
 } from './plugin-view-meta'
+import { defaultApplication, profileHasHmr } from './plugin-hmr'
+import {
+  authorName,
+  defaultReadIcon,
+  defaultReadLocale,
+  defaultReadManifest,
+  installSourceOf,
+  svgDataUri
+} from './plugin-info'
+import type { PluginManifest, ProfileListEntry } from './plugin-info'
 import { nodeModeExecutable } from '../node-mode'
+
+/** HMR 判定与生效口径已抽出；此处再导出以保留既有导入路径。 */
+export { profileHasHmr } from './plugin-hmr'
+export type { PluginApplication } from './plugin-hmr'
 
 /** 插件命令执行超时：pnpm 安装可能较慢，给足余量（与安装器同量级）。 */
 const PLUGIN_COMMAND_TIMEOUT_MS = 10 * 60_000
 
 /** 界面语言：与 app 的 Language 一致（system 已解析为 zh|en）。 */
 export type PluginLocale = 'zh' | 'en'
-
-interface PluginManifest {
-  name?: string
-  version?: string
-  description?: string
-  author?: unknown
-  license?: string
-  homepage?: string
-  repository?: unknown
-  dependencies?: Record<string, string>
-  peerDependencies?: Record<string, string>
-  engines?: { node?: string }
-  icon?: string
-  dsh?: { bundle?: { patch?: string }; client?: unknown }
-}
-
-/** `dsh plugin list --json` 的顶层条目（只取用到的字段）。 */
-interface ProfileListEntry {
-  dependencies?: Record<
-    string,
-    { from?: string; version?: string; resolved?: string; path?: string }
-  >
-}
 
 export interface PluginManagerOptions {
   installer: RuntimeInstaller
@@ -202,101 +193,6 @@ export interface RuntimeReconcileResult {
   checked: boolean
   /** 因与新版 dsh 不兼容而被禁用的插件。 */
   disabled: AutoDisabledPlugin[]
-}
-
-/** 含 web-app bundle 的 profile 才有 HMR 服务（headless/SDK/ACP 显式关闭）。 */
-const WEB_APP_BUNDLE = '@deepseek-ai/dsh-web-app'
-
-/**
- * 运行中的 Host 是否具备 HMR（决定改动能否热生效）。
- *
- * 与 dsh 的 `change()` 同口径：`ownerContext.get('hmr') !== undefined ? applied : restart-required`。
- * hmr 服务由 base bundle 提供、仅在有 profileContext 时启用，headless/SDK/ACP 在自己的 patch 里
- * 显式关闭。这里按「profile 名或加载清单里出现 web-app」判定；判定不出时按「无 HMR」保守处理
- * （宁可提示重启，也不谎称已生效）。
- */
-export function profileHasHmr(profile: string, bundles: readonly string[] | null): boolean {
-  if (profile === 'web') return true
-  return bundles !== null && bundles.includes(WEB_APP_BUNDLE)
-}
-
-/** dsh 语义下的生效结果：`applied` 已热生效；`restart-required` 需重启 Host。 */
-export type PluginApplication = 'applied' | 'restart-required'
-
-/**
- * 生效口径，与 dsh 一致（dsh-plugin-manager 的 change()：有 HMR 即 applied，
- * 仅在 reconcile 报出 restartReason 时才要求重启）。替换/升级已装包同样热生效——
- * dsh-hmr 按磁盘身份（inode/size/mtime）判定模块 stale 并热重载新模块代，
- * 没有「替换已装包必须重启」的特例。
- */
-function defaultApplication(hmr: boolean): PluginApplication {
-  return hmr ? 'applied' : 'restart-required'
-}
-
-function defaultReadManifest(dir: string): PluginManifest | null {
-  try {
-    return JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as PluginManifest
-  } catch {
-    return null
-  }
-}
-
-function defaultReadIcon(path: string): string | null {
-  try {
-    return readFileSync(path).toString('base64')
-  } catch {
-    return null
-  }
-}
-
-function defaultReadLocale(
-  path: string
-): { meta?: { title?: string; description?: string } } | null {
-  try {
-    return JSON.parse(readFileSync(path, 'utf8')) as {
-      meta?: { title?: string; description?: string }
-    }
-  } catch {
-    return null
-  }
-}
-
-/** author 字段可能是字符串或 `{ name, email }` 对象。 */
-function authorName(author: unknown): string | null {
-  if (typeof author === 'string') return author.trim() || null
-  if (author && typeof author === 'object' && 'name' in author) {
-    const name = String((author as { name: unknown }).name ?? '').trim()
-    return name || null
-  }
-  return null
-}
-
-/** 安装来源判定：resolved 指向 registry → npm；from/version 指向 github / file。 */
-function installSourceOf(entry: {
-  from?: string
-  version?: string
-  resolved?: string
-}): PluginInfo['installSource'] {
-  const from = entry.from ?? ''
-  const version = entry.version ?? ''
-  const resolved = entry.resolved ?? ''
-  if (
-    /^(github:|git\+|git@)/.test(from) ||
-    /github\.com/.test(from) ||
-    /github\.com/.test(version)
-  ) {
-    return 'github'
-  }
-  if (/^(file:|link:)/.test(from) || /^(file:|link:)/.test(version)) return 'file'
-  if (resolved.includes('/') && /https?:\/\//.test(resolved)) return 'npm'
-  // 无 resolved 但有普通语义化 version（本地 node_modules 已解析）：按 npm 处理。
-  if (version !== '' && !version.includes('/')) return 'npm'
-  return 'unknown'
-}
-
-/** SVG 文本 base64 → data-uri（图标恒为 svg，其它扩展一律忽略）。 */
-function svgDataUri(base64: string | null): string | null {
-  return base64 === null ? null : `data:image/svg+xml;base64,${base64}`
 }
 
 export function createPluginManager(options: PluginManagerOptions): PluginManager {
