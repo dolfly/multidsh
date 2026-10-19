@@ -262,6 +262,11 @@ test.beforeAll(async () => {
   })
   win = await app.firstWindow()
   await expect(win.getByTestId('app-shell')).toBeVisible()
+  // 侧栏收起态（rail）持久化在真实 userData 的 localStorage，会跨 spec 文件残留；
+  // 归位到展开态，各用例再自行收敛到所需状态（见「收起态悬停提示」的范式），不依赖执行顺序。
+  await win.evaluate(() => localStorage.setItem('dshhub-rail', '0'))
+  await win.reload()
+  await expect(win.getByTestId('app-shell')).toBeVisible()
 })
 
 test.afterAll(async () => {
@@ -538,6 +543,8 @@ test('刷新后不会保留旧的原生工作区边界', async () => {
   await expect(win.getByTestId(`inst-${instanceId}`)).toBeVisible()
   await win.getByTestId(`inst-${instanceId}`).click()
   await expect(win.getByTestId('workspace-back-btn')).toBeVisible()
+  // 用快捷键切换侧栏制造一次原生布局变更，为下面的「边界清零」断言确保有过非零起点；
+  // 切换方向依赖当前 rail 态，因此不在此断言侧栏文案（rail 持久化后方向随前序用例变化）。
   await win.keyboard.press('Meta+b')
   await win.waitForTimeout(300)
 
@@ -557,7 +564,6 @@ test('刷新后不会保留旧的原生工作区边界', async () => {
       })
     )
     .toMatchObject({ bounds: { width: 0, height: 0 } })
-  await expect(win.getByTestId('sidebar-collapse-btn')).toHaveAttribute('aria-label', '收起侧边栏')
 })
 
 test('SSH 认证对话框限制在右侧工作区且指纹复制行不溢出', async () => {
@@ -575,7 +581,11 @@ test('SSH 认证对话框限制在右侧工作区且指纹复制行不溢出', a
   await expect(win.getByTestId(`inst-${workspaceId}`)).toBeVisible()
   await win.getByTestId(`inst-${workspaceId}`).click()
   await expect(win.getByTestId('workspace-back-btn')).toBeVisible()
-  await win.keyboard.press('Meta+b')
+  // 悬停提示只在收起态出现：先收敛到已知收起态，避免依赖前序用例的收展状态（同「收起态悬停提示」）。
+  const collapsed = await win.evaluate(() =>
+    document.querySelector('[data-testid="app-shell"]')?.classList.contains('rail')
+  )
+  if (!collapsed) await win.keyboard.press('Meta+b')
   const workspaceRailItem = win.getByTestId(`inst-${workspaceId}`)
   await workspaceRailItem.hover()
   await expect
