@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import { vi } from 'vitest'
 import { PassThrough } from 'node:stream'
 import { randomUUID } from 'node:crypto'
@@ -36,6 +37,27 @@ export interface FakeChild extends SpawnedProcess {
   emit(event: string, ...args: unknown[]): boolean
   listeners(event: string): unknown[]
   killCall: NodeJS.Signals[]
+}
+
+/**
+ * 假子进程：带可写 stdout/stderr 与 kill 调用记录。
+ *
+ * 默认 kill 只记录信号并返回 true（启动/停止用例普遍只关心「何时、以何信号回收」）；
+ * 需要自定义退出行为的用例传 killImpl。
+ */
+export function makeFakeChild(
+  options: { pid?: number; killImpl?: (signal: NodeJS.Signals) => boolean } = {}
+): FakeChild {
+  const child = new EventEmitter() as unknown as FakeChild
+  child.stdout = new PassThrough()
+  child.stderr = new PassThrough()
+  child.pid = options.pid ?? 999991
+  child.killCall = []
+  child.kill = vi.fn((signal: NodeJS.Signals) => {
+    child.killCall.push(signal ?? 'SIGTERM')
+    return options.killImpl ? options.killImpl(signal) : true
+  }) as never
+  return child
 }
 
 export function makeFakeInstaller(overrides: Partial<RuntimeInstaller> = {}): RuntimeInstaller & {
