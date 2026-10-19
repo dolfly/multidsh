@@ -6,8 +6,10 @@ import type { CommandResult } from './exec-file'
 import {
   LIST_JSON,
   baseOptions,
+  fakeBundles,
   fakeInstaller,
   localInstance,
+  stubRun,
   toPosix,
   GIT_PANEL_MANIFEST
 } from './plugin-manager.testkit'
@@ -216,5 +218,18 @@ describe('createPluginManager.list', () => {
     // 入口取 PATH 上的系统 dsh，而不是 hub 已装的 0.1.7-rc.2 副本。
     expect(calls[0]!.args[0]).toBe('/usr/local/bin/dsh')
     expect(toPosix(calls[0]!.env?.DSH_HOME ?? '')).toBe('/Users/me/.dsh')
+  })
+
+  it('list：按 bundles 给出 enabled（无 host 半的插件为 null）', async () => {
+    const run = stubRun()
+    const bundles = fakeBundles({
+      bundles: ['@xbzbing/dsh-git-panel'],
+      dependencies: ['@xbzbing/dsh-git-panel', 'dsh-free-search']
+    })
+    const manager = createPluginManager({ ...baseOptions(run), bundleStore: bundles.store })
+    const plugins = await manager.list(localInstance())
+    // git-panel 在清单里 → 启用；free-search 不在 → 已禁用
+    expect(plugins.find((p) => p.name === '@xbzbing/dsh-git-panel')?.enabled).toBe(true)
+    expect(plugins.find((p) => p.name === 'dsh-free-search')?.enabled).toBe(false)
   })
 })
