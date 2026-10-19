@@ -1,5 +1,3 @@
-import { EventEmitter } from 'node:events'
-import { PassThrough } from 'node:stream'
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -12,6 +10,7 @@ import {
   ISO,
   localInstance,
   storeStub,
+  makeFakeChild,
   makeFakeInstaller,
   waitForStatus,
   readyLine
@@ -125,15 +124,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('start → 就绪行 → 健康探测通过 → running(带 url/port/version)', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999991
-    child.killCall = []
-    child.kill = vi.fn((signal) => {
-      child.killCall.push(signal ?? 'SIGTERM')
-      return true
-    }) as never
+    const child = makeFakeChild({ pid: 999991 })
 
     const spawnImpl = vi.fn((invocation: SpawnInvocation) => {
       expect(invocation.args).toContain('--no-open')
@@ -197,12 +188,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('beforeSpawn：在 spawn 前以解析出的 dsh 版本调用；抛错不阻断启动', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999993
-    child.killCall = []
-    child.kill = vi.fn(() => true) as never
+    const child = makeFakeChild({ pid: 999993 })
     const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
     const seen: string[] = []
 
@@ -235,12 +221,7 @@ describe('createLocalRuntime', () => {
   it.each(['dush', 'duush'] as const)(
     '选择 %s 启动器时由 Hub 固定 web、回环端口和 --no-open',
     async (launcher) => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999990
-      child.killCall = []
-      child.kill = vi.fn(() => true) as never
+      const child = makeFakeChild({ pid: 999990 })
       const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
       const manager = createLocalRuntime({
         store: storeStub,
@@ -300,12 +281,7 @@ describe('createLocalRuntime', () => {
   ])(
     '自定义启动器：dshVersion=$dshVersion 来源=$source 时状态版本显示 $expected，DSH_BIN 指向该来源',
     async ({ dshVersion, pathDsh, expected, source, dshBin }) => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999986
-      child.killCall = []
-      child.kill = vi.fn(() => true) as never
+      const child = makeFakeChild({ pid: 999986 })
       const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
       const manager = createLocalRuntime({
         store: storeStub,
@@ -341,12 +317,7 @@ describe('createLocalRuntime', () => {
   it.each(['dush', 'duush'] as const)(
     '%s 启动不会继承父进程的 DUSH_PATCH_FILE，避免 loader 重复加载',
     async (launcher) => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999988
-      child.killCall = []
-      child.kill = vi.fn(() => true) as never
+      const child = makeFakeChild({ pid: 999988 })
       const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
       const previousPatch = process.env.DUSH_PATCH_FILE
       process.env.DUSH_PATCH_FILE = '/tmp/global/cordis.dush.patch.yml'
@@ -392,12 +363,7 @@ describe('createLocalRuntime', () => {
   it.each(['dush', 'duush'] as const)(
     '公共空间的 %s 实例固定跟随系统默认 dsh：探测结果注入 DSH_BIN，实例固定版本不生效',
     async (launcher) => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999985
-      child.killCall = []
-      child.kill = vi.fn(() => true) as never
+      const child = makeFakeChild({ pid: 999985 })
       const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
       const listInstalled = vi.fn(async () => [])
       const ensureInstalled = vi.fn(async () => {
@@ -441,12 +407,7 @@ describe('createLocalRuntime', () => {
   ])(
     '公共空间实例未探到系统默认 dsh 时退回占位显示（dshVersion=$dshVersion → $expected）且不注入 DSH_BIN',
     async ({ dshVersion, expected }) => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999984
-      child.killCall = []
-      child.kill = vi.fn(() => true) as never
+      const child = makeFakeChild({ pid: 999984 })
       const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
       const manager = createLocalRuntime({
         store: storeStub,
@@ -511,12 +472,7 @@ describe('createLocalRuntime', () => {
       await writeFile(cmdPath, '@ECHO off\r\n"%dp0%\\node_modules\\dush\\bin\\dush.js" %*\r\n')
       await writeFile(jsPath, '')
 
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999981
-      child.killCall = []
-      child.kill = vi.fn(() => true) as never
+      const child = makeFakeChild({ pid: 999981 })
       const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
       const manager = createLocalRuntime({
         store: storeStub,
@@ -549,12 +505,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('公共空间仅使用主进程提供的 ~/.dsh，不接受渲染层路径', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999989
-    child.killCall = []
-    child.kill = vi.fn(() => true) as never
+    const child = makeFakeChild({ pid: 999989 })
     const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
     const manager = createLocalRuntime({
       store: storeStub,
@@ -583,15 +534,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('启动超时未出就绪行 → error + 杀进程', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999992
-    child.killCall = []
-    child.kill = vi.fn((signal?: NodeJS.Signals) => {
-      child.killCall.push(signal ?? 'SIGTERM')
-      return true
-    }) as never
+    const child = makeFakeChild({ pid: 999992 })
 
     const manager = createLocalRuntime({
       store: storeStub,
@@ -611,15 +554,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('进程在就绪前意外退出 → error(仅显示退出码)', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999993
-    child.killCall = []
-    child.kill = vi.fn((signal?: NodeJS.Signals) => {
-      child.killCall.push(signal ?? 'SIGTERM')
-      return true
-    }) as never
+    const child = makeFakeChild({ pid: 999993 })
     const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
 
     const manager = createLocalRuntime({
@@ -645,15 +580,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('就绪行主机非回环 → error + 杀进程（不加载远端 origin）', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999997
-    child.killCall = []
-    child.kill = vi.fn((signal?: NodeJS.Signals) => {
-      child.killCall.push(signal ?? 'SIGTERM')
-      return true
-    }) as never
+    const child = makeFakeChild({ pid: 999997 })
     const probe = vi.fn(async () => true)
 
     const manager = createLocalRuntime({
@@ -679,17 +606,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('stop:SIGTERM → 子进程退出 → stopped;未退出 → SIGKILL 兜底', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999994
-    child.killCall = []
-    child.kill = vi.fn((signal?: NodeJS.Signals) => {
-      child.killCall.push(signal ?? 'SIGTERM')
-      // SIGTERM 后不退出 → 需要 SIGKILL 兜底
-      if (signal === 'SIGKILL') setImmediate(() => child.emit('exit', 0, 'SIGKILL'))
-      return true
-    }) as never
+    const child = makeFakeChild({ pid: 999994 })
 
     const manager = createLocalRuntime({
       store: storeStub,
@@ -727,11 +644,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('重复 start 幂等:已在运行则不再 spawn', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999995
-    child.kill = vi.fn(() => true) as never
+    const child = makeFakeChild({ pid: 999995 })
 
     const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
     const installer = makeFakeInstaller()
@@ -756,11 +669,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('启动前经 ensureInstalled 准备运行时(指定版本直接用)', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999996
-    child.kill = vi.fn(() => true) as never
+    const child = makeFakeChild({ pid: 999996 })
 
     const installer = makeFakeInstaller()
     const manager = createLocalRuntime({
@@ -802,12 +711,7 @@ describe('createLocalRuntime', () => {
   it('并发启动串行化:A 就绪后才拉起 B(TOCTOU 防线)', async () => {
     const children: FakeChild[] = []
     const spawnImpl = vi.fn(() => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999997 - children.length
-      child.killCall = []
-      child.kill = vi.fn(() => true) as never
+      const child = makeFakeChild({ pid: 999997 - children.length })
       children.push(child)
       return child as unknown as SpawnedProcess
     })
@@ -837,11 +741,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('排队期间 stop:取消启动,不再 spawn', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999998
-    child.kill = vi.fn(() => true) as never
+    const child = makeFakeChild({ pid: 999998 })
 
     const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
     const blocker = makeFakeInstaller({
@@ -895,15 +795,7 @@ describe('createLocalRuntime', () => {
   it('健康探测连续失败 → error + SIGKILL + 条目清除 + 队列立即放行(不等到期定时器)', async () => {
     const children: FakeChild[] = []
     const spawnImpl = vi.fn(() => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999750 - children.length
-      child.killCall = []
-      child.kill = vi.fn((signal?: NodeJS.Signals) => {
-        child.killCall.push(signal ?? 'SIGTERM')
-        return true
-      }) as never
+      const child = makeFakeChild({ pid: 999750 - children.length })
       children.push(child)
       return child as unknown as SpawnedProcess
     })
@@ -945,15 +837,7 @@ describe('createLocalRuntime', () => {
       calls += 1
       return calls >= 2
     })
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999740
-    child.killCall = []
-    child.kill = vi.fn((signal?: NodeJS.Signals) => {
-      child.killCall.push(signal ?? 'SIGTERM')
-      return true
-    }) as never
+    const child = makeFakeChild({ pid: 999740 })
 
     const manager = createLocalRuntime({
       store: storeStub,
@@ -976,12 +860,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('同一 id 并发 start 两次 → 只 spawn 一个进程(队列内二次查重)', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999730
-    child.killCall = []
-    child.kill = vi.fn(() => true) as never
+    const child = makeFakeChild({ pid: 999730 })
     const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
 
     const manager = createLocalRuntime({
@@ -1007,16 +886,7 @@ describe('createLocalRuntime', () => {
   it('stop:先杀运行中的进程,排队中的重复 start 一并取消(不复活)', async () => {
     const children: FakeChild[] = []
     const spawnImpl = vi.fn(() => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999720 - children.length
-      child.killCall = []
-      child.kill = vi.fn((signal?: NodeJS.Signals) => {
-        child.killCall.push(signal ?? 'SIGTERM')
-        if (signal === 'SIGKILL') setImmediate(() => child.emit('exit', 0, 'SIGKILL'))
-        return true
-      }) as never
+      const child = makeFakeChild({ pid: 999720 - children.length })
       children.push(child)
       return child as unknown as SpawnedProcess
     })
@@ -1050,15 +920,7 @@ describe('createLocalRuntime', () => {
     })
     const portProbe = vi.fn(() => portGate) as never
 
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999710
-    child.killCall = []
-    child.kill = vi.fn((signal?: NodeJS.Signals) => {
-      child.killCall.push(signal ?? 'SIGTERM')
-      return true
-    }) as never
+    const child = makeFakeChild({ pid: 999710 })
     const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
 
     const manager = createLocalRuntime({
@@ -1089,15 +951,7 @@ describe('createLocalRuntime', () => {
   it('陈旧条目的迟到 exit 不误删新条目(身份守卫)', async () => {
     const children: FakeChild[] = []
     const spawnImpl = vi.fn(() => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999700 - children.length
-      child.killCall = []
-      child.kill = vi.fn((signal?: NodeJS.Signals) => {
-        child.killCall.push(signal ?? 'SIGTERM')
-        return true
-      }) as never
+      const child = makeFakeChild({ pid: 999700 - children.length })
       children.push(child)
       return child as unknown as SpawnedProcess
     })
@@ -1135,12 +989,7 @@ describe('createLocalRuntime', () => {
   })
 
   it('就绪行跨 chunk 拆分 → 仍能匹配就绪(running)', async () => {
-    const child = new EventEmitter() as unknown as FakeChild
-    child.stdout = new PassThrough()
-    child.stderr = new PassThrough()
-    child.pid = 999690
-    child.killCall = []
-    child.kill = vi.fn(() => true) as never
+    const child = makeFakeChild({ pid: 999690 })
     const spawnImpl = vi.fn(() => child as unknown as SpawnedProcess)
     const manager = createLocalRuntime({
       store: storeStub,
@@ -1165,12 +1014,7 @@ describe('createLocalRuntime', () => {
     // 场景一:30123 空闲 → 直接用用户选定端口
     const portProbe = vi.fn(async (port: number) => port === 30123)
     let args1: string[] = []
-    const child1 = new EventEmitter() as unknown as FakeChild
-    child1.stdout = new PassThrough()
-    child1.stderr = new PassThrough()
-    child1.pid = 999680
-    child1.killCall = []
-    child1.kill = vi.fn(() => true) as never
+    const child1 = makeFakeChild({ pid: 999680 })
     const spawnImpl1 = vi.fn((invocation: SpawnInvocation) => {
       args1 = invocation.args
       return child1 as unknown as SpawnedProcess
@@ -1196,12 +1040,7 @@ describe('createLocalRuntime', () => {
     // 场景二:30123 被占 → 递增到 30124
     const portProbe2 = vi.fn(async (port: number) => port === 30124)
     let args2: string[] = []
-    const child2 = new EventEmitter() as unknown as FakeChild
-    child2.stdout = new PassThrough()
-    child2.stderr = new PassThrough()
-    child2.pid = 999670
-    child2.killCall = []
-    child2.kill = vi.fn(() => true) as never
+    const child2 = makeFakeChild({ pid: 999670 })
     const spawnImpl2 = vi.fn((invocation: SpawnInvocation) => {
       args2 = invocation.args
       return child2 as unknown as SpawnedProcess
@@ -1228,12 +1067,7 @@ describe('createLocalRuntime', () => {
     // 场景三:用户端口超出默认区间(如 dsh 默认 52300)→ 仍先尝试该端口,被占则向 65535 递增
     const portProbe3 = vi.fn(async (port: number) => port >= 52301)
     let args3: string[] = []
-    const child3 = new EventEmitter() as unknown as FakeChild
-    child3.stdout = new PassThrough()
-    child3.stderr = new PassThrough()
-    child3.pid = 999660
-    child3.killCall = []
-    child3.kill = vi.fn(() => true) as never
+    const child3 = makeFakeChild({ pid: 999660 })
     const spawnImpl3 = vi.fn((invocation: SpawnInvocation) => {
       args3 = invocation.args
       return child3 as unknown as SpawnedProcess
@@ -1261,15 +1095,7 @@ describe('createLocalRuntime', () => {
   it('在途 handleReady 的陈旧续体不误删新条目(就绪后崩溃场景)', async () => {
     const children: FakeChild[] = []
     const spawnImpl = vi.fn(() => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999650 - children.length
-      child.killCall = []
-      child.kill = vi.fn((signal?: NodeJS.Signals) => {
-        child.killCall.push(signal ?? 'SIGTERM')
-        return true
-      }) as never
+      const child = makeFakeChild({ pid: 999650 - children.length })
       children.push(child)
       return child as unknown as SpawnedProcess
     })
@@ -1314,15 +1140,7 @@ describe('createLocalRuntime', () => {
     // 防止 ready-timer 兜底触发 settle 而掩盖「缺失的 stop-settle」
     const children: FakeChild[] = []
     const spawnImpl = vi.fn(() => {
-      const child = new EventEmitter() as unknown as FakeChild
-      child.stdout = new PassThrough()
-      child.stderr = new PassThrough()
-      child.pid = 999640 - children.length
-      child.killCall = []
-      child.kill = vi.fn((signal?: NodeJS.Signals) => {
-        child.killCall.push(signal ?? 'SIGTERM')
-        return true // 永不触发 exit(模拟 SIGKILL 免疫的 D 态)
-      }) as never
+      const child = makeFakeChild({ pid: 999640 - children.length })
       children.push(child)
       return child as unknown as SpawnedProcess
     })
