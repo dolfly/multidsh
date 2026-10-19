@@ -361,7 +361,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     'if (!current) throw new Error(`插件未安装：${name}`)'
   ),
   debt(
-    'src/main/local-runtime/plugin-manager.ts',
+    'src/main/local-runtime/plugin-command.ts',
     "`dsh plugin ${fullArgs.join(' ')} 失败（exit ${result.code}）：${tail || '无 stderr'}`"
   ),
   debt('src/main/local-runtime/plugin-manager.ts', "throw new Error('无法解析插件列表输出')"),
