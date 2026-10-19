@@ -154,9 +154,10 @@ export default tseslint.config(
   },
   // 渲染层：只能经 contextBridge（window.dshHub）访问宿主能力，不得直接 import node:*。
   // 测试在 Node 环境运行（vitest），豁免；react-hooks 规则在上方独立条目，互不覆盖。
+  // testkit 是测试专用的支撑模块（不被生产入口引用、不进产物），同样在 Node 环境运行。
   {
     files: ['src/renderer/src/**/*.{ts,tsx}'],
-    ignores: ['**/*.test.ts', '**/*.test.tsx'],
+    ignores: ['**/*.test.ts', '**/*.test.tsx', '**/*.testkit.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
