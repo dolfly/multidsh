@@ -26,7 +26,9 @@ export interface VersionCatalogState {
 export interface LocalConfigProps {
   t: Translator
   form: WizardForm
-  set: (key: Exclude<keyof WizardForm, 'useDefaultSpace'>) => (event: { target: { value: string } }) => void
+  set: (
+    key: Exclude<keyof WizardForm, 'useDefaultSpace'>
+  ) => (event: { target: { value: string } }) => void
   setForm: (updater: (current: WizardForm) => WizardForm) => void
   external: ExternalAdoption
   versions: VersionCatalogState
@@ -36,13 +38,21 @@ export interface LocalConfigProps {
 /** 本机实例配置：外部 dsh 接管选项 + 高级设置（启动器/版本/配置档案/端口/空间/镜像）。 */
 export default function LocalConfig(props: LocalConfigProps): ReactNode {
   const { t, form, set, setForm, external, versions, persistRegistry } = props
-  const { workspace: externalWorkspace, useExisting: useExistingExternal, setUseExisting: setUseExistingExternal } =
-    external
+  const {
+    workspace: externalWorkspace,
+    useExisting: useExistingExternal,
+    setUseExisting: setUseExistingExternal
+  } = external
   // 公共空间（默认 DSH_HOME）的本机绝对路径：Windows 为 C:\Users\<用户>\.dsh，
   // 其它平台为 /Users|home/<用户>/.dsh。向导里直接展示解析后的真实路径，避免 ~/.dsh 歧义。
   const defaultDshHome = useAppStore((state) => state.defaultDshHome)
-  const { localLaunchers, versionOptions, catalog: versionCatalog, catalogError: versionCatalogError, setVersionTouched } =
-    versions
+  const {
+    localLaunchers,
+    versionOptions,
+    catalog: versionCatalog,
+    catalogError: versionCatalogError,
+    setVersionTouched
+  } = versions
   return (
     <>
       {externalWorkspace && (
@@ -93,7 +103,8 @@ export default function LocalConfig(props: LocalConfigProps): ReactNode {
                 {LAUNCHERS.filter(
                   (name) => name === 'dsh' || localLaunchers.some((item) => item.launcher === name)
                 ).map((name) => {
-                  const detected = localLaunchers.find((item) => item.launcher === name)?.version ?? null
+                  const detected =
+                    localLaunchers.find((item) => item.launcher === name)?.version ?? null
                   return (
                     <option key={name} value={name}>
                       {name}
@@ -102,7 +113,9 @@ export default function LocalConfig(props: LocalConfigProps): ReactNode {
                   )
                 })}
               </select>
-              {localLaunchers.length === 0 && <span className="hint">{t('wizard.launcherMissingHint')}</span>}
+              {localLaunchers.length === 0 && (
+                <span className="hint">{t('wizard.launcherMissingHint')}</span>
+              )}
             </div>
             <div className="field">
               <label htmlFor="wizard-version">{t('wizard.versionLabel')}</label>
@@ -159,7 +172,10 @@ export default function LocalConfig(props: LocalConfigProps): ReactNode {
                 id="wizard-space"
                 value={form.useDefaultSpace ? 'shared' : 'isolated'}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, useDefaultSpace: event.target.value === 'shared' }))
+                  setForm((current) => ({
+                    ...current,
+                    useDefaultSpace: event.target.value === 'shared'
+                  }))
                 }
                 data-testid="wizard-space"
               >

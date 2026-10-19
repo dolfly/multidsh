@@ -11,7 +11,12 @@ function setup(settings: { tray: boolean } | null, trayAvailable: boolean, quitt
   const hideWindow = vi.fn()
   const handled = handleWindowClose(
     { preventDefault },
-    { settings: () => settings, trayAvailable: () => trayAvailable, isQuitting: () => quitting, hideWindow }
+    {
+      settings: () => settings,
+      trayAvailable: () => trayAvailable,
+      isQuitting: () => quitting,
+      hideWindow
+    }
   )
   return { handled, preventDefault, hideWindow }
 }
@@ -56,7 +61,12 @@ describe('handleWindowClose（close-to-tray 接线）', () => {
     const trayAvailable = vi.fn(() => false)
     handleWindowClose(
       { preventDefault: vi.fn() },
-      { settings: () => ({ tray: true }), trayAvailable, isQuitting: () => false, hideWindow: vi.fn() }
+      {
+        settings: () => ({ tray: true }),
+        trayAvailable,
+        isQuitting: () => false,
+        hideWindow: vi.fn()
+      }
     )
     expect(trayAvailable).toHaveBeenCalledTimes(1)
   })

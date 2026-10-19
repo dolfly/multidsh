@@ -143,7 +143,8 @@ export interface AuditDeps {
 }
 
 export interface IpcDeps
-  extends RuntimeDeps,
+  extends
+    RuntimeDeps,
     InstanceViewDeps,
     AuthDeps,
     VaultDeps,
@@ -175,34 +176,34 @@ export function registerIpc(store: InstanceStore, deps: IpcDeps): AuthProbeContr
   registerAppHandlers(processVersions, wrap)
 
   // 关于 → 项目主页:空元组 schema 拒绝任何入参,URL 由主进程固定
-  ipcMain.handle(
-    IPC.openHomepage,
-    (_event, ...args: unknown[]): Promise<IpcResult<null>> =>
-      wrap(async () => {
-        z.tuple([]).parse(args)
-        if (!deps.openHomepage) throw new HomepageOpenError('internal', '打开项目主页不可用')
-        await deps.openHomepage()
-        return null
-      })
+  ipcMain.handle(IPC.openHomepage, (_event, ...args: unknown[]): Promise<IpcResult<null>> =>
+    wrap(async () => {
+      z.tuple([]).parse(args)
+      if (!deps.openHomepage) throw new HomepageOpenError('internal', '打开项目主页不可用')
+      await deps.openHomepage()
+      return null
+    })
   )
 
   // 关于面板：空元组 schema 拒绝任何入参，窗口由主进程构造
-  ipcMain.handle(
-    IPC.openAbout,
-    (_event, ...args: unknown[]): Promise<IpcResult<null>> =>
-      wrap(() => {
-        z.tuple([]).parse(args)
-        if (!deps.openAbout) throw new HomepageOpenError('internal', '打开关于面板不可用')
-        deps.openAbout()
-        return null
-      })
+  ipcMain.handle(IPC.openAbout, (_event, ...args: unknown[]): Promise<IpcResult<null>> =>
+    wrap(() => {
+      z.tuple([]).parse(args)
+      if (!deps.openAbout) throw new HomepageOpenError('internal', '打开关于面板不可用')
+      deps.openAbout()
+      return null
+    })
   )
 
   const authProbe = registerAuthHandlers(deps, wrap)
   registerInstanceHandlers(store, deps, externalAccessUrls, wrap)
   registerRuntimeHandlers(store, deps, { externalAccessUrls, probe: authProbe.probe }, wrap)
   registerVersionHandlers(store, deps, wrap)
-  registerPluginHandlers(store, { pluginManager: deps.pluginManager, openExternalUrl: deps.openExternalUrl }, wrap)
+  registerPluginHandlers(
+    store,
+    { pluginManager: deps.pluginManager, openExternalUrl: deps.openExternalUrl },
+    wrap
+  )
   registerVaultHandlers(deps, externalAccessUrls, wrap)
 
   registerSettingsHandlers(

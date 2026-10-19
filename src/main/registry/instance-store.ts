@@ -166,7 +166,9 @@ export function createInstanceStore(options: InstanceStoreOptions): InstanceStor
     const from = typeof rawVersion === 'number' && Number.isInteger(rawVersion) ? rawVersion : 0
     if (from > REGISTRY_SCHEMA_VERSION) {
       // 文件来自更新版本的应用：拒绝降级读取
-      await quarantineCorruptFile(`schemaVersion=${from} 高于当前 ${REGISTRY_SCHEMA_VERSION}，拒绝降级`)
+      await quarantineCorruptFile(
+        `schemaVersion=${from} 高于当前 ${REGISTRY_SCHEMA_VERSION}，拒绝降级`
+      )
       return { instances: [], recoveredAt: Date.now(), migrated: false }
     }
     for (let v = from; v < REGISTRY_SCHEMA_VERSION; v++) {
@@ -183,12 +185,15 @@ export function createInstanceStore(options: InstanceStoreOptions): InstanceStor
     try {
       parsed = RegistryFileSchema.parse(data)
     } catch (error) {
-      const reason =
-        error instanceof z.ZodError ? formatZodIssues(error, 200) : String(error)
+      const reason = error instanceof z.ZodError ? formatZodIssues(error, 200) : String(error)
       await quarantineCorruptFile(`schema 校验失败：${reason}`)
       return { instances: [], recoveredAt: Date.now(), migrated: false }
     }
-    return { instances: parsed.instances, recoveredAt: null, migrated: from !== REGISTRY_SCHEMA_VERSION }
+    return {
+      instances: parsed.instances,
+      recoveredAt: null,
+      migrated: from !== REGISTRY_SCHEMA_VERSION
+    }
   }
 
   /** 把损坏文件移出主路径，并修剪隔离副本数量 */
@@ -269,7 +274,10 @@ export function createInstanceStore(options: InstanceStoreOptions): InstanceStor
     } catch {
       return
     }
-    const matches = names.filter((name) => name.startsWith(prefix)).sort().reverse()
+    const matches = names
+      .filter((name) => name.startsWith(prefix))
+      .sort()
+      .reverse()
     for (const name of matches.slice(retention)) {
       await rm(join(dir, name), { force: true }).catch(() => undefined)
     }
@@ -360,11 +368,17 @@ export function createInstanceStore(options: InstanceStoreOptions): InstanceStor
    * 同时拒绝与实例变体无关的字段（local 实例不许带 ssh/http 专属字段），
    * 避免非 strict 记录 schema 静默剥离跨变体字段。
    */
-  function applyPatch(current: InstanceRecord, patch: PatchInstanceParams): Record<string, unknown> {
+  function applyPatch(
+    current: InstanceRecord,
+    patch: PatchInstanceParams
+  ): Record<string, unknown> {
     const allowed = new Set(Object.keys(variantSchema(current.transport).shape))
     for (const key of Object.keys(patch)) {
       if (!allowed.has(key)) {
-        throw new InstanceStoreError('invalid-input', `字段 ${key} 不适用于 ${current.transport} 实例`)
+        throw new InstanceStoreError(
+          'invalid-input',
+          `字段 ${key} 不适用于 ${current.transport} 实例`
+        )
       }
     }
     const merged: Record<string, unknown> = { ...current }
@@ -399,7 +413,10 @@ export function createInstanceStore(options: InstanceStoreOptions): InstanceStor
         const record = parseOrThrow(() =>
           stamp({
             ...normalizeCreate(parsed),
-            id: parsed.transport === 'local' && parsed.existingSpaceId ? parsed.existingSpaceId : randomUUID(),
+            id:
+              parsed.transport === 'local' && parsed.existingSpaceId
+                ? parsed.existingSpaceId
+                : randomUUID(),
             createdAt: now,
             updatedAt: now
           })

@@ -90,7 +90,9 @@ export interface CachedResolver<T> {
 }
 
 /** 进程内缓存的解析器：解析有启动开销，结果只在应用生命周期内有意义；失败同样缓存为 null。 */
-export function createLoginPathResolver(probe: () => Promise<string | null>): CachedResolver<string | null> {
+export function createLoginPathResolver(
+  probe: () => Promise<string | null>
+): CachedResolver<string | null> {
   let cached: Promise<string | null> | null = null
   const resolver = (): Promise<string | null> => {
     cached ??= probe().catch(() => null)
@@ -123,10 +125,7 @@ async function loginShellPath(
 }
 
 /** Windows：注册表 User + Machine 的 Path；单侧缺失只取非空一侧。 */
-async function registryPath(
-  run: CommandRunner,
-  env: NodeJS.ProcessEnv
-): Promise<string | null> {
+async function registryPath(run: CommandRunner, env: NodeJS.ProcessEnv): Promise<string | null> {
   const result = await run('powershell.exe', [
     '-NoProfile',
     '-NonInteractive',
@@ -143,9 +142,7 @@ async function registryPath(
 
 /** 展开 `%VAR%`（注册表 REG_EXPAND_SZ 原值不带展开）；未知变量原样保留。 */
 function expandVars(value: string, env: NodeJS.ProcessEnv): string {
-  return value
-    .trim()
-    .replace(/%([^%]+)%/g, (whole, name: string) => lookupEnv(env, name) ?? whole)
+  return value.trim().replace(/%([^%]+)%/g, (whole, name: string) => lookupEnv(env, name) ?? whole)
 }
 
 /** 变量名大小写不敏感查找（Windows 环境变量语义）；已展开的值里不会再有 %VAR%。 */

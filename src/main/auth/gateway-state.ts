@@ -42,7 +42,8 @@ export type AuthEvent =
 export interface AuthTransition {
   state: AuthState
 
-  action: 'none' | 'probe' | 'submit-password' | 'prompt-credentials' | 'prompt-otp' | 'ready' | 'stop'
+  action:
+    'none' | 'probe' | 'submit-password' | 'prompt-credentials' | 'prompt-otp' | 'ready' | 'stop'
 }
 
 /** 由失败结果推导事件(把网关错误码收敛为状态机事件) */

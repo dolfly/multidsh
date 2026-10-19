@@ -340,7 +340,8 @@ export function createLauncher(deps: LauncherDeps): Launcher {
     // node 目录前置（dsh 自己 spawn 的子进程解析到同一个 node）；随包 pnpm 启动器目录按平台并入：
     // Windows 前置（系统 pnpm 的全局 shim 已损坏，自带 pnpm 必须胜出），其余平台后置兜底
     // （系统 pnpm 与用户既有 profile 的 store 大版本匹配，优先用它，避免 ERR_PNPM_UNEXPECTED_STORE）。
-    const nodeAndBase = runtimeNode !== null ? `${dirname(runtimeNode)}${delimiter}${basePath}` : basePath
+    const nodeAndBase =
+      runtimeNode !== null ? `${dirname(runtimeNode)}${delimiter}${basePath}` : basePath
     const runtimePath = withBundledPnpmPath(nodeAndBase, options.pnpmBinDir)
     const runtimeEnv: NodeJS.ProcessEnv = {
       ...baseEnv,

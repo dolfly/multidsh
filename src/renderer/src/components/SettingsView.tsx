@@ -48,10 +48,11 @@ export default function SettingsView(): ReactNode {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
   }
 
-  const formatTime = (value: string): string => new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(value))
+  const formatTime = (value: string): string =>
+    new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(new Date(value))
 
   const totalSpaceBytes = spaces.reduce((total, space) => total + space.sizeBytes, 0)
 
@@ -252,10 +253,7 @@ export default function SettingsView(): ReactNode {
               />
               <span>{t('settings.preventSleepWhenRunning')}</span>
             </label>
-            <InfoTip
-              text={t('settings.preventSleepWhenRunningHint')}
-              label={t('common.hint')}
-            />
+            <InfoTip text={t('settings.preventSleepWhenRunningHint')} label={t('common.hint')} />
           </div>
           <div className="row mt12" style={{ gap: 6, alignItems: 'center' }}>
             <label className="row" style={{ gap: 8, alignItems: 'center' }}>
@@ -303,7 +301,8 @@ export default function SettingsView(): ReactNode {
               data-testid="settings-workspace-cache-size"
               onChange={(event) => {
                 const value = Number(event.target.value)
-                if (Number.isInteger(value) && value >= 1 && value <= 10) apply({ workspaceCacheSize: value })
+                if (Number.isInteger(value) && value >= 1 && value <= 10)
+                  apply({ workspaceCacheSize: value })
               }}
               style={{ width: 70, flex: 'none' }}
             />
@@ -357,30 +356,52 @@ export default function SettingsView(): ReactNode {
             </div>
             {spaces.map((space, index) => (
               <div className="spaces-row" key={space.id} role="row">
-                <span className="meta num" role="cell">{index + 1}</span>
+                <span className="meta num" role="cell">
+                  {index + 1}
+                </span>
                 <span role="cell" style={{ minWidth: 0 }}>
                   {space.instanceName ? (
                     <>
                       <strong>{space.instanceName}</strong>
-                      <span className="meta num" style={{ display: 'block', marginTop: 2, overflowWrap: 'anywhere' }}>{space.id}</span>
+                      <span
+                        className="meta num"
+                        style={{ display: 'block', marginTop: 2, overflowWrap: 'anywhere' }}
+                      >
+                        {space.id}
+                      </span>
                     </>
                   ) : (
-                    <span className="num" style={{ overflowWrap: 'anywhere' }}>{space.id}</span>
+                    <span className="num" style={{ overflowWrap: 'anywhere' }}>
+                      {space.id}
+                    </span>
                   )}
                 </span>
-                <span className="meta num" role="cell">{t('spaces.size', { size: formatSize(space.sizeBytes) })}</span>
-                <span className="meta num" role="cell">{t('spaces.modifiedAt', { time: formatTime(space.modifiedAt) })}</span>
+                <span className="meta num" role="cell">
+                  {t('spaces.size', { size: formatSize(space.sizeBytes) })}
+                </span>
+                <span className="meta num" role="cell">
+                  {t('spaces.modifiedAt', { time: formatTime(space.modifiedAt) })}
+                </span>
                 <span className="spaces-actions" role="cell">
                   {space.inUse ? (
-                    <button className="btn btn-secondary btn-sm" onClick={() => openDetail(space.id)}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => openDetail(space.id)}
+                    >
                       {t('spaces.instanceDetail')}
                     </button>
                   ) : (
                     <>
-                      <button className="btn btn-secondary btn-sm" onClick={() => createWithExistingSpace(space.id)}>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => createWithExistingSpace(space.id)}
+                      >
                         {t('spaces.createInstance')}
                       </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => setTrashTarget(space)}>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => setTrashTarget(space)}
+                      >
                         <Icon name="trash" /> {t('spaces.delete')}
                       </button>
                     </>
@@ -447,13 +468,19 @@ export default function SettingsView(): ReactNode {
           testId="settings-confirm-trash-space"
           footer={
             <div className="right">
-              <button className="btn btn-secondary btn-sm" onClick={() => setTrashTarget(null)}>{t('common.cancel')}</button>
-              <button className="btn btn-danger btn-sm" onClick={trashSpace}>{t('spaces.delete')}</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setTrashTarget(null)}>
+                {t('common.cancel')}
+              </button>
+              <button className="btn btn-danger btn-sm" onClick={trashSpace}>
+                {t('spaces.delete')}
+              </button>
             </div>
           }
         >
           <p className="meta">{t('spaces.trashConfirm')}</p>
-          <p className="meta num mt12" style={{ overflowWrap: 'anywhere' }}>{trashTarget.id}</p>
+          <p className="meta num mt12" style={{ overflowWrap: 'anywhere' }}>
+            {trashTarget.id}
+          </p>
         </Modal>
       )}
       {restartPrompt && restartPrompt.length > 0 && (
@@ -468,13 +495,19 @@ export default function SettingsView(): ReactNode {
               <button className="btn btn-secondary btn-sm" onClick={() => setRestartPrompt(null)}>
                 {t('settings.refreshEnvRestartLater')}
               </button>
-              <button className="btn btn-primary btn-sm" data-testid="settings-restart-env-confirm" onClick={restartForEnv}>
+              <button
+                className="btn btn-primary btn-sm"
+                data-testid="settings-restart-env-confirm"
+                onClick={restartForEnv}
+              >
                 {t('settings.refreshEnvRestartConfirm')}
               </button>
             </div>
           }
         >
-          <p className="meta">{t('settings.refreshEnvRestartBody', { count: restartPrompt.length })}</p>
+          <p className="meta">
+            {t('settings.refreshEnvRestartBody', { count: restartPrompt.length })}
+          </p>
         </Modal>
       )}
     </section>

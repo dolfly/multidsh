@@ -31,7 +31,12 @@ import { createStatusNotifier } from './status-notifier'
 import type { StatusNotifierDeps } from './status-notifier'
 
 function running(detail?: string): InstanceStatusEvent {
-  return { id: 'inst-1', status: 'running', at: '2026-01-01T00:00:00.000Z', ...(detail ? { detail } : {}) }
+  return {
+    id: 'inst-1',
+    status: 'running',
+    at: '2026-01-01T00:00:00.000Z',
+    ...(detail ? { detail } : {})
+  }
 }
 
 function notifier(
@@ -78,9 +83,9 @@ describe('createStatusNotifier（通知真的发出去）', () => {
       false
     )
     expect(notify(running(), 'running')).toBe(false)
-    expect(notify({ id: 'inst-1', status: 'stopped', at: '2026-01-01T00:00:00.000Z' }, 'running')).toBe(
-      false
-    )
+    expect(
+      notify({ id: 'inst-1', status: 'stopped', at: '2026-01-01T00:00:00.000Z' }, 'running')
+    ).toBe(false)
     expect(shown).toEqual([])
   })
 
@@ -95,9 +100,9 @@ describe('createStatusNotifier（通知真的发出去）', () => {
   it('发送失败只经 onError 上报,绝不冒泡进状态流', () => {
     const onError = vi.fn()
     constructError.value = new Error('通知中心不可用')
-    expect(notifier({ language: 'zh', notifications: true }, { onError }).notify(running(), 'stopped')).toBe(
-      false
-    )
+    expect(
+      notifier({ language: 'zh', notifications: true }, { onError }).notify(running(), 'stopped')
+    ).toBe(false)
     expect(onError).toHaveBeenCalledTimes(1)
     expect(shown).toEqual([])
   })

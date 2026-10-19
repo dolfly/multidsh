@@ -117,7 +117,9 @@ export default function AboutDialog() {
           <dl className="about-build">
             <div className="about-row">
               <dt>{t('about.build')}</dt>
-              <dd data-testid="about-build-commit">{copyCellButton('build-commit', info.buildCommit)}</dd>
+              <dd data-testid="about-build-commit">
+                {copyCellButton('build-commit', info.buildCommit)}
+              </dd>
             </div>
             <div className="about-row">
               <dt>{t('about.buildTime')}</dt>
@@ -131,7 +133,9 @@ export default function AboutDialog() {
             {components.map(([name, version]) => (
               <div key={name} className="about-row">
                 <dt>{name}</dt>
-                <dd data-testid={`about-${name.toLowerCase()}`}>{copyCellButton(`component-${name}`, version)}</dd>
+                <dd data-testid={`about-${name.toLowerCase()}`}>
+                  {copyCellButton(`component-${name}`, version)}
+                </dd>
               </div>
             ))}
           </dl>

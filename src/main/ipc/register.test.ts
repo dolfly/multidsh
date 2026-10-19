@@ -143,8 +143,18 @@ beforeEach(async () => {
     resolveLatestVersion: vi.fn(async () => '0.1.5'),
     listInstalled: vi.fn(async () => []),
     isInstalled: vi.fn(async () => false),
-    install: vi.fn(async () => ({ version: '0.1.5', dir: '/tmp/d', entry: '/tmp/e', installedAt: '' })),
-    ensureInstalled: vi.fn(async () => ({ version: '0.1.5', dir: '/tmp/d', entry: '/tmp/e', installedAt: '' })),
+    install: vi.fn(async () => ({
+      version: '0.1.5',
+      dir: '/tmp/d',
+      entry: '/tmp/e',
+      installedAt: ''
+    })),
+    ensureInstalled: vi.fn(async () => ({
+      version: '0.1.5',
+      dir: '/tmp/d',
+      entry: '/tmp/e',
+      installedAt: ''
+    })),
     resolveEntry: vi.fn((v: string) => `/tmp/${v}`),
     hasIncompleteInstall: vi.fn(async () => false),
     resolveGlobalPrefix: vi.fn(async () => '/usr/local'),
@@ -411,7 +421,11 @@ describe('registerIpc', () => {
   })
 
   it('拒绝超长或越界的原生提示载荷', async () => {
-    const result = (await invoke('instances:showTooltip', { text: 'x'.repeat(201), x: -1, y: 160 })) as {
+    const result = (await invoke('instances:showTooltip', {
+      text: 'x'.repeat(201),
+      x: -1,
+      y: 160
+    })) as {
       ok: boolean
       code?: string
     }
@@ -421,10 +435,16 @@ describe('registerIpc', () => {
   })
 
   it('disconnectView 只销毁指定 WebContentsView，不停止运行时或清除凭据', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
-    const result = (await invoke('instances:disconnectView', created.value.id)) as { ok: boolean; value: null }
+    const result = (await invoke('instances:disconnectView', created.value.id)) as {
+      ok: boolean
+      value: null
+    }
 
     expect(result).toEqual({ ok: true, value: null })
     expect(closeInstanceView).toHaveBeenCalledWith(created.value.id)
@@ -437,10 +457,16 @@ describe('registerIpc', () => {
   })
 
   it('reloadView 刷新指定实例的内嵌工作区会话（重新登录后导航回工作区 URL）', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
-    const result = (await invoke('instances:reloadView', created.value.id)) as { ok: boolean; value: null }
+    const result = (await invoke('instances:reloadView', created.value.id)) as {
+      ok: boolean
+      value: null
+    }
 
     expect(result).toEqual({ ok: true, value: null })
     expect(reloadInstanceView).toHaveBeenCalledWith(created.value.id)
@@ -448,11 +474,22 @@ describe('registerIpc', () => {
   })
 
   it('restart:运行中的 hub 托管实例先停止再按注册表记录重新拉起', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
-    currentStatus = { id: created.value.id, status: 'running', runtimeSource: 'hub', at: new Date().toISOString() }
+    currentStatus = {
+      id: created.value.id,
+      status: 'running',
+      runtimeSource: 'hub',
+      at: new Date().toISOString()
+    }
 
-    const result = (await invoke('instances:restart', created.value.id)) as { ok: boolean; value: null }
+    const result = (await invoke('instances:restart', created.value.id)) as {
+      ok: boolean
+      value: null
+    }
 
     expect(result).toEqual({ ok: true, value: null })
     expect(runtimeFake.stop).toHaveBeenCalledWith(created.value.id)
@@ -472,7 +509,10 @@ describe('registerIpc', () => {
     })) as { ok: boolean; value: { id: string } }
     if (!created.ok) throw new Error('创建失败')
 
-    const result = (await invoke('instances:restart', created.value.id)) as { ok: boolean; code?: string }
+    const result = (await invoke('instances:restart', created.value.id)) as {
+      ok: boolean
+      code?: string
+    }
 
     expect(result).toMatchObject({ ok: false, code: 'invalid-input' })
     expect(runtimeFake.stop).not.toHaveBeenCalled()
@@ -480,17 +520,31 @@ describe('registerIpc', () => {
   })
 
   it('restart:未运行或外部接管被拒绝', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
     // 未运行:statusOf 返回 null
     currentStatus = null
-    const idle = (await invoke('instances:restart', created.value.id)) as { ok: boolean; code?: string }
+    const idle = (await invoke('instances:restart', created.value.id)) as {
+      ok: boolean
+      code?: string
+    }
     expect(idle).toMatchObject({ ok: false, code: 'invalid-state' })
 
     // 外部接管:进程归用户所有,hub 无权重启
-    currentStatus = { id: created.value.id, status: 'running', runtimeSource: 'external', at: new Date().toISOString() }
-    const external = (await invoke('instances:restart', created.value.id)) as { ok: boolean; code?: string }
+    currentStatus = {
+      id: created.value.id,
+      status: 'running',
+      runtimeSource: 'external',
+      at: new Date().toISOString()
+    }
+    const external = (await invoke('instances:restart', created.value.id)) as {
+      ok: boolean
+      code?: string
+    }
     expect(external).toMatchObject({ ok: false, code: 'invalid-state' })
 
     expect(runtimeFake.stop).not.toHaveBeenCalled()
@@ -511,7 +565,12 @@ describe('registerIpc', () => {
       dshVersion: '0.1.4'
     })) as { ok: boolean; value: { id: string } }
     if (!created.ok) throw new Error('创建失败')
-    currentStatus = { id: created.value.id, status: 'stopped', runtimeSource: 'hub', at: new Date().toISOString() }
+    currentStatus = {
+      id: created.value.id,
+      status: 'stopped',
+      runtimeSource: 'hub',
+      at: new Date().toISOString()
+    }
 
     const result = (await invoke('dsh-version:check', created.value.id)) as {
       ok: boolean
@@ -614,9 +673,17 @@ describe('registerIpc', () => {
     }
 
     // 推广：默认 dsh 启动器的 path 来源同样可升级（升级时接管进 hub 隔离目录）
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
-    currentStatus = { id: local.value.id, status: 'running', runtimeSource: 'path', at: new Date().toISOString() }
+    currentStatus = {
+      id: local.value.id,
+      status: 'running',
+      runtimeSource: 'path',
+      at: new Date().toISOString()
+    }
     const pathResult = (await invoke('dsh-version:check', local.value.id)) as {
       value: { canUpgrade: boolean; reason?: string }
     }
@@ -636,12 +703,10 @@ describe('registerIpc', () => {
   })
 
   it('check：公共空间实例的 current 取 PATH 实测版本；来源无法代管时主动给出原因', async () => {
-    const probe = vi.fn(
-      async (): Promise<{ command: string; version: string } | null> => ({
-        command: '/Users/x/.local/bin/dsh',
-        version: '0.1.6'
-      })
-    )
+    const probe = vi.fn(async (): Promise<{ command: string; version: string } | null> => ({
+      command: '/Users/x/.local/bin/dsh',
+      version: '0.1.6'
+    }))
     registerIpc(createInstanceStore({ dir }), {
       ...ipcDeps,
       pathProbe: { probe, probeLauncher: async () => null }
@@ -657,10 +722,21 @@ describe('registerIpc', () => {
     currentStatus = null
 
     const result = (await invoke('dsh-version:check', created.value.id)) as {
-      value: { current: string | null; latest: string; hasUpdate: boolean; canUpgrade: boolean; reason?: string }
+      value: {
+        current: string | null
+        latest: string
+        hasUpdate: boolean
+        canUpgrade: boolean
+        reason?: string
+      }
     }
     expect(probe).toHaveBeenCalled()
-    expect(result.value).toMatchObject({ current: '0.1.6', latest: '0.1.5', hasUpdate: false, canUpgrade: true })
+    expect(result.value).toMatchObject({
+      current: '0.1.6',
+      latest: '0.1.5',
+      hasUpdate: false,
+      canUpgrade: true
+    })
     expect(installerFake.resolveGlobalPrefix).toHaveBeenCalledWith('/Users/x/.local/bin/dsh')
 
     // 来源检测：系统 dsh 非 npm 全局安装 → 检查时就给出不可代管原因，不等用户点升级才失败
@@ -686,7 +762,12 @@ describe('registerIpc', () => {
   it('check：公共空间默认启动器未启动时按启动计划判定，hub 已装固定版本不按 PATH 改写 current', async () => {
     const probe = vi.fn(async () => ({ command: '/Users/x/.local/bin/dsh', version: '0.1.9' }))
     const listInstalled = vi.fn(async () => [
-      { version: '0.1.4', dir: '/tmp/dsh-0.1.4', entry: '/tmp/e', installedAt: '2026-09-18T00:00:00.000Z' }
+      {
+        version: '0.1.4',
+        dir: '/tmp/dsh-0.1.4',
+        entry: '/tmp/e',
+        installedAt: '2026-09-18T00:00:00.000Z'
+      }
     ])
     registerIpc(createInstanceStore({ dir }), {
       ...ipcDeps,
@@ -786,7 +867,9 @@ describe('registerIpc', () => {
     if (!created.ok) throw new Error('创建失败')
     pluginManagerFake.checkState.mockResolvedValueOnce({
       lastCheckedAt: '2026-09-29T10:00:00.000Z',
-      updates: { p: { current: '1.0.0', latest: '2.0.0', compatible: true, dshPeer: null, dshVersion: null } },
+      updates: {
+        p: { current: '1.0.0', latest: '2.0.0', compatible: true, dshPeer: null, dshVersion: null }
+      },
       checking: []
     })
     const result = (await invoke('plugin:checkState', created.value.id)) as {
@@ -804,7 +887,12 @@ describe('registerIpc', () => {
       value: { id: string }
     }
     if (!created.ok) throw new Error('创建失败')
-    const result = (await invoke('plugin:upgrade', created.value.id, 'dsh-free-search', '0.4.40')) as {
+    const result = (await invoke(
+      'plugin:upgrade',
+      created.value.id,
+      'dsh-free-search',
+      '0.4.40'
+    )) as {
       ok: boolean
     }
     expect(result.ok).toBe(true)
@@ -933,7 +1021,12 @@ describe('registerIpc', () => {
       value: { id: string }
     }
     if (!created.ok) throw new Error('创建失败')
-    const result = (await invoke('plugin:packageInfo', created.value.id, 'demo-plugin', '1.1.0')) as {
+    const result = (await invoke(
+      'plugin:packageInfo',
+      created.value.id,
+      'demo-plugin',
+      '1.1.0'
+    )) as {
       ok: boolean
       value: { releaseNotes: { source: string } }
     }
@@ -945,7 +1038,12 @@ describe('registerIpc', () => {
       '1.1.0'
     )
 
-    const bad = (await invoke('plugin:packageInfo', created.value.id, 'demo-plugin', 'bad version')) as {
+    const bad = (await invoke(
+      'plugin:packageInfo',
+      created.value.id,
+      'demo-plugin',
+      'bad version'
+    )) as {
       ok: boolean
       code?: string
     }
@@ -958,14 +1056,24 @@ describe('registerIpc', () => {
       value: { id: string }
     }
     if (!created.ok) throw new Error('创建失败')
-    const result = (await invoke('plugin:setEnabled', created.value.id, 'dsh-free-search', false)) as {
+    const result = (await invoke(
+      'plugin:setEnabled',
+      created.value.id,
+      'dsh-free-search',
+      false
+    )) as {
       ok: boolean
       value: { name: string; enabled: boolean }
     }
     expect(result.ok).toBe(true)
     expect(result.value).toEqual({ name: 'dsh-free-search', enabled: false })
 
-    const bad = (await invoke('plugin:setEnabled', created.value.id, 'dsh-free-search', 'nope')) as {
+    const bad = (await invoke(
+      'plugin:setEnabled',
+      created.value.id,
+      'dsh-free-search',
+      'nope'
+    )) as {
       ok: boolean
       code?: string
     }
@@ -1021,10 +1129,24 @@ describe('registerIpc', () => {
   })
 
   it('dsh-version:list：按版本从新到旧返回可用版本与已装版本', async () => {
-    installerFake.listAvailableVersions.mockResolvedValueOnce(['0.1.5', '0.1.7-alpha.2', '0.1.6-alpha.2'])
+    installerFake.listAvailableVersions.mockResolvedValueOnce([
+      '0.1.5',
+      '0.1.7-alpha.2',
+      '0.1.6-alpha.2'
+    ])
     installerFake.listInstalled.mockResolvedValueOnce([
-      { version: '0.1.5-rc.1', dir: '/tmp/runtimes/dsh-0.1.5-rc.1', entry: '/tmp/e1', installedAt: '' },
-      { version: '0.1.6-alpha.2', dir: '/tmp/runtimes/dsh-0.1.6-alpha.2', entry: '/tmp/e2', installedAt: '' }
+      {
+        version: '0.1.5-rc.1',
+        dir: '/tmp/runtimes/dsh-0.1.5-rc.1',
+        entry: '/tmp/e1',
+        installedAt: ''
+      },
+      {
+        version: '0.1.6-alpha.2',
+        dir: '/tmp/runtimes/dsh-0.1.6-alpha.2',
+        entry: '/tmp/e2',
+        installedAt: ''
+      }
     ])
 
     const result = (await invoke('dsh-version:list')) as {
@@ -1063,7 +1185,12 @@ describe('registerIpc', () => {
       dshVersion: '0.1.4'
     })) as { ok: boolean; value: { id: string } }
     if (!created.ok) throw new Error('创建失败')
-    currentStatus = { id: created.value.id, status: 'stopped', runtimeSource: 'hub', at: new Date().toISOString() }
+    currentStatus = {
+      id: created.value.id,
+      status: 'stopped',
+      runtimeSource: 'hub',
+      at: new Date().toISOString()
+    }
 
     const result = (await invoke('dsh-version:upgrade', created.value.id)) as {
       ok: boolean
@@ -1108,7 +1235,11 @@ describe('registerIpc', () => {
   })
 
   it('dsh-version:confirmList/confirmReply：待答快照补拉与回答经 broker，入参走 zod 边界', async () => {
-    const payload = { requestId: randomUUID(), kind: 'dsh-download' as const, version: '0.1.7-rc.1' }
+    const payload = {
+      requestId: randomUUID(),
+      kind: 'dsh-download' as const,
+      version: '0.1.7-rc.1'
+    }
     promptBrokerFake.listConfirms.mockReturnValue([payload])
 
     const list = (await invoke('dsh-version:confirmList')) as { ok: boolean; value: unknown }
@@ -1136,7 +1267,10 @@ describe('registerIpc', () => {
   })
 
   it('upgrade：不可升级来源 → ok:false invalid-input，不触发编排', async () => {
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
     currentStatus = {
       id: local.value.id,
@@ -1167,7 +1301,10 @@ describe('registerIpc', () => {
   })
 
   it('upgrade：实例不存在报 not-found', async () => {
-    const result = (await invoke('dsh-version:upgrade', '00000000-0000-4000-8000-000000000000')) as {
+    const result = (await invoke(
+      'dsh-version:upgrade',
+      '00000000-0000-4000-8000-000000000000'
+    )) as {
       ok: boolean
       code?: string
     }
@@ -1237,7 +1374,10 @@ describe('registerIpc', () => {
   })
 
   it('app:ping 原样回显', async () => {
-    const result = (await invoke('app:ping', 'hello')) as { ok: boolean; value: { echo: string | null } }
+    const result = (await invoke('app:ping', 'hello')) as {
+      ok: boolean
+      value: { echo: string | null }
+    }
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.value.echo).toBe('hello')
   })
@@ -1261,43 +1401,80 @@ describe('registerIpc', () => {
   })
 
   it('删除隔离本地实例时仅在明确请求后移入废纸篓', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
     const withoutTrash = (await invoke('instances:delete', created.value.id, {})) as { ok: boolean }
     expect(withoutTrash.ok).toBe(true)
     expect(trashLocalSpace).not.toHaveBeenCalled()
 
-    const another = (await invoke('instances:create', { transport: 'local', name: '移入废纸篓' })) as {
+    const another = (await invoke('instances:create', {
+      transport: 'local',
+      name: '移入废纸篓'
+    })) as {
       ok: boolean
       value: { id: string }
     }
     if (!another.ok) throw new Error('创建失败')
-    const withTrash = (await invoke('instances:delete', another.value.id, { trashSpace: true })) as { ok: boolean }
+    const withTrash = (await invoke('instances:delete', another.value.id, {
+      trashSpace: true
+    })) as { ok: boolean }
     expect(withTrash.ok).toBe(true)
     expect(trashLocalSpace).toHaveBeenCalledWith(another.value.id)
   })
 
   it('列出空间时标注已被本地实例使用的空间', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
     listLocalSpaces.mockResolvedValueOnce([
-      { id: '11111111-1111-4111-8111-111111111111', sizeBytes: 4, modifiedAt: '2026-09-20T00:00:00.000Z' },
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        sizeBytes: 4,
+        modifiedAt: '2026-09-20T00:00:00.000Z'
+      },
       { id: created.value.id, sizeBytes: 3, modifiedAt: '2026-09-21T00:00:00.000Z' }
     ])
 
-    const result = (await invoke('spaces:list')) as { ok: boolean; value: Array<{ id: string; inUse: boolean }> }
+    const result = (await invoke('spaces:list')) as {
+      ok: boolean
+      value: Array<{ id: string; inUse: boolean }>
+    }
     expect(result.ok).toBe(true)
-    if (result.ok) expect(result.value).toEqual([
-      { id: created.value.id, sizeBytes: 3, modifiedAt: '2026-09-21T00:00:00.000Z', inUse: true, instanceName: 'IPC 实例' },
-      { id: '11111111-1111-4111-8111-111111111111', sizeBytes: 4, modifiedAt: '2026-09-20T00:00:00.000Z', inUse: false, instanceName: null }
-    ])
+    if (result.ok)
+      expect(result.value).toEqual([
+        {
+          id: created.value.id,
+          sizeBytes: 3,
+          modifiedAt: '2026-09-21T00:00:00.000Z',
+          inUse: true,
+          instanceName: 'IPC 实例'
+        },
+        {
+          id: '11111111-1111-4111-8111-111111111111',
+          sizeBytes: 4,
+          modifiedAt: '2026-09-20T00:00:00.000Z',
+          inUse: false,
+          instanceName: null
+        }
+      ])
   })
 
   it('reuses only an unassigned existing local space', async () => {
     const id = '11111111-1111-4111-8111-111111111111'
-    listLocalSpaces.mockResolvedValueOnce([{ id, sizeBytes: 4, modifiedAt: '2026-09-20T00:00:00.000Z' }])
-    const created = (await invoke('instances:create', { transport: 'local', name: '复用空间', existingSpaceId: id })) as {
+    listLocalSpaces.mockResolvedValueOnce([
+      { id, sizeBytes: 4, modifiedAt: '2026-09-20T00:00:00.000Z' }
+    ])
+    const created = (await invoke('instances:create', {
+      transport: 'local',
+      name: '复用空间',
+      existingSpaceId: id
+    })) as {
       ok: boolean
       value: { id: string }
     }
@@ -1382,11 +1559,7 @@ describe('registerIpc', () => {
         result: 'failed'
       })
       // 留痕（二）：console 记录失败原因，主进程日志可查。
-      expect(errSpy).toHaveBeenCalledWith(
-        '[ipc] 登出时清理分区会话失败：',
-        id,
-        expect.any(Error)
-      )
+      expect(errSpy).toHaveBeenCalledWith('[ipc] 登出时清理分区会话失败：', id, expect.any(Error))
     } finally {
       errSpy.mockRestore()
     }
@@ -1602,7 +1775,9 @@ describe('registerIpc', () => {
 
     const opened = (await invoke('instances:openView', created.value.id)) as { ok: boolean }
     expect(opened.ok).toBe(true)
-    expect(tunnelsFake.start).toHaveBeenCalledWith(expect.objectContaining({ id: created.value.id }))
+    expect(tunnelsFake.start).toHaveBeenCalledWith(
+      expect.objectContaining({ id: created.value.id })
+    )
     expect(openInstanceView).toHaveBeenCalledWith(
       expect.objectContaining({ id: created.value.id, transport: 'ssh' }),
       'http://127.0.0.1:39001/'
@@ -1674,7 +1849,6 @@ describe('registerIpc', () => {
     )
   })
 
-
   it('同一实例的并发打开请求只导航一次', async () => {
     const local = (await invoke('instances:create', VALID_LOCAL)) as {
       ok: boolean
@@ -1700,7 +1874,10 @@ describe('registerIpc', () => {
     await vi.waitFor(() => expect(runtimeFake.start).toHaveBeenCalledTimes(1))
     const second = invoke('instances:openView', local.value.id) as Promise<{ ok: boolean }>
     release()
-    await expect(Promise.all([first, second])).resolves.toEqual([{ ok: true, value: null }, { ok: true, value: null }])
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { ok: true, value: null },
+      { ok: true, value: null }
+    ])
     expect(openInstanceView).toHaveBeenCalledTimes(1)
   })
 
@@ -1755,7 +1932,10 @@ describe('registerIpc', () => {
     const opened = (await invoke('instances:openView', created.value.id)) as { ok: boolean }
     expect(opened.ok).toBe(true)
     expect(probeSettled).toBe(false)
-    expect(openInstanceView).toHaveBeenCalledWith(expect.objectContaining({ id: created.value.id }), endpoint)
+    expect(openInstanceView).toHaveBeenCalledWith(
+      expect.objectContaining({ id: created.value.id }),
+      endpoint
+    )
   })
 
   it('缓存视图停在别的 URL 时仍先完成认证探测再开窗', async () => {
@@ -1819,7 +1999,9 @@ describe('registerIpc', () => {
       value: { id: string }
     }
     if (!local.ok) throw new Error('创建失败')
-    externalDshScannerFake.scan.mockResolvedValue([{ pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }])
+    externalDshScannerFake.scan.mockResolvedValue([
+      { pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }
+    ])
     vaultFake['getExternalAccessToken']!.mockReturnValue('saved-token')
 
     const opened = (await invoke('instances:openView', local.value.id)) as { ok: boolean }
@@ -1838,11 +2020,17 @@ describe('registerIpc', () => {
       value: { id: string }
     }
     if (!local.ok) throw new Error('创建失败')
-    externalDshScannerFake.scan.mockResolvedValue([{ pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }])
+    externalDshScannerFake.scan.mockResolvedValue([
+      { pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }
+    ])
     vaultFake['getExternalAccessToken']!.mockReturnValue('expired-token')
     verifyExternalAccess.mockResolvedValueOnce(false)
 
-    const opened = (await invoke('instances:openView', local.value.id)) as { ok: boolean; code?: string; message?: string }
+    const opened = (await invoke('instances:openView', local.value.id)) as {
+      ok: boolean
+      code?: string
+      message?: string
+    }
     expect(opened.ok).toBe(false)
     expect(opened.code).toBe('invalid-state')
     expect(opened.message).toContain('实例详情中更新')
@@ -1860,7 +2048,10 @@ describe('registerIpc', () => {
     externalDshScannerFake.scan.mockResolvedValueOnce([
       { pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }
     ])
-    await expect(invoke('instances:openView', local.value.id)).resolves.toEqual({ ok: true, value: null })
+    await expect(invoke('instances:openView', local.value.id)).resolves.toEqual({
+      ok: true,
+      value: null
+    })
 
     externalDshScannerFake.scan.mockResolvedValueOnce([
       { pid: 84759, port: 3080, patch: null, command: 'node /x/dsh web' }
@@ -1881,19 +2072,31 @@ describe('registerIpc', () => {
     externalDshScannerFake.scan.mockResolvedValue([
       { pid: 84759, port: 3080, patch: null, command: 'node /x/dsh web' }
     ])
-    currentStatus = { id: local.value.id, status: 'running', runtimeSource: 'external', at: '2026-09-17T00:00:00.000Z' }
-    await expect(invoke('instances:adoptExternal', local.value.id, 84759, 'new-token')).resolves.toEqual({
+    currentStatus = {
+      id: local.value.id,
+      status: 'running',
+      runtimeSource: 'external',
+      at: '2026-09-17T00:00:00.000Z'
+    }
+    await expect(
+      invoke('instances:adoptExternal', local.value.id, 84759, 'new-token')
+    ).resolves.toEqual({
       ok: true,
       value: null
     })
-    expect(vaultFake['rememberExternalAccessToken']).toHaveBeenCalledWith(local.value.id, 'new-token')
+    expect(vaultFake['rememberExternalAccessToken']).toHaveBeenCalledWith(
+      local.value.id,
+      'new-token'
+    )
   })
 
   it('外部接管创建在 token 持久化失败时回滚实例记录', async () => {
     externalDshScannerFake.scan.mockResolvedValue([
       { pid: 84758, port: 52300, patch: null, command: 'node /x/dsh web' }
     ])
-    vaultFake['rememberExternalAccessToken']!.mockRejectedValueOnce(new Error('keychain unavailable'))
+    vaultFake['rememberExternalAccessToken']!.mockRejectedValueOnce(
+      new Error('keychain unavailable')
+    )
 
     const created = (await invoke('instances:create', {
       ...VALID_LOCAL,
@@ -1903,7 +2106,7 @@ describe('registerIpc', () => {
     })) as { ok: boolean }
 
     expect(created.ok).toBe(false)
-    expect((await invoke('instances:list'))).toMatchObject({ ok: true, value: [] })
+    expect(await invoke('instances:list')).toMatchObject({ ok: true, value: [] })
     expect(vaultFake['forgetExternalAccessToken']).toHaveBeenCalledOnce()
     expect(runtimeFake.stop).toHaveBeenCalledOnce()
   })
@@ -1987,24 +2190,43 @@ describe('registerIpc', () => {
   })
 
   it('接管时可复用已保存的外部 token，渲染层无需再次提交凭据', async () => {
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
-    externalDshScannerFake.scan.mockResolvedValue([{ pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }])
+    externalDshScannerFake.scan.mockResolvedValue([
+      { pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }
+    ])
     vaultFake['getExternalAccessToken']!.mockReturnValue('saved-token')
 
-    const adopted = (await invoke('instances:adoptExternal', local.value.id, 84758, '')) as { ok: boolean }
+    const adopted = (await invoke('instances:adoptExternal', local.value.id, 84758, '')) as {
+      ok: boolean
+    }
     expect(adopted.ok).toBe(true)
     expect(verifyExternalAccess).toHaveBeenCalledWith('http://127.0.0.1:3080/?token=saved-token')
     expect(vaultFake['rememberExternalAccessToken']).not.toHaveBeenCalled()
   })
 
   it('外部接管的 token 持久化失败时不改变现有运行时', async () => {
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
-    externalDshScannerFake.scan.mockResolvedValue([{ pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }])
-    vaultFake['rememberExternalAccessToken']!.mockRejectedValueOnce(new Error('keychain unavailable'))
+    externalDshScannerFake.scan.mockResolvedValue([
+      { pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }
+    ])
+    vaultFake['rememberExternalAccessToken']!.mockRejectedValueOnce(
+      new Error('keychain unavailable')
+    )
 
-    const adopted = (await invoke('instances:adoptExternal', local.value.id, 84758, 'new-token')) as { ok: boolean }
+    const adopted = (await invoke(
+      'instances:adoptExternal',
+      local.value.id,
+      84758,
+      'new-token'
+    )) as { ok: boolean }
 
     expect(adopted.ok).toBe(false)
     expect(runtimeFake.stop).not.toHaveBeenCalled()
@@ -2012,18 +2234,36 @@ describe('registerIpc', () => {
   })
 
   it('外部 dsh 接管验证 token 后保存，失效 token 会被清除并要求重新输入', async () => {
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
-    externalDshScannerFake.scan.mockResolvedValue([{ pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }])
+    externalDshScannerFake.scan.mockResolvedValue([
+      { pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }
+    ])
 
-    const saved = (await invoke('instances:adoptExternal', local.value.id, 84758, 'valid-token')) as { ok: boolean }
+    const saved = (await invoke(
+      'instances:adoptExternal',
+      local.value.id,
+      84758,
+      'valid-token'
+    )) as { ok: boolean }
     expect(saved.ok).toBe(true)
     expect(verifyExternalAccess).toHaveBeenCalledWith('http://127.0.0.1:3080/?token=valid-token')
-    expect(vaultFake['rememberExternalAccessToken']).toHaveBeenCalledWith(local.value.id, 'valid-token')
+    expect(vaultFake['rememberExternalAccessToken']).toHaveBeenCalledWith(
+      local.value.id,
+      'valid-token'
+    )
 
     currentStatus = null
     verifyExternalAccess.mockResolvedValueOnce(false)
-    const rejected = (await invoke('instances:adoptExternal', local.value.id, 84758, 'invalid-token')) as {
+    const rejected = (await invoke(
+      'instances:adoptExternal',
+      local.value.id,
+      84758,
+      'invalid-token'
+    )) as {
       ok: boolean
       code?: string
     }
@@ -2032,29 +2272,46 @@ describe('registerIpc', () => {
     expect(vaultFake['forgetExternalAccessToken']).not.toHaveBeenCalled()
   })
 
-
   it('接管外部 dsh 的 token 只用于匹配 PID 的回环 URL，拒绝远程或错误端口', async () => {
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
     externalDshScannerFake.scan.mockResolvedValue([
       { pid: 84758, port: 3080, patch: null, command: 'node /x/dsh web' }
     ])
 
-    const remote = (await invoke('instances:adoptExternal', local.value.id, 84758, 'https://example.com/?token=x')) as {
+    const remote = (await invoke(
+      'instances:adoptExternal',
+      local.value.id,
+      84758,
+      'https://example.com/?token=x'
+    )) as {
       ok: boolean
       code?: string
     }
     expect(remote.ok).toBe(false)
     expect(remote.code).toBe('invalid-input')
 
-    const localhost = (await invoke('instances:adoptExternal', local.value.id, 84758, 'http://localhost:3080/?token=x')) as {
+    const localhost = (await invoke(
+      'instances:adoptExternal',
+      local.value.id,
+      84758,
+      'http://localhost:3080/?token=x'
+    )) as {
       ok: boolean
       code?: string
     }
     expect(localhost.ok).toBe(false)
     expect(localhost.code).toBe('invalid-input')
 
-    const wrongPort = (await invoke('instances:adoptExternal', local.value.id, 84758, 'http://127.0.0.1:3081/?token=x')) as {
+    const wrongPort = (await invoke(
+      'instances:adoptExternal',
+      local.value.id,
+      84758,
+      'http://127.0.0.1:3081/?token=x'
+    )) as {
       ok: boolean
       code?: string
     }
@@ -2080,9 +2337,11 @@ describe('registerIpc', () => {
     expect(newline.code).toBe('invalid-input')
   })
 
-
   it('不允许运行中的实例覆盖已接管外部 dsh 的访问会话', async () => {
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
     currentStatus = { id: local.value.id, status: 'running', at: '2026-09-17T00:00:00.000Z' }
     runtimeFake.runningIds.mockReturnValue([local.value.id])
@@ -2099,7 +2358,10 @@ describe('registerIpc', () => {
   })
 
   it('已接管的外部 dsh 可用新 token 重新接管，但 hub 启动的实例仍被拒绝', async () => {
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
     currentStatus = {
       id: local.value.id,
@@ -2112,20 +2374,28 @@ describe('registerIpc', () => {
     ])
     runtimeFake.runningIds.mockReturnValue([local.value.id])
 
-    await expect(invoke('instances:adoptExternal', local.value.id, 84758, 'rotated-token')).resolves.toEqual({
+    await expect(
+      invoke('instances:adoptExternal', local.value.id, 84758, 'rotated-token')
+    ).resolves.toEqual({
       ok: true,
       value: null
     })
     expect(runtimeFake.stop).toHaveBeenCalledWith(local.value.id)
-    expect(runtimeFake.adopt).toHaveBeenCalledWith(expect.objectContaining({ id: local.value.id }), {
-      pid: 84758,
-      port: 3080,
-      patch: null
-    })
+    expect(runtimeFake.adopt).toHaveBeenCalledWith(
+      expect.objectContaining({ id: local.value.id }),
+      {
+        pid: 84758,
+        port: 3080,
+        patch: null
+      }
+    )
   })
 
   it('意外退出留下 error 状态时，仍可用新 token 接管重启的外部 dsh', async () => {
-    const local = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const local = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!local.ok) throw new Error('创建失败')
     currentStatus = { id: local.value.id, status: 'error', at: '2026-09-17T00:00:00.000Z' }
     runtimeFake.runningIds.mockReturnValue([])
@@ -2133,16 +2403,21 @@ describe('registerIpc', () => {
       { pid: 84759, port: 3080, patch: null, command: 'node /x/dsh web' }
     ])
 
-    await expect(invoke('instances:adoptExternal', local.value.id, 84759, 'new-token')).resolves.toEqual({
+    await expect(
+      invoke('instances:adoptExternal', local.value.id, 84759, 'new-token')
+    ).resolves.toEqual({
       ok: true,
       value: null
     })
     expect(runtimeFake.stop).not.toHaveBeenCalled()
-    expect(runtimeFake.adopt).toHaveBeenCalledWith(expect.objectContaining({ id: local.value.id }), {
-      pid: 84759,
-      port: 3080,
-      patch: null
-    })
+    expect(runtimeFake.adopt).toHaveBeenCalledWith(
+      expect.objectContaining({ id: local.value.id }),
+      {
+        pid: 84759,
+        port: 3080,
+        patch: null
+      }
+    )
   })
 
   it('adoptExternal 边界:pid 不存在 / 端口未知 / 非本地实例 / 非法 pid 都被拒', async () => {
@@ -2180,7 +2455,12 @@ describe('registerIpc', () => {
       endpointUrl: 'https://gw.example.com/dsh'
     })) as { ok: boolean; value: { id: string } }
     if (!httpInstance.ok) throw new Error('创建失败')
-    const wrongTransport = (await invoke('instances:adoptExternal', httpInstance.value.id, 5, 'token')) as {
+    const wrongTransport = (await invoke(
+      'instances:adoptExternal',
+      httpInstance.value.id,
+      5,
+      'token'
+    )) as {
       ok: boolean
       code?: string
     }
@@ -2197,8 +2477,6 @@ describe('registerIpc', () => {
     if (!badPid.ok) expect(badPid.code).toBe('invalid-input')
     expect(runtimeFake.adopt).not.toHaveBeenCalled()
   })
-
-
 
   it('/http:detect 非法 URL → invalid-input(而非 internal)', async () => {
     for (const bad of ['ftp://x', 'http://user:pw@h/', 'not a url', '']) {
@@ -2287,7 +2565,10 @@ describe('registerIpc', () => {
   })
 
   it('list：本机实例停止后版本回落到注册表 dshVersion，不退回空', async () => {
-    const created = (await invoke('instances:create', { ...VALID_LOCAL, dshVersion: '0.1.7-rc.2' })) as {
+    const created = (await invoke('instances:create', {
+      ...VALID_LOCAL,
+      dshVersion: '0.1.7-rc.2'
+    })) as {
       ok: boolean
       value: { id: string }
     }
@@ -2341,7 +2622,10 @@ describe('registerIpc', () => {
   })
 
   it('update 非法补丁 → invalid-input;不存在 → not-found', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
     const badPatch = (await invoke('instances:update', created.value.id, {
@@ -2358,7 +2642,10 @@ describe('registerIpc', () => {
   })
 
   it('delete 返回 removed 标志', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
     const removed = (await invoke('instances:delete', created.value.id)) as {
@@ -2376,7 +2663,10 @@ describe('registerIpc', () => {
   })
 
   it('delete:local 实例 → 先 runtime.stop 再移除记录(运行中不留孤儿进程)', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
     const result = (await invoke('instances:delete', created.value.id)) as {
@@ -2404,7 +2694,10 @@ describe('registerIpc', () => {
   it('delete:保险库清理失败不阻断实例记录移除(留痕而非报错)', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     try {
-      const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+      const created = (await invoke('instances:create', VALID_LOCAL)) as {
+        ok: boolean
+        value: { id: string }
+      }
       if (!created.ok) throw new Error('创建失败')
       // 模拟 Windows 上 vault 落盘偶发失败：删除仍必须成功移除记录。
       vaultFake['forgetInstance'] = vi.fn(async () => {
@@ -2428,7 +2721,10 @@ describe('registerIpc', () => {
   })
 
   it('start:local 实例 → 交给 runtime.start 并立即返回(不阻塞安装/启动)', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
     const result = (await invoke('instances:start', created.value.id)) as { ok: boolean }
@@ -2551,7 +2847,10 @@ describe('registerIpc', () => {
   })
 
   it('stop 交给 runtime.stop；之后打开工作区会再次开始准备', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
 
     const stopResult = (await invoke('instances:stop', created.value.id)) as { ok: boolean }
@@ -2560,10 +2859,12 @@ describe('registerIpc', () => {
 
     const viewResult = (await invoke('instances:openView', created.value.id)) as { ok: boolean }
     expect(viewResult.ok).toBe(true)
-    expect(runtimeFake.start).toHaveBeenCalledWith(expect.objectContaining({ id: created.value.id }))
+    expect(runtimeFake.start).toHaveBeenCalledWith(
+      expect.objectContaining({ id: created.value.id })
+    )
   })
 
-  it("openView:ssh 实例 running → 从 tunnels 取状态开窗", async () => {
+  it('openView:ssh 实例 running → 从 tunnels 取状态开窗', async () => {
     const created = (await invoke('instances:create', {
       transport: 'ssh',
       name: '隧道',
@@ -2590,7 +2891,10 @@ describe('registerIpc', () => {
   })
 
   it('openView:运行中实例 → 先完成认证探测再打开窗口，避免首个请求落到登录页', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
     currentStatus = {
       id: created.value.id,
@@ -2640,7 +2944,10 @@ describe('registerIpc', () => {
   })
 
   it('openInBrowser:运行中的本机实例带 token 的就绪 URL 交给系统浏览器', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
     runtimeFake.urlOf.mockReturnValue('http://127.0.0.1:31234/?token=abc')
 
@@ -2650,7 +2957,10 @@ describe('registerIpc', () => {
   })
 
   it('openInBrowser:未运行的本机实例返回可见错误，不打开浏览器', async () => {
-    const created = (await invoke('instances:create', VALID_LOCAL)) as { ok: boolean; value: { id: string } }
+    const created = (await invoke('instances:create', VALID_LOCAL)) as {
+      ok: boolean
+      value: { id: string }
+    }
     if (!created.ok) throw new Error('创建失败')
     runtimeFake.urlOf.mockReturnValue(null)
 
@@ -2728,7 +3038,9 @@ describe('registerIpc', () => {
     })
 
     // 非法入参在 IPC 边界被拒(错误信封,不抛异常)
-    const bad = (await invoke('vault:setPolicy', created.value.id, { rememberPassword: 'yes' })) as {
+    const bad = (await invoke('vault:setPolicy', created.value.id, {
+      rememberPassword: 'yes'
+    })) as {
       ok: boolean
       code?: string
     }
@@ -2895,22 +3207,26 @@ describe('registerIpc', () => {
   })
 
   it('settings:refreshEnvironment 拒绝多余参数', async () => {
-    const result = (await invoke('settings:refreshEnvironment', 'x')) as { ok: boolean; code?: string }
+    const result = (await invoke('settings:refreshEnvironment', 'x')) as {
+      ok: boolean
+      code?: string
+    }
     expect(result.ok).toBe(false)
     expect(result.code).toBe('invalid-input')
   })
 })
 
-  it("ssh:askpassReply 空串/全空白在 IPC 边界拒绝(invalid-input)", async () => {
-    const reply = (secret: unknown) => invoke('ssh:askpassReply', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', secret)
-    // 空串与全空白都不是有效口令(UI 已 disabled,这里是 IPC 边界的第二道闸)
-    const empty = (await reply('')) as { ok: boolean; code?: string }
-    expect(empty.ok).toBe(false)
-    expect(empty.code).toBe('invalid-input')
-    const blank = (await reply('   ')) as { ok: boolean; code?: string }
-    expect(blank.ok).toBe(false)
-    expect(blank.code).toBe('invalid-input')
-    // null 是合法回答(用户显式取消)
-    const cancelled = (await reply(null)) as { ok: boolean }
-    expect(cancelled.ok).toBe(true)
-  })
+it('ssh:askpassReply 空串/全空白在 IPC 边界拒绝(invalid-input)', async () => {
+  const reply = (secret: unknown) =>
+    invoke('ssh:askpassReply', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', secret)
+  // 空串与全空白都不是有效口令(UI 已 disabled,这里是 IPC 边界的第二道闸)
+  const empty = (await reply('')) as { ok: boolean; code?: string }
+  expect(empty.ok).toBe(false)
+  expect(empty.code).toBe('invalid-input')
+  const blank = (await reply('   ')) as { ok: boolean; code?: string }
+  expect(blank.ok).toBe(false)
+  expect(blank.code).toBe('invalid-input')
+  // null 是合法回答(用户显式取消)
+  const cancelled = (await reply(null)) as { ok: boolean }
+  expect(cancelled.ok).toBe(true)
+})

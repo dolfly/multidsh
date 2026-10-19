@@ -31,10 +31,28 @@ test('截图：首页 + 暗色主题 + 收起侧边栏', async () => {
   await win.evaluate(async () => {
     const instances = [
       { name: '本地开发环境', transport: 'local' as const, authMode: 'auto' as const },
-      { name: '生产服务器', transport: 'ssh' as const, authMode: 'auto' as const, host: '192.168.1.100', username: 'deploy', port: 22, remotePort: 3080 },
-      { name: '远程网关', transport: 'http' as const, authMode: 'auto' as const, endpointUrl: 'https://dsh.example.com' },
+      {
+        name: '生产服务器',
+        transport: 'ssh' as const,
+        authMode: 'auto' as const,
+        host: '192.168.1.100',
+        username: 'deploy',
+        port: 22,
+        remotePort: 3080
+      },
+      {
+        name: '远程网关',
+        transport: 'http' as const,
+        authMode: 'auto' as const,
+        endpointUrl: 'https://dsh.example.com'
+      },
       { name: '测试环境', transport: 'local' as const, authMode: 'none' as const },
-      { name: 'Staging 服务器', transport: 'http' as const, authMode: 'gateway' as const, endpointUrl: 'https://staging.dsh.internal:8443' },
+      {
+        name: 'Staging 服务器',
+        transport: 'http' as const,
+        authMode: 'gateway' as const,
+        endpointUrl: 'https://staging.dsh.internal:8443'
+      }
     ]
     for (const inst of instances) {
       await window.dshHub.instances.create(inst)

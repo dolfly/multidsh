@@ -8,7 +8,6 @@
 import type { SshInstance } from '@shared/contracts'
 
 export interface SshArgsOptions {
-
   controlPath: string
   /** 私有 known_hosts 路径；配合 TOFU 前置写入(StrictHostKeyChecking=yes,指纹变更一律拒绝),不污染用户 ~/.ssh */
   knownHostsPath: string

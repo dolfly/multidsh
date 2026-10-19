@@ -248,9 +248,7 @@ export default function AuthPanel(): ReactNode {
       footer={
         <>
           <span className="meta">
-            {locked
-              ? t('auth.locked', { seconds: lockedSeconds })
-              : t('auth.credentialsLocalOnly')}
+            {locked ? t('auth.locked', { seconds: lockedSeconds }) : t('auth.credentialsLocalOnly')}
           </span>
           <div className="right">
             {/* 紧凑浮层使用小尺寸操作按钮。 */}

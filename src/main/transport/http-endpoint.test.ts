@@ -87,13 +87,16 @@ describe('createHttpEndpoints（HTTP 直连传输）', () => {
   })
 
   it('stop → stopped；重复 start 幂等', async () => {
-    const manager = createHttpEndpoints({ probe: async () => true, detect: async () => ({
-      mode: 'none' as const,
-      gatewayEvidence: null,
-      evidence: '200 可直接访问',
-      status: 200,
-      at: ISO
-    }) })
+    const manager = createHttpEndpoints({
+      probe: async () => true,
+      detect: async () => ({
+        mode: 'none' as const,
+        gatewayEvidence: null,
+        evidence: '200 可直接访问',
+        status: 200,
+        at: ISO
+      })
+    })
     const instance = httpInstance()
     await manager.start(instance)
     await waitForStatus(manager, instance.id, 'running')

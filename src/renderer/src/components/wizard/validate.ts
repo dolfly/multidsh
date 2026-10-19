@@ -16,10 +16,20 @@ export function validateWizardForm(args: {
 }): string | null {
   const { t, transport, form, useExistingExternal, hasReusableExternal } = args
   if (!form.name.trim() && !hasReusableExternal) return t('wizard.errName')
-  if (transport === 'local' && useExistingExternal && !hasReusableExternal && !form.externalAccess.trim()) {
+  if (
+    transport === 'local' &&
+    useExistingExternal &&
+    !hasReusableExternal &&
+    !form.externalAccess.trim()
+  ) {
     return t('wizard.errExternalAccess')
   }
-  if (transport === 'local' && !useExistingExternal && form.profile.trim() !== '' && !isValidProfile(form.profile)) {
+  if (
+    transport === 'local' &&
+    !useExistingExternal &&
+    form.profile.trim() !== '' &&
+    !isValidProfile(form.profile)
+  ) {
     return t('wizard.errProfile')
   }
   if (transport === 'ssh') {

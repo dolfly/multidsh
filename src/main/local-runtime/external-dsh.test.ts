@@ -73,7 +73,9 @@ describe('isDshWebCommand(命令行判定)', () => {
   it('识别 Windows 路径形态:\\dsh web 与 @deepseek-ai\\dsh\\lib\\bin.js web', () => {
     expect(isDshWebCommand('node C:\\Users\\me\\.local\\bin\\dsh web --no-open')).toBe(true)
     expect(
-      isDshWebCommand('node C:\\opt\\hub\\runtimes\\0.1.5\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js web --port 52300')
+      isDshWebCommand(
+        'node C:\\opt\\hub\\runtimes\\0.1.5\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js web --port 52300'
+      )
     ).toBe(true)
     expect(isDshWebCommand('C:\\Windows\\system32\\cmd.exe /c dsh --version')).toBe(false)
   })
@@ -182,7 +184,10 @@ describe('parseWindowsListeningPorts(netstat 解析)', () => {
         if (command === 'powershell.exe') {
           return { code: 0, stdout: `84758\tnode C:\\Users\\me\\.local\\bin\\dsh web --no-open\n` }
         }
-        return { code: 0, stdout: '  TCP    127.0.0.1:135           0.0.0.0:0              LISTENING       999\n' }
+        return {
+          code: 0,
+          stdout: '  TCP    127.0.0.1:135           0.0.0.0:0              LISTENING       999\n'
+        }
       }
     })
     await expect(scanner.scan()).resolves.toEqual([
@@ -198,7 +203,7 @@ describe('parseWindowsListeningPorts(netstat 解析)', () => {
   it('PowerShell 查询脚本把命令行内的换行/制表符折叠成空格', () => {
     // Win32_Process.CommandLine 原样保留 `-e` 脚本里的换行:条目一旦断行,
     // `dsh web` 参数会落在无 pid 的续行上,被逐行解析器丢弃(POSIX 的 ps 会自行折叠)
-    expect(WIN_PROCESS_SCRIPT).toContain("[char]9")
+    expect(WIN_PROCESS_SCRIPT).toContain('[char]9')
     expect(WIN_PROCESS_SCRIPT).toContain("-replace '[\\r\\n\\t]+'")
   })
 
@@ -212,7 +217,10 @@ describe('parseWindowsListeningPorts(netstat 解析)', () => {
             stdout: `84758\tC:\\Users\\me\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js web --port 3080\n`
           }
         }
-        return { code: 0, stdout: '  TCP    127.0.0.1:3080         0.0.0.0:0              LISTENING       84758\n' }
+        return {
+          code: 0,
+          stdout: '  TCP    127.0.0.1:3080         0.0.0.0:0              LISTENING       84758\n'
+        }
       }
     })
     await expect(scanner.scan()).resolves.toEqual([
@@ -306,7 +314,7 @@ describe('createExternalDshScanner(注入 IO)', () => {
     await expect(scanner.scan()).resolves.toEqual([])
   })
 
-  it("win32 进程查询失败时返回空数组,不抛异常", async () => {
+  it('win32 进程查询失败时返回空数组,不抛异常', async () => {
     const scanner = createExternalDshScanner({
       platform: 'win32',
       run: async () => {

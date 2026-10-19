@@ -15,7 +15,13 @@ function fakeClient(): AuthClient {
   return {
     instanceId: 'i1',
     jar: jar as unknown as AuthClient['jar'],
-    backoff: { canAttempt: () => true, recordRateLimited: vi.fn(), recordSuccess: vi.fn(), state: () => ({ blocked: false, remainingMs: 0, reason: null }), now: () => 0 },
+    backoff: {
+      canAttempt: () => true,
+      recordRateLimited: vi.fn(),
+      recordSuccess: vi.fn(),
+      state: () => ({ blocked: false, remainingMs: 0, reason: null }),
+      now: () => 0
+    },
     state: () => initialState(),
     probeAndRestore: vi.fn(async () => ({
       mode: 'gateway' as const,
@@ -122,13 +128,19 @@ describe('auth-registry（每实例客户端）', () => {
   })
 
   it('probe/login/submit 在端点缺失时返回 null(不抛)', async () => {
-    const registry = createAuthRegistry({ resolveEndpoint: async () => null, factory: () => fakeClient() })
+    const registry = createAuthRegistry({
+      resolveEndpoint: async () => null,
+      factory: () => fakeClient()
+    })
     expect(await registry.probe('x')).toBeNull()
     expect(await registry.login('x', 'pw')).toBeNull()
   })
 
   it('sessionCookie 无会话返回 null', async () => {
-    const registry = createAuthRegistry({ resolveEndpoint: async () => 'https://gw', factory: () => fakeClient() })
+    const registry = createAuthRegistry({
+      resolveEndpoint: async () => 'https://gw',
+      factory: () => fakeClient()
+    })
     await registry.client('i1')
     expect(registry.sessionCookie('i1')).toBeNull()
   })

@@ -13,7 +13,10 @@ const FOCUSABLE_SELECTOR = 'a[href], button, input, select, textarea, [tabindex]
 
 function tabbableWithin(dialog: HTMLElement): HTMLElement[] {
   return Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (element) => element.tabIndex >= 0 && !element.hasAttribute('disabled') && element.getClientRects().length > 0
+    (element) =>
+      element.tabIndex >= 0 &&
+      !element.hasAttribute('disabled') &&
+      element.getClientRects().length > 0
   )
 }
 
@@ -91,7 +94,10 @@ export function Modal(props: {
   }, [])
 
   return (
-    <div className={`overlay${props.scope === 'workspace' ? ' overlay-workspace' : ''}`} onClick={props.onClose}>
+    <div
+      className={`overlay${props.scope === 'workspace' ? ' overlay-workspace' : ''}`}
+      onClick={props.onClose}
+    >
       <div
         ref={dialogRef}
         tabIndex={-1}

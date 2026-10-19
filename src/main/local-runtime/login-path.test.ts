@@ -15,10 +15,10 @@ describe('resolveLoginPath（macOS/Linux：登录 shell 导出）', () => {
     })
     const got = await resolveLoginPath({ run, platform: 'darwin', shell: '/bin/zsh' })
     expect(got).toBe('/custom/bin:/usr/bin')
-    expect(run).toHaveBeenCalledWith(
-      '/bin/zsh',
-      ['-lc', expect.stringContaining('__DSH_LOGIN_PATH__')]
-    )
+    expect(run).toHaveBeenCalledWith('/bin/zsh', [
+      '-lc',
+      expect.stringContaining('__DSH_LOGIN_PATH__')
+    ])
   })
 
   it('缺省 shell 取 env.SHELL', async () => {
@@ -51,10 +51,12 @@ describe('resolveLoginPath（Windows：注册表 User + Machine）', () => {
     })
     const got = await resolveLoginPath({ run, platform: 'win32', env: {} })
     expect(got).toBe('C:\\Windows\\system32;C:\\Users\\me\\bin')
-    expect(run).toHaveBeenCalledWith(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-Command', expect.stringContaining('GetEnvironmentVariable')]
-    )
+    expect(run).toHaveBeenCalledWith('powershell.exe', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      expect.stringContaining('GetEnvironmentVariable')
+    ])
   })
 
   it('单侧缺失只取非空一侧', async () => {
@@ -69,8 +71,7 @@ describe('resolveLoginPath（Windows：注册表 User + Machine）', () => {
   it('%VAR% 按环境展开，未知变量原样保留', async () => {
     const run = runReturning({
       code: 0,
-      stdout:
-        '%SystemRoot%\\system32\n__DSH_LOGIN_PATH_SPLIT__\n%USERPROFILE%\\bin;%UNKNOWN%\\x\n',
+      stdout: '%SystemRoot%\\system32\n__DSH_LOGIN_PATH_SPLIT__\n%USERPROFILE%\\bin;%UNKNOWN%\\x\n',
       stderr: ''
     })
     const got = await resolveLoginPath({
@@ -98,9 +99,9 @@ describe('mergeLoginPath', () => {
   })
 
   it('win32 大小写不敏感、分隔符形态归一后去重（保留登录侧写法）', () => {
-    expect(
-      mergeLoginPath('C:\\Windows\\system32', 'c:/windows/SYSTEM32;D:\\tools', 'win32')
-    ).toBe('c:/windows/SYSTEM32;D:\\tools')
+    expect(mergeLoginPath('C:\\Windows\\system32', 'c:/windows/SYSTEM32;D:\\tools', 'win32')).toBe(
+      'c:/windows/SYSTEM32;D:\\tools'
+    )
   })
 
   it('login 为 null 或空 → base 原样返回', () => {

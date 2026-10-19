@@ -74,7 +74,8 @@ const bridge: DshHubBridge = {
     reloadView: (id) => ipcRenderer.invoke(INSTANCE_RUNTIME_IPC.reloadView, id),
     openInBrowser: (id) => ipcRenderer.invoke(INSTANCE_RUNTIME_IPC.openInBrowser, id),
     updateViewBounds: (bounds) => ipcRenderer.invoke(INSTANCE_RUNTIME_IPC.updateViewBounds, bounds),
-    showTooltip: (tooltip: WorkspaceTooltip) => ipcRenderer.invoke(INSTANCE_RUNTIME_IPC.showTooltip, tooltip),
+    showTooltip: (tooltip: WorkspaceTooltip) =>
+      ipcRenderer.invoke(INSTANCE_RUNTIME_IPC.showTooltip, tooltip),
     hideTooltip: () => ipcRenderer.invoke(INSTANCE_RUNTIME_IPC.hideTooltip),
     hideView: () => ipcRenderer.invoke(INSTANCE_RUNTIME_IPC.hideView),
     disconnectView: (id) => ipcRenderer.invoke(INSTANCE_RUNTIME_IPC.disconnectView, id),
@@ -88,12 +89,15 @@ const bridge: DshHubBridge = {
     listDshVersions: () => ipcRenderer.invoke(DSH_VERSION_IPC.list),
     onRuntimeConfirm: (listener) => subscribe(DSH_VERSION_IPC.confirmRequest, listener),
     listRuntimeConfirms: () =>
-      ipcRenderer.invoke(DSH_VERSION_IPC.confirmList) as Promise<IpcResult<RuntimeConfirmPromptPayload[]>>,
+      ipcRenderer.invoke(DSH_VERSION_IPC.confirmList) as Promise<
+        IpcResult<RuntimeConfirmPromptPayload[]>
+      >,
     replyRuntimeConfirm: (requestId: string, accepted: boolean) =>
       ipcRenderer.invoke(DSH_VERSION_IPC.confirmReply, requestId, accepted)
   },
   plugin: {
-    list: (id: string, locale?: 'zh' | 'en') => ipcRenderer.invoke(PLUGIN_IPC.list, id, locale ?? 'zh'),
+    list: (id: string, locale?: 'zh' | 'en') =>
+      ipcRenderer.invoke(PLUGIN_IPC.list, id, locale ?? 'zh'),
     check: (id: string, name: string) => ipcRenderer.invoke(PLUGIN_IPC.check, id, name),
     checkState: (id: string) => ipcRenderer.invoke(PLUGIN_IPC.checkState, id),
     install: (
@@ -101,11 +105,8 @@ const bridge: DshHubBridge = {
       spec: string,
       options?: { enable?: boolean; registry?: PluginRegistryOption }
     ) => ipcRenderer.invoke(PLUGIN_IPC.install, id, spec, options),
-    resolveInstall: (
-      id: string,
-      spec: string,
-      options?: { registry?: PluginRegistryOption }
-    ) => ipcRenderer.invoke(PLUGIN_IPC.resolveInstall, id, spec, options),
+    resolveInstall: (id: string, spec: string, options?: { registry?: PluginRegistryOption }) =>
+      ipcRenderer.invoke(PLUGIN_IPC.resolveInstall, id, spec, options),
     packageInfo: (id: string, name: string, version: string) =>
       ipcRenderer.invoke(PLUGIN_IPC.packageInfo, id, name, version),
     upgrade: (
@@ -141,7 +142,9 @@ const bridge: DshHubBridge = {
   },
   auth: {
     probe: (instanceId: string) =>
-      ipcRenderer.invoke(AUTH_IPC.probe, instanceId) as Promise<IpcResult<AuthStateSnapshot | null>>,
+      ipcRenderer.invoke(AUTH_IPC.probe, instanceId) as Promise<
+        IpcResult<AuthStateSnapshot | null>
+      >,
     login: (instanceId: string, password: string, otp?: string) =>
       ipcRenderer.invoke(AUTH_IPC.login, instanceId, password, otp ?? null) as Promise<
         IpcResult<AuthStateSnapshot | null>
@@ -152,7 +155,9 @@ const bridge: DshHubBridge = {
         IpcResult<AuthStateSnapshot | null>
       >,
     logout: (instanceId: string) =>
-      ipcRenderer.invoke(AUTH_IPC.logout, instanceId) as Promise<IpcResult<AuthStateSnapshot | null>>,
+      ipcRenderer.invoke(AUTH_IPC.logout, instanceId) as Promise<
+        IpcResult<AuthStateSnapshot | null>
+      >,
     onState: (listener) => subscribe(AUTH_IPC.state, listener),
     onSignal: (listener) => subscribe(AUTH_IPC.signal, listener)
   },
@@ -171,8 +176,7 @@ const bridge: DshHubBridge = {
   },
   // 只暴露状态和管理操作，不提供读取凭据的通道；凭据仅在主进程内使用。
   vault: {
-    status: () =>
-      ipcRenderer.invoke(VAULT_IPC.status) as Promise<IpcResult<VaultStatusSnapshot>>,
+    status: () => ipcRenderer.invoke(VAULT_IPC.status) as Promise<IpcResult<VaultStatusSnapshot>>,
     setPolicy: (instanceId, policy) =>
       ipcRenderer.invoke(VAULT_IPC.setPolicy, instanceId, policy) as Promise<
         IpcResult<VaultPolicy>
@@ -181,8 +185,7 @@ const bridge: DshHubBridge = {
       ipcRenderer.invoke(VAULT_IPC.forget, instanceId, target ?? null) as Promise<
         IpcResult<VaultPolicy>
       >,
-    clear: () =>
-      ipcRenderer.invoke(VAULT_IPC.clear) as Promise<IpcResult<VaultStatusSnapshot>>
+    clear: () => ipcRenderer.invoke(VAULT_IPC.clear) as Promise<IpcResult<VaultStatusSnapshot>>
   }
 }
 

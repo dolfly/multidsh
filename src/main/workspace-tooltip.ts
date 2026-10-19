@@ -32,11 +32,16 @@ html,body{margin:0;background:transparent;overflow:hidden}body{padding:${TOOLTIP
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => {
     switch (character) {
-      case '&': return '&amp;'
-      case '<': return '&lt;'
-      case '>': return '&gt;'
-      case '"': return '&quot;'
-      default: return '&#39;'
+      case '&':
+        return '&amp;'
+      case '<':
+        return '&lt;'
+      case '>':
+        return '&gt;'
+      case '"':
+        return '&quot;'
+      default:
+        return '&#39;'
     }
   })
 }
@@ -55,7 +60,8 @@ export interface WorkspaceTooltipHostOptions {
  */
 export function createWorkspaceTooltipHost(
   getHubWindow: () => BrowserWindow | null,
-  createWindow: (options: BrowserWindowConstructorOptions) => BrowserWindow = (options) => new BrowserWindow(options),
+  createWindow: (options: BrowserWindowConstructorOptions) => BrowserWindow = (options) =>
+    new BrowserWindow(options),
   options: WorkspaceTooltipHostOptions = {}
 ): WorkspaceTooltipHost {
   let tooltipWindow: BrowserWindow | null = null
@@ -122,7 +128,9 @@ export function createWorkspaceTooltipHost(
       })
       if (displayedText !== tooltip.text) {
         try {
-          await nativeTooltip.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(tooltipHtml(tooltip.text))}`)
+          await nativeTooltip.loadURL(
+            `data:text/html;charset=utf-8,${encodeURIComponent(tooltipHtml(tooltip.text))}`
+          )
         } catch (error) {
           // 指针快速划过多个实例时,后一次 show 的导航会中止前一次在途导航(Err_ABORTED);
           // 展示结果以最新请求为准,被中止的旧请求静默退出,不作为故障上报。

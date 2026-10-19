@@ -69,7 +69,11 @@ client.on('error', (error) => {
 `
 
 /** 包装脚本：用 hub 自带 Node/Electron-as-Node 执行 helper（argv 不经 shell） */
-export function askpassWrapperSource(nodeCommand: string, nodeArgs: string[], helperPath: string): string {
+export function askpassWrapperSource(
+  nodeCommand: string,
+  nodeArgs: string[],
+  helperPath: string
+): string {
   const quotedArgs = nodeArgs.map((arg) => `'${arg.replace(/'/g, `'\\''`)}'`).join(' ')
   return [
     '#!/bin/sh',
@@ -94,7 +98,9 @@ export async function ensureAskpassScripts(
   const helperPath = join(dir, ASKPASS_HELPER_NAME)
   const wrapperPath = join(dir, ASKPASS_WRAPPER_NAME)
   await writeFile(helperPath, ASKPASS_HELPER_SOURCE, { mode: 0o600 })
-  await writeFile(wrapperPath, askpassWrapperSource(nodeCommand, nodeArgs, helperPath), { mode: 0o700 })
+  await writeFile(wrapperPath, askpassWrapperSource(nodeCommand, nodeArgs, helperPath), {
+    mode: 0o700
+  })
   await chmod(wrapperPath, 0o700)
   return { wrapperPath, helperPath }
 }
@@ -154,9 +160,7 @@ export function startAskpassServer(options: AskpassServerOptions): Promise<Askpa
         .onPrompt({ prompt })
         .then((secret) => {
           if (socket.destroyed) return
-          socket.end(
-            JSON.stringify(secret === null ? { cancelled: true } : { secret }) + '\n'
-          )
+          socket.end(JSON.stringify(secret === null ? { cancelled: true } : { secret }) + '\n')
         })
         .catch(() => {
           if (!socket.destroyed) socket.end(JSON.stringify({ cancelled: true }) + '\n')

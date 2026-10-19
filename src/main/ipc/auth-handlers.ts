@@ -9,12 +9,7 @@ import { InstanceStoreError } from '../registry/instance-store'
 import type { AuthRegistry } from '../auth/auth-registry'
 import type { Vault } from '../vault/vault'
 import type { AuditEntry } from '../audit/audit-log'
-import {
-  parseId,
-  probeWithStoredPassword,
-  type IpcWrap,
-  type StoredLoginMemory
-} from './ipc-utils'
+import { parseId, probeWithStoredPassword, type IpcWrap, type StoredLoginMemory } from './ipc-utils'
 
 export interface AuthHandlerDeps {
   auth: AuthRegistry
@@ -29,7 +24,10 @@ export interface AuthProbeController {
 }
 
 export function registerAuthHandlers(deps: AuthHandlerDeps, wrap: IpcWrap): AuthProbeController {
-  const memory: StoredLoginMemory = { storedLoginAttempted: new Set<string>(), logoutSuppressed: new Set<string>() }
+  const memory: StoredLoginMemory = {
+    storedLoginAttempted: new Set<string>(),
+    logoutSuppressed: new Set<string>()
+  }
 
   const probe = (instanceId: string): Promise<AuthStateSnapshot | null> =>
     probeWithStoredPassword(deps, memory, instanceId)
@@ -64,20 +62,33 @@ export function registerAuthHandlers(deps: AuthHandlerDeps, wrap: IpcWrap): Auth
   }
 
   // Try one silent login when probing finds a stored password and an authentication state.
-  ipcMain.handle(AUTH_IPC.probe, (_event, id: unknown): Promise<IpcResult<AuthStateSnapshot | null>> =>
-    wrap(async () => probe(parseId(id)))
+  ipcMain.handle(
+    AUTH_IPC.probe,
+    (_event, id: unknown): Promise<IpcResult<AuthStateSnapshot | null>> =>
+      wrap(async () => probe(parseId(id)))
   )
 
   ipcMain.handle(
     AUTH_IPC.login,
-    (_event, id: unknown, password: unknown, otp: unknown): Promise<IpcResult<AuthStateSnapshot | null>> =>
+    (
+      _event,
+      id: unknown,
+      password: unknown,
+      otp: unknown
+    ): Promise<IpcResult<AuthStateSnapshot | null>> =>
       wrap(async () => {
         const instanceId = parseId(id)
         const pwd = z.string().min(1).max(1024).parse(password)
         // 验证码/备份码域:网关 TOTP 位数**可配**(`otpDigits`,默认 6,合法 4-10),
         // 备份码长度也可配(`backupCodeLength`,默认 8,合法 6-12)。
         // 完全无法登录(合法验证码被 zod 拒掉)。
-        const code = z.string().trim().min(4).max(12).nullable().parse(otp ?? null)
+        const code = z
+          .string()
+          .trim()
+          .min(4)
+          .max(12)
+          .nullable()
+          .parse(otp ?? null)
         const state = await deps.auth.login(instanceId, pwd, code ?? undefined)
         // 失败绝不写(否则一次错误输入会把错密码存进钥匙串);未勾选时 vault 自身也会拒绝。
         if (state?.phase === 'connected' && deps.vault.getPolicy(instanceId).rememberPassword) {
@@ -97,7 +108,13 @@ export function registerAuthHandlers(deps: AuthHandlerDeps, wrap: IpcWrap): Auth
       wrap(async () => {
         const instanceId = parseId(id)
         // OTP 域与 auth:login 同口径:otpDigits 可配(合法 4-10)、备份码 6-12,下界 4
-        const code = z.string().trim().min(4).max(12).nullable().parse(otp ?? null)
+        const code = z
+          .string()
+          .trim()
+          .min(4)
+          .max(12)
+          .nullable()
+          .parse(otp ?? null)
         const snapshot = await loginWithStored(instanceId, code ?? undefined)
         // 与 auth:login 同口径:用户以已存密码显式登录成功 = 重新表态,解除登出压制
         if (snapshot?.phase === 'connected') memory.logoutSuppressed.delete(instanceId)
@@ -105,34 +122,40 @@ export function registerAuthHandlers(deps: AuthHandlerDeps, wrap: IpcWrap): Auth
       })
   )
 
-  ipcMain.handle(AUTH_IPC.logout, (_event, id: unknown): Promise<IpcResult<AuthStateSnapshot | null>> =>
-    wrap(async () => {
-      const instanceId = parseId(id)
-      // 登出窗口：期间并发探测不得从 vault 恢复会话、不得静默登录、不回写会话；
-      // 分区 Cookie 与 vault 会话清理完成后窗口才结束。
-      deps.auth.beginLogout(instanceId)
-      try {
-        const snapshot = await deps.auth.logout(instanceId)
-        // 「登出 → 任何探测」会立刻用已存密码复活会话。手动登录成功才解除。
-        memory.logoutSuppressed.add(instanceId)
-        // 清理是尽力而为：单步失败不拖垮后续步骤（否则 vault 遗忘与两条审计都会被跳过），
-        // 但失败必须留痕——console 记原因，审计把 cookie-cleared 如实标 failed。
-        let cookieCleared = true
+  ipcMain.handle(
+    AUTH_IPC.logout,
+    (_event, id: unknown): Promise<IpcResult<AuthStateSnapshot | null>> =>
+      wrap(async () => {
+        const instanceId = parseId(id)
+        // 登出窗口：期间并发探测不得从 vault 恢复会话、不得静默登录、不回写会话；
+        // 分区 Cookie 与 vault 会话清理完成后窗口才结束。
+        deps.auth.beginLogout(instanceId)
         try {
-          await deps.clearPartitionSession?.(instanceId)
-        } catch (error) {
-          cookieCleared = false
-          console.error('[ipc] 登出时清理分区会话失败：', instanceId, error)
+          const snapshot = await deps.auth.logout(instanceId)
+          // 「登出 → 任何探测」会立刻用已存密码复活会话。手动登录成功才解除。
+          memory.logoutSuppressed.add(instanceId)
+          // 清理是尽力而为：单步失败不拖垮后续步骤（否则 vault 遗忘与两条审计都会被跳过），
+          // 但失败必须留痕——console 记原因，审计把 cookie-cleared 如实标 failed。
+          let cookieCleared = true
+          try {
+            await deps.clearPartitionSession?.(instanceId)
+          } catch (error) {
+            cookieCleared = false
+            console.error('[ipc] 登出时清理分区会话失败：', instanceId, error)
+          }
+          // 登出时忘掉 vault 中的会话:否则重启后 restoreSessionFromVault 会恢复已失效的登录态
+          await deps.vault.forgetSession(instanceId).catch(() => undefined)
+          deps.audit?.({ instanceId, event: 'session-revoked', result: 'logout' })
+          deps.audit?.({
+            instanceId,
+            event: 'cookie-cleared',
+            result: cookieCleared ? 'logout' : 'failed'
+          })
+          return snapshot
+        } finally {
+          deps.auth.endLogout(instanceId)
         }
-        // 登出时忘掉 vault 中的会话:否则重启后 restoreSessionFromVault 会恢复已失效的登录态
-        await deps.vault.forgetSession(instanceId).catch(() => undefined)
-        deps.audit?.({ instanceId, event: 'session-revoked', result: 'logout' })
-        deps.audit?.({ instanceId, event: 'cookie-cleared', result: cookieCleared ? 'logout' : 'failed' })
-        return snapshot
-      } finally {
-        deps.auth.endLogout(instanceId)
-      }
-    })
+      })
   )
 
   return { probe }

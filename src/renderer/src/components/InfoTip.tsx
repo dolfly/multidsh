@@ -31,7 +31,12 @@ export function InfoTip(props: {
   const bubbleId = useId()
   return (
     <span className={`info-tip${PLACEMENT_CLASS[props.placement ?? 'below']}`}>
-      <span className="info-tip-btn" tabIndex={0} aria-label={props.label} aria-describedby={bubbleId}>
+      <span
+        className="info-tip-btn"
+        tabIndex={0}
+        aria-label={props.label}
+        aria-describedby={bubbleId}
+      >
         <Icon name="help" />
       </span>
       {/* 气泡常驻 DOM：aria-describedby 可被读屏读到，显示与否只由 CSS 决定。 */}

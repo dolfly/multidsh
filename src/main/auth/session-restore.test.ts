@@ -6,10 +6,10 @@ import type { StoredSession, Vault } from '../vault/vault'
 const NOW = 1_800_000_000_000
 
 /** 最小 vault 假实现(只覆盖复用路径用到的三个方法) */
-function fakeVault(over: {
-  rememberSession?: boolean
-  session?: StoredSession | null
-}): { vault: Vault; forgetSession: ReturnType<typeof vi.fn> } {
+function fakeVault(over: { rememberSession?: boolean; session?: StoredSession | null }): {
+  vault: Vault
+  forgetSession: ReturnType<typeof vi.fn>
+} {
   const forgetSession = vi.fn(async () => undefined)
   const vault = {
     getPolicy: () => ({

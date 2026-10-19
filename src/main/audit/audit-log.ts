@@ -123,7 +123,8 @@ export function createAuditLog(options: AuditLogOptions): AuditLog {
   const dir = options.dir
   const now = options.now ?? (() => Date.now())
   const maxAgeDays = options.maxAgeDays ?? AUDIT_MAX_AGE_DAYS
-  const onError = options.onError ?? ((error: unknown) => console.error('[audit] 写入失败：', error))
+  const onError =
+    options.onError ?? ((error: unknown) => console.error('[audit] 写入失败：', error))
 
   let written = 0
   /** 当前活动文件所属的本地日(首次写入前为 null) */

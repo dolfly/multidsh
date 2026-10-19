@@ -63,7 +63,8 @@ export function isDshWebCommand(command: string): boolean {
   // 而 `node /Users/x/.local/bin/dsh web ...` 会命中。
   if (/[/\\]dsh(?:\.js)?\s+web(?:\s|$)/i.test(command)) return true
   // node …/@deepseek-ai/dsh/lib/bin.js web …
-  if (/@deepseek-ai[/\\]dsh\b/i.test(command) && /[/\\]bin\.js\s+web(?:\s|$)/i.test(command)) return true
+  if (/@deepseek-ai[/\\]dsh\b/i.test(command) && /[/\\]bin\.js\s+web(?:\s|$)/i.test(command))
+    return true
   return false
 }
 
@@ -103,7 +104,8 @@ export function parseDshWebProcesses(psOutput: string): ExternalDshWeb[] {
       pid,
       port: portOf(command),
       patch: patchOf(command),
-      command: command.length > COMMAND_DISPLAY_MAX ? `${command.slice(0, COMMAND_DISPLAY_MAX)}…` : command
+      command:
+        command.length > COMMAND_DISPLAY_MAX ? `${command.slice(0, COMMAND_DISPLAY_MAX)}…` : command
     })
   }
   return found

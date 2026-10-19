@@ -79,7 +79,9 @@ export interface SshTunnelOptions {
   /** askpass helper 使用的 Node 命令(缺省 process.execPath + ELECTRON_RUN_AS_NODE) */
   askpassNode?: { command: string; args: string[] }
   /** ssh -G 实际目标解析器（注入以便别名 + TOFU 对齐的测试） */
-  resolveTarget?: (instance: Pick<SshInstance, 'host' | 'port' | 'username'>) => Promise<ResolvedSshTarget>
+  resolveTarget?: (
+    instance: Pick<SshInstance, 'host' | 'port' | 'username'>
+  ) => Promise<ResolvedSshTarget>
   /** 信任探测器工厂(注入以便单测覆盖 TOFU 写入/轮换;缺省 ssh-keyscan + 私有 known_hosts) */
   hostTrustProbe?: (host: string, port: number, knownHostsPath: string) => HostTrustProbe
 }
@@ -208,7 +210,9 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
   const confirmHostKey = options.confirmHostKey
   const askpassNode = options.askpassNode ?? { command: nodeModeExecutable(), args: [] }
   const resolveTarget =
-    options.resolveTarget ?? ((instance: Pick<SshInstance, 'host' | 'port' | 'username'>) => resolveSshTarget(instance, sshCommand))
+    options.resolveTarget ??
+    ((instance: Pick<SshInstance, 'host' | 'port' | 'username'>) =>
+      resolveSshTarget(instance, sshCommand))
   const trustProbeFactory =
     options.hostTrustProbe ??
     ((host: string, port: number, knownHostsPath: string) =>
@@ -238,14 +242,16 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
       // 日志行进 detail/归因前统一脱敏：剥掉行内 URL 的查询串（防 ?token= 等意外泄漏）。
       if (line.trim() !== '') entry.log.push(redactLine(line))
     }
-    if (entry.log.length > LOG_BUFFER_LINES) entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
+    if (entry.log.length > LOG_BUFFER_LINES)
+      entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
   }
 
   function drainLogBuffer(entry: TunnelEntry): void {
     const trailing = entry.buffer.trim()
     if (trailing !== '') entry.log.push(redactLine(trailing))
     entry.buffer = ''
-    if (entry.log.length > LOG_BUFFER_LINES) entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
+    if (entry.log.length > LOG_BUFFER_LINES)
+      entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
   }
 
   async function resolveTargetOrFallback(instance: SshInstance): Promise<ResolvedSshTarget> {
@@ -257,7 +263,10 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     }
   }
 
-  async function ensureTrust(instance: SshInstance, emitWaiting: (detail: string) => void): Promise<boolean> {
+  async function ensureTrust(
+    instance: SshInstance,
+    emitWaiting: (detail: string) => void
+  ): Promise<boolean> {
     const target = await resolveTargetOrFallback(instance)
     const knownHostsPath = join(dataRoot, 'ssh', 'known_hosts')
     const hostField = knownHostsHostField(target.host, target.port)
@@ -307,7 +316,11 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
 
   async function startAskpassFor(entry: TunnelEntry): Promise<AskpassServer | null> {
     if (!askpass) return null
-    const scripts = await ensureAskpassScripts(join(dataRoot, 'ssh'), askpassNode.command, askpassNode.args)
+    const scripts = await ensureAskpassScripts(
+      join(dataRoot, 'ssh'),
+      askpassNode.command,
+      askpassNode.args
+    )
     const server = await startAskpassServer({
       socketPath: askpassSocketPath(socketsDirFor(dataRoot), controlSlug(entry)),
       onPrompt: async ({ prompt }) => {
@@ -332,7 +345,10 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
    * 释放条目占用的资源：从注册表移除、归还本地端口、关掉 askpass 服务。
    * `dropControlPath` 为真时一并删除本条目的 ControlPath（带 force，文件不存在不算错）。
    */
-  function disposeEntry(entry: TunnelEntry, { dropControlPath }: { dropControlPath: boolean }): void {
+  function disposeEntry(
+    entry: TunnelEntry,
+    { dropControlPath }: { dropControlPath: boolean }
+  ): void {
     entries.delete(entry.id)
     reservedPorts.delete(entry.localPort)
     if (dropControlPath) {

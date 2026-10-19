@@ -42,9 +42,12 @@ const slashes = (value: string): string => value.replace(/\\/g, '/')
 /** 造一个「已安装」的运行时目录,让入口存在性校验通过 */
 async function fakeInstallArtifacts(runtimesDir: string, version: string): Promise<string> {
   const entry = runtimeEntryFor(runtimesDir, version)
-  await mkdir(join(runtimeDirFor(runtimesDir, version), 'node_modules', '@deepseek-ai', 'dsh', 'lib'), {
-    recursive: true
-  })
+  await mkdir(
+    join(runtimeDirFor(runtimesDir, version), 'node_modules', '@deepseek-ai', 'dsh', 'lib'),
+    {
+      recursive: true
+    }
+  )
   await writeFile(entry, '#!/usr/bin/env node\n', 'utf8')
   return entry
 }
@@ -52,7 +55,9 @@ async function fakeInstallArtifacts(runtimesDir: string, version: string): Promi
 describe('createRuntimeInstaller', () => {
   it('listAvailableVersions 解析 npm view 输出(剔除非字符串/含斜杠项)', async () => {
     // npm 解析注入固定值:聚焦 view 输出解析,断言不随宿主平台探测结果漂移
-    const run = vi.fn(async () => okRun(JSON.stringify(['0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', { bad: 1 }, 'x/y'])))
+    const run = vi.fn(async () =>
+      okRun(JSON.stringify(['0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', { bad: 1 }, 'x/y']))
+    )
     const installer = createRuntimeInstaller({
       runtimesDir: tmpDir(),
       cacheDir: tmpDir(),
@@ -149,7 +154,11 @@ describe('createRuntimeInstaller', () => {
   it('isInstalled 按入口存在性 stat 判断:有入口→已安装,无入口/无目录→未安装', async () => {
     // 已通过 fakeInstallArtifacts 造好 0.1.5-rc.2 的入口;0.1.4-rc.1 目录与入口都不存在。
     const runtimesDir = tmpDir()
-    const installer = createRuntimeInstaller({ runtimesDir, cacheDir: tmpDir(), run: async () => okRun('') })
+    const installer = createRuntimeInstaller({
+      runtimesDir,
+      cacheDir: tmpDir(),
+      run: async () => okRun('')
+    })
     await fakeInstallArtifacts(runtimesDir, '0.1.5-rc.2')
     expect(await installer.isInstalled('0.1.5-rc.2')).toBe(true)
     expect(await installer.isInstalled('0.1.4-rc.1')).toBe(false)
@@ -191,7 +200,11 @@ describe('createRuntimeInstaller', () => {
 
   it('listInstalled 跳过未完成安装与无关目录名', async () => {
     const runtimesDir = tmpDir()
-    const installer = createRuntimeInstaller({ runtimesDir, cacheDir: tmpDir(), run: async () => okRun('') })
+    const installer = createRuntimeInstaller({
+      runtimesDir,
+      cacheDir: tmpDir(),
+      run: async () => okRun('')
+    })
     await fakeInstallArtifacts(runtimesDir, '0.1.5-rc.1')
 
     // 手工制造「未完成」目录与无关目录
@@ -212,24 +225,30 @@ describe('createRuntimeInstaller', () => {
       void args
       return okRun('[]')
     })
-    const runNpm = vi.fn(async (
-      _npm: NpmInvocation,
-      _args: string[],
-      opts: { onStderrLine?: (line: string) => void }
-    ) => {
-      // 元数据请求不算下载
-      opts.onStderrLine?.('npm http fetch GET 200 https://registry.npmjs.org/a 1ms (cache miss)')
-      opts.onStderrLine?.('npm http fetch GET 200 https://registry.npmjs.org/b/-/b-1.0.0.tgz 2ms (cache miss)')
-      // 缓存命中的包体同样计入（重复安装/修复时不会漏数）
-      opts.onStderrLine?.(
-        'npm http cache c@https://registry.npmjs.org/c/-/c-1.0.0.tgz 0ms (cache hit)'
-      )
-      // 同一包体的重复日志只算一次
-      opts.onStderrLine?.('npm http fetch GET 200 https://registry.npmjs.org/b/-/b-1.0.0.tgz 1ms (cache miss)')
-      opts.onStderrLine?.('added 2 packages')
-      await fakeInstallArtifacts(runtimesDir, version)
-      return okRun('')
-    })
+    const runNpm = vi.fn(
+      async (
+        _npm: NpmInvocation,
+        _args: string[],
+        opts: { onStderrLine?: (line: string) => void }
+      ) => {
+        // 元数据请求不算下载
+        opts.onStderrLine?.('npm http fetch GET 200 https://registry.npmjs.org/a 1ms (cache miss)')
+        opts.onStderrLine?.(
+          'npm http fetch GET 200 https://registry.npmjs.org/b/-/b-1.0.0.tgz 2ms (cache miss)'
+        )
+        // 缓存命中的包体同样计入（重复安装/修复时不会漏数）
+        opts.onStderrLine?.(
+          'npm http cache c@https://registry.npmjs.org/c/-/c-1.0.0.tgz 0ms (cache hit)'
+        )
+        // 同一包体的重复日志只算一次
+        opts.onStderrLine?.(
+          'npm http fetch GET 200 https://registry.npmjs.org/b/-/b-1.0.0.tgz 1ms (cache miss)'
+        )
+        opts.onStderrLine?.('added 2 packages')
+        await fakeInstallArtifacts(runtimesDir, version)
+        return okRun('')
+      }
+    )
     const installer = createRuntimeInstaller({
       runtimesDir,
       cacheDir: tmpDir(),
@@ -262,11 +281,17 @@ describe('createRuntimeInstaller', () => {
       void args
       return okRun('not json')
     })
-    const runNpm = vi.fn(async (_npm: NpmInvocation, _args: string[], opts: { onStderrLine?: (line: string) => void }) => {
-      opts.onStderrLine?.('npm http fetch GET 200 https://registry.npmjs.org/b/-/b-1.0.0.tgz 1ms')
-      await fakeInstallArtifacts(runtimesDir, version)
-      return okRun('')
-    })
+    const runNpm = vi.fn(
+      async (
+        _npm: NpmInvocation,
+        _args: string[],
+        opts: { onStderrLine?: (line: string) => void }
+      ) => {
+        opts.onStderrLine?.('npm http fetch GET 200 https://registry.npmjs.org/b/-/b-1.0.0.tgz 1ms')
+        await fakeInstallArtifacts(runtimesDir, version)
+        return okRun('')
+      }
+    )
     const installer = createRuntimeInstaller({
       runtimesDir,
       cacheDir: tmpDir(),
@@ -283,17 +308,22 @@ describe('createRuntimeInstaller', () => {
     const runtimesDir = tmpDir()
     const run = vi.fn(async () => okRun('[]'))
     const stderrLines = [
-      ...Array.from({ length: 40 }, (_, index) => `npm http fetch GET 200 https://registry.npmjs.org/pkg-${index} 1ms`),
+      ...Array.from(
+        { length: 40 },
+        (_, index) => `npm http fetch GET 200 https://registry.npmjs.org/pkg-${index} 1ms`
+      ),
       'npm error 404 Not Found'
     ]
-    const runNpm = vi.fn(async (
-      _npm: NpmInvocation,
-      _args: string[],
-      opts: { onStderrLine?: (line: string) => void }
-    ) => {
-      for (const line of stderrLines) opts.onStderrLine?.(line)
-      return { code: 1, stdout: '', stderr: stderrLines.join('\n') }
-    })
+    const runNpm = vi.fn(
+      async (
+        _npm: NpmInvocation,
+        _args: string[],
+        opts: { onStderrLine?: (line: string) => void }
+      ) => {
+        for (const line of stderrLines) opts.onStderrLine?.(line)
+        return { code: 1, stdout: '', stderr: stderrLines.join('\n') }
+      }
+    )
     const installer = createRuntimeInstaller({
       runtimesDir,
       cacheDir: tmpDir(),
@@ -328,7 +358,9 @@ describe('npmFetchInfo', () => {
         'npm http cache media-typer@https://registry.npmjs.org/media-typer/-/media-typer-1.1.1.tgz 0ms (cache hit)'
       )
     ).toEqual({ path: 'media-typer/-/media-typer-1.1.1.tgz', kind: 'tarball' })
-    expect(npmFetchInfo('npm http cache https://registry.npmjs.org/express 9ms (cache hit)')).toEqual({
+    expect(
+      npmFetchInfo('npm http cache https://registry.npmjs.org/express 9ms (cache hit)')
+    ).toEqual({
       path: 'express',
       kind: 'packument'
     })
@@ -346,7 +378,9 @@ describe('npmFetchInfo', () => {
   })
 
   it('查询串被剥掉（仍按包体判定）', () => {
-    expect(npmFetchInfo('npm http fetch GET 200 https://r.example.com/a/-/a-1.0.0.tgz?x=1 1ms')?.kind).toBe('tarball')
+    expect(
+      npmFetchInfo('npm http fetch GET 200 https://r.example.com/a/-/a-1.0.0.tgz?x=1 1ms')?.kind
+    ).toBe('tarball')
   })
 
   it('非下载完成行返回 null', () => {
@@ -362,7 +396,7 @@ describe('spawnNpm', () => {
     const lines: string[] = []
     const script = [
       "process.stderr.write('npm http fetch GET 200 https://registry.npmmir')",
-      "setTimeout(() => {",
+      'setTimeout(() => {',
       "  process.stderr.write('ror.com/x 1ms\\ndone-line\\n')",
       "  process.stdout.write('OUT')",
       '}, 20)'
@@ -374,7 +408,10 @@ describe('spawnNpm', () => {
     expect(result.code).toBe(0)
     expect(result.stdout).toContain('OUT')
     expect(result.stderr).toContain('done-line')
-    expect(lines).toEqual(['npm http fetch GET 200 https://registry.npmmirror.com/x 1ms', 'done-line'])
+    expect(lines).toEqual([
+      'npm http fetch GET 200 https://registry.npmmirror.com/x 1ms',
+      'done-line'
+    ])
   })
 
   it('启动失败时 reject(与 runCommand 语义一致)', async () => {
@@ -487,7 +524,14 @@ describe('resolveNpmInvocation (win32)', () => {
     try {
       // 用同一 join 构造期望路径:POSIX 下 join 产生混合分隔符,与实现一致
       const nodeExe = join('C:\\Program Files', 'nodejs', 'node.exe')
-      const bundledCli = join('C:\\Program Files', 'nodejs', 'node_modules', 'npm', 'bin', 'npm-cli.js')
+      const bundledCli = join(
+        'C:\\Program Files',
+        'nodejs',
+        'node_modules',
+        'npm',
+        'bin',
+        'npm-cli.js'
+      )
       const exists = vi.fn((path: string) => path === nodeExe || path === bundledCli)
       const invocation = await resolveNpmInvocation(vi.fn(), exists)
       expect(invocation).toEqual({ command: nodeExe, prefixArgs: [bundledCli] })
@@ -563,7 +607,12 @@ describe('npm 子进程 PATH（GUI 启动时 node 不在 PATH 的场景）', () 
       if (args.includes('install')) await fakeInstallArtifacts(plainDir, version)
       return okRun('')
     })
-    const plain = createRuntimeInstaller({ runtimesDir: plainDir, cacheDir: tmpDir(), run, resolveNpm })
+    const plain = createRuntimeInstaller({
+      runtimesDir: plainDir,
+      cacheDir: tmpDir(),
+      run,
+      resolveNpm
+    })
     await plain.install(version)
     const installCall = run.mock.calls.find(([, args]) => (args as string[]).includes('install'))
     expect(pathDirs(envOf(installCall).PATH)[0]).toBe(dirname(command))
@@ -571,15 +620,13 @@ describe('npm 子进程 PATH（GUI 启动时 node 不在 PATH 的场景）', () 
     // 进度分支
     const progressDir = tmpDir()
     let progressPath: string | undefined
-    const runNpm = vi.fn(async (
-      _npm: NpmInvocation,
-      _args: string[],
-      opts: { env: NodeJS.ProcessEnv }
-    ) => {
-      progressPath = opts.env.PATH
-      await fakeInstallArtifacts(progressDir, version)
-      return okRun('')
-    })
+    const runNpm = vi.fn(
+      async (_npm: NpmInvocation, _args: string[], opts: { env: NodeJS.ProcessEnv }) => {
+        progressPath = opts.env.PATH
+        await fakeInstallArtifacts(progressDir, version)
+        return okRun('')
+      }
+    )
     const progress = createRuntimeInstaller({
       runtimesDir: progressDir,
       cacheDir: tmpDir(),
@@ -697,12 +744,17 @@ describe('元数据读取提速（分队列 + TTL 缓存）', () => {
 describe('系统 dsh 的 npm 全局升级', () => {
   it('globalPrefixFor 只认 npm 全局布局，pnpm 虚拟存储与本地依赖不猜', () => {
     // 布局判定跟平台走：断言一律显式传平台，宿主平台（如 Windows CI）不改变预期
-    expect(globalPrefixFor('/Users/x/.local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js', 'linux')).toBe(
-      '/Users/x/.local'
-    )
-    expect(globalPrefixFor('/usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js', 'linux')).toBe('/usr/local')
     expect(
-      globalPrefixFor('C:\\Users\\x\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js', 'win32')
+      globalPrefixFor('/Users/x/.local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js', 'linux')
+    ).toBe('/Users/x/.local')
+    expect(
+      globalPrefixFor('/usr/local/lib/node_modules/@deepseek-ai/dsh/lib/bin.js', 'linux')
+    ).toBe('/usr/local')
+    expect(
+      globalPrefixFor(
+        'C:\\Users\\x\\AppData\\Roaming\\npm\\node_modules\\@deepseek-ai\\dsh\\lib\\bin.js',
+        'win32'
+      )
     ).toBe('C:/Users/x/AppData/Roaming/npm')
     // pnpm 全局:真实路径落在 .pnpm 虚拟存储,node_modules 不在 lib 下
     expect(
@@ -712,7 +764,9 @@ describe('系统 dsh 的 npm 全局升级', () => {
       )
     ).toBeNull()
     // 本地依赖与裸脚本路径
-    expect(globalPrefixFor('/Users/x/proj/node_modules/@deepseek-ai/dsh/lib/bin.js', 'linux')).toBeNull()
+    expect(
+      globalPrefixFor('/Users/x/proj/node_modules/@deepseek-ai/dsh/lib/bin.js', 'linux')
+    ).toBeNull()
     expect(globalPrefixFor('/opt/homebrew/bin/dsh', 'linux')).toBeNull()
     expect(globalPrefixFor('/lib/node_modules/@deepseek-ai/dsh/lib/bin.js', 'linux')).toBeNull()
   })

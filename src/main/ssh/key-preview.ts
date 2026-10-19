@@ -66,7 +66,7 @@ export function parseAgentKeys(
     const parts = line.split(/\s+/)
     const type = parts[0]
     const blob = parts[1]
-    if (!type || !blob || !type.startsWith('ssh-') && !type.includes('@openssh.com')) continue
+    if (!type || !blob || (!type.startsWith('ssh-') && !type.includes('@openssh.com'))) continue
     keys.push({
       type,
       typeLabel: keyTypeLabel(type),
@@ -120,10 +120,15 @@ export async function resolveSshKeyPreview(
     : parsedG.identityFiles
 
   const agent = await new Promise<{ status: AgentStatus; keys: AgentKey[] }>((resolve) => {
-    execFile(sshAdd, ['-L'], { timeout: timeoutMs, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
-      const code = error ? ((error as { code?: number }).code ?? 1) : 0
-      resolve(parseAgentKeys(stdout ?? '', stderr ?? '', code))
-    })
+    execFile(
+      sshAdd,
+      ['-L'],
+      { timeout: timeoutMs, maxBuffer: 1024 * 1024 },
+      (error, stdout, stderr) => {
+        const code = error ? ((error as { code?: number }).code ?? 1) : 0
+        resolve(parseAgentKeys(stdout ?? '', stderr ?? '', code))
+      }
+    )
   })
 
   return {

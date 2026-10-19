@@ -46,9 +46,24 @@ export interface StepTransportProps {
 export default function StepTransport({ t, transport, onSelect }: StepTransportProps): ReactNode {
   return (
     <div className="type-cards" data-testid="wizard-step-1">
-      <TypeCard t={t} transport="local" pressed={transport === 'local'} onClick={() => onSelect('local')} />
-      <TypeCard t={t} transport="ssh" pressed={transport === 'ssh'} onClick={() => onSelect('ssh')} />
-      <TypeCard t={t} transport="http" pressed={transport === 'http'} onClick={() => onSelect('http')} />
+      <TypeCard
+        t={t}
+        transport="local"
+        pressed={transport === 'local'}
+        onClick={() => onSelect('local')}
+      />
+      <TypeCard
+        t={t}
+        transport="ssh"
+        pressed={transport === 'ssh'}
+        onClick={() => onSelect('ssh')}
+      />
+      <TypeCard
+        t={t}
+        transport="http"
+        pressed={transport === 'http'}
+        onClick={() => onSelect('http')}
+      />
     </div>
   )
 }

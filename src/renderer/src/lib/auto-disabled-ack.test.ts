@@ -46,7 +46,9 @@ describe('自动禁用提示的确认记录', () => {
     expect(readAutoDisabledAcks(memoryStorage('不是 JSON'))).toEqual({})
     expect(readAutoDisabledAcks(memoryStorage('[1,2]'))).toEqual({})
     expect(readAutoDisabledAcks(memoryStorage('null'))).toEqual({})
-    expect(readAutoDisabledAcks(memoryStorage('{"inst-1":"","inst-2":3,"inst-3":"0.2.0"}'))).toEqual({
+    expect(
+      readAutoDisabledAcks(memoryStorage('{"inst-1":"","inst-2":3,"inst-3":"0.2.0"}'))
+    ).toEqual({
       'inst-3': '0.2.0'
     })
     expect(isAutoDisabledAcked(memoryStorage('{}'), 'inst-1', '0.2.0')).toBe(false)

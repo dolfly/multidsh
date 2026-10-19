@@ -1,4 +1,3 @@
-
 import type { Settings } from '@shared/settings'
 
 export type NativeAction =
@@ -28,7 +27,8 @@ export interface NativePlanInput {
 export function planNativeSettings(input: NativePlanInput): NativeAction[] {
   const actions: NativeAction[] = []
   const { settings, trayExists, startup, changedKeys } = input
-  const changed = (key: keyof Settings): boolean => changedKeys === undefined || changedKeys.includes(key)
+  const changed = (key: keyof Settings): boolean =>
+    changedKeys === undefined || changedKeys.includes(key)
 
   // 创建/销毁托盘只响应 tray 开关；语言变更只刷新已有托盘菜单。
   if (changed('tray')) {

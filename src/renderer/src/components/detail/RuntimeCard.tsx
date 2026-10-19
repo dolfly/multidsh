@@ -36,14 +36,26 @@ export interface RuntimeCardProps {
 
 /** 运行环境卡：版本/端口/数据目录/启动命令，打开工作区、重启、关闭、编辑与检查更新。 */
 export default function RuntimeCard(props: RuntimeCardProps): ReactNode {
-  const { t, record, status, display, version, runCommand, localHome, control, versionControl, actions } =
-    props
+  const {
+    t,
+    record,
+    status,
+    display,
+    version,
+    runCommand,
+    localHome,
+    control,
+    versionControl,
+    actions
+  } = props
   const { canControl, restarting, stopping } = control
   return (
     <div className="card runtime-card selectable">
       <div className="card-head">
         <h3>{t('detail.runtime')}</h3>
-        <span className="meta">{record.transport === 'local' ? t('detail.localSide') : t('detail.remoteSide')}</span>
+        <span className="meta">
+          {record.transport === 'local' ? t('detail.localSide') : t('detail.remoteSide')}
+        </span>
       </div>
       <dl className="kv">
         <dt>{t('detail.dshVersion')}</dt>
@@ -114,7 +126,11 @@ export default function RuntimeCard(props: RuntimeCardProps): ReactNode {
             </button>
           )}
           {/* transport 不可修改；端口留空时自动分配，运行中修改在下次启动生效。 */}
-          <button className="btn btn-secondary btn-sm" onClick={actions.edit} data-testid="edit-btn">
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={actions.edit}
+            data-testid="edit-btn"
+          >
             <Icon name="edit" /> {t('edit.openButton')}
           </button>
           {/* 检查更新与编辑同一行，放在编辑之后。 */}

@@ -33,7 +33,8 @@ async function main() {
   // 转发主进程日志:实例启动失败时能看到归因(dsh stderr / 安装错误)
   app.process().stderr.on('data', (chunk) => {
     const text = String(chunk)
-    if (/registry|local-runtime|启动|安装|失败|error/i.test(text)) process.stderr.write(`[main] ${text}`)
+    if (/registry|local-runtime|启动|安装|失败|error/i.test(text))
+      process.stderr.write(`[main] ${text}`)
   })
   const hub = await app.firstWindow()
   // 捕获全部状态事件(含 detail),失败时可 dump 归因
@@ -44,7 +45,10 @@ async function main() {
   })
 
   async function createInstance(name) {
-    const isEmpty = await hub.getByTestId('view-empty').isVisible().catch(() => false)
+    const isEmpty = await hub
+      .getByTestId('view-empty')
+      .isVisible()
+      .catch(() => false)
     if (isEmpty) await hub.getByTestId('empty-new-btn').click()
     else await hub.getByTestId('new-instance-btn').click()
     await hub.getByRole('button', { name: '下一步' }).click()

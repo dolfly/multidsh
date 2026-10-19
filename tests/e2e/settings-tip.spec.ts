@@ -49,7 +49,9 @@ test('说明图标：hover 展开、点击不钉住、键盘聚焦仍展开', as
   const bubble = tip.locator('.info-tip-bubble')
 
   // 常驻段落已移除：设置视图里不再有承载这段说明的 .meta 行。
-  await expect(win.locator('[data-testid="view-settings"] .meta').filter({ hasText: 'git/node' })).toHaveCount(0)
+  await expect(
+    win.locator('[data-testid="view-settings"] .meta').filter({ hasText: 'git/node' })
+  ).toHaveCount(0)
 
   // 图标紧跟文案之后：复选框行里 label 与图标是仅有的两个相邻子元素。
   // has 内的定位器会以候选行为根重新求根，必须给相对选择器（不能带 card 那段链）。

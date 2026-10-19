@@ -7,7 +7,9 @@ import type { WizardForm } from './types'
 export interface SshConfigProps {
   t: Translator
   form: WizardForm
-  set: (key: Exclude<keyof WizardForm, 'useDefaultSpace'>) => (event: { target: { value: string } }) => void
+  set: (
+    key: Exclude<keyof WizardForm, 'useDefaultSpace'>
+  ) => (event: { target: { value: string } }) => void
 }
 
 /** SSH 隧道实例配置：主机 / 用户 / 端口 + 密钥预览与 agent 提示。 */
@@ -39,7 +41,12 @@ export default function SshConfig({ t, form, set }: SshConfigProps): ReactNode {
         </div>
         <div className="field">
           <label htmlFor="wizard-ssh-port">{t('wizard.sshPortLabel')}</label>
-          <input className="input num" id="wizard-ssh-port" value={form.sshPort} onChange={set('sshPort')} />
+          <input
+            className="input num"
+            id="wizard-ssh-port"
+            value={form.sshPort}
+            onChange={set('sshPort')}
+          />
         </div>
         <div className="field">
           <label htmlFor="wizard-remote-port">{t('wizard.remotePortLabel')}</label>

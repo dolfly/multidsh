@@ -104,7 +104,9 @@ describe('createInstanceStore / 基础 CRUD', () => {
   it('local 保存公共空间选择', async () => {
     const record = asLocal(await store.create(localInput({ useDefaultSpace: true })))
     expect(record.useDefaultSpace).toBe(true)
-    expect(asLocal(await store.update(record.id, { useDefaultSpace: false })).useDefaultSpace).toBe(false)
+    expect(asLocal(await store.update(record.id, { useDefaultSpace: false })).useDefaultSpace).toBe(
+      false
+    )
   })
 
   it('local 保存并更新受限的启动器', async () => {
@@ -117,7 +119,9 @@ describe('createInstanceStore / 基础 CRUD', () => {
     const updated = asLocal(await store.update(created.id, { launcher: 'dsh' }))
     expect(updated.launcher).toBe('dsh')
 
-    await expect(store.update(created.id, { launcher: 'node server.js' } as never)).rejects.toMatchObject({
+    await expect(
+      store.update(created.id, { launcher: 'node server.js' } as never)
+    ).rejects.toMatchObject({
       code: 'invalid-input'
     })
   })
@@ -150,7 +154,9 @@ describe('createInstanceStore / 基础 CRUD', () => {
     expect(bareV6.port).toBe(22)
 
     // host[:port] 与显式 port 并存时,host[:port] 优先(文档化的约定)
-    const conflict = asSsh(await store.create(sshInput({ name: '冲突', host: 'server:2222', port: 24 })))
+    const conflict = asSsh(
+      await store.create(sshInput({ name: '冲突', host: 'server:2222', port: 24 }))
+    )
     expect(conflict.host).toBe('server')
     expect(conflict.port).toBe(2222)
   })
@@ -227,7 +233,10 @@ describe('createInstanceStore / 基础 CRUD', () => {
 
     // 三次拒绝都不改动已落盘数据
     const file = await readRegistryFile()
-    expect((file as { instances: InstanceRecord[] }).instances.map((r) => r.name)).toEqual(['甲', '乙'])
+    expect((file as { instances: InstanceRecord[] }).instances.map((r) => r.name)).toEqual([
+      '甲',
+      '乙'
+    ])
   })
 
   it('update ssh host[:port]、http 端点同样归一化', async () => {
@@ -263,7 +272,7 @@ describe('createInstanceStore / 基础 CRUD', () => {
 
     const cleared = await store.update(created.id, { notes: null })
     expect(cleared.notes).toBeNull()
-    expect((await readRegistryFile())).not.toBeNull() // 落盘正常
+    expect(await readRegistryFile()).not.toBeNull() // 落盘正常
     const fresh = tmpRun()
     expect((await fresh.get(created.id))?.notes).toBeNull() // 重载依旧为空
   })
@@ -481,7 +490,9 @@ describe.skipIf(process.platform === 'win32')('createInstanceStore / 写盘失�
     const store = createInstanceStore({ dir })
     const COUNT = 60
     for (let index = 0; index < COUNT; index += 1) {
-      await store.create(httpInput({ name: `实例 ${index}`, endpointUrl: `https://h${index}.example.com/` }))
+      await store.create(
+        httpInput({ name: `实例 ${index}`, endpointUrl: `https://h${index}.example.com/` })
+      )
     }
     // 首次 list 触发装载;随后应完全命中内存缓存(退化成每次读盘会远超下面的界)
     expect(await store.list()).toHaveLength(COUNT)
@@ -528,7 +539,9 @@ describe.skipIf(process.platform === 'win32')('createInstanceStore / 落盘权�
     expect(await modeOf(file)).toBe(0o644)
 
     expect(await tmpRun().list()).toEqual([]) // 触发一次损坏隔离
-    const corrupts = (await readdir(dir)).filter((name) => name.startsWith('instances.json.corrupt-'))
+    const corrupts = (await readdir(dir)).filter((name) =>
+      name.startsWith('instances.json.corrupt-')
+    )
     expect(corrupts.length).toBe(1)
     const quarantined = corrupts[0]
     if (!quarantined) throw new Error('期望存在隔离副本')

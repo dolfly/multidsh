@@ -188,9 +188,11 @@ export function createHttpEndpoints(options: HttpEndpointOptions = {}): HttpEndp
         }
         await runStart(instance, myGen)
       })
-      const chained = next.catch(() => undefined).finally(() => {
-        if (startChains.get(id) === chained) startChains.delete(id)
-      })
+      const chained = next
+        .catch(() => undefined)
+        .finally(() => {
+          if (startChains.get(id) === chained) startChains.delete(id)
+        })
       startChains.set(id, chained)
       return next
     },

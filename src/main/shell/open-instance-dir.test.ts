@@ -42,12 +42,16 @@ function localRecord(overrides: Partial<InstanceRecord> = {}): InstanceRecord {
 
 describe('instanceHomeDir', () => {
   it('隔离空间：<dataRoot>/homes/<id>', () => {
-    expect(instanceHomeDir({ dataRoot: '/data' }, localRecord())).toBe(join('/data', 'homes', ISO_ID))
+    expect(instanceHomeDir({ dataRoot: '/data' }, localRecord())).toBe(
+      join('/data', 'homes', ISO_ID)
+    )
   })
 
   it('公共空间：<home>/.dsh（Windows 与其他平台一致，由 Node path 规则决定分隔符）', () => {
     const ports = { dataRoot: '/data', homeDir: () => '/Users/admin' }
-    expect(instanceHomeDir(ports, localRecord({ useDefaultSpace: true }))).toBe(join('/Users/admin', '.dsh'))
+    expect(instanceHomeDir(ports, localRecord({ useDefaultSpace: true }))).toBe(
+      join('/Users/admin', '.dsh')
+    )
   })
 })
 
@@ -55,10 +59,7 @@ describe('openInstanceDir', () => {
   it('目录不存在时先创建再打开，返回成功传入 openPath 的是解析出的 DSH_HOME', async () => {
     const dataRoot = await root()
     const opened: string[] = []
-    await openInstanceDir(
-      { dataRoot, openPath: async (p) => (opened.push(p), '') },
-      localRecord()
-    )
+    await openInstanceDir({ dataRoot, openPath: async (p) => (opened.push(p), '') }, localRecord())
     const home = join(dataRoot, 'homes', ISO_ID)
     expect(opened).toEqual([home])
     expect(existsSync(home)).toBe(true)
@@ -78,14 +79,20 @@ describe('openInstanceLogDir', () => {
     const logs = join(dataRoot, 'homes', ISO_ID, 'profiles', 'web', '.plugin-manager', 'logs')
     await mkdir(logs, { recursive: true })
     const opened: string[] = []
-    await openInstanceLogDir({ dataRoot, openPath: async (p) => (opened.push(p), '') }, localRecord())
+    await openInstanceLogDir(
+      { dataRoot, openPath: async (p) => (opened.push(p), '') },
+      localRecord()
+    )
     expect(opened).toEqual([logs])
   })
 
   it('插件日志目录不存在时回落到 DSH_HOME', async () => {
     const dataRoot = await root()
     const opened: string[] = []
-    await openInstanceLogDir({ dataRoot, openPath: async (p) => (opened.push(p), '') }, localRecord())
+    await openInstanceLogDir(
+      { dataRoot, openPath: async (p) => (opened.push(p), '') },
+      localRecord()
+    )
     expect(opened).toEqual([join(dataRoot, 'homes', ISO_ID)])
   })
 

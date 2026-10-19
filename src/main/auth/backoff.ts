@@ -46,7 +46,9 @@ export function createBackoff(options: BackoffOptions = {}): BackoffController {
   return {
     recordRateLimited(retryAfterSeconds, why) {
       const seconds =
-        typeof retryAfterSeconds === 'number' && Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+        typeof retryAfterSeconds === 'number' &&
+        Number.isFinite(retryAfterSeconds) &&
+        retryAfterSeconds > 0
           ? retryAfterSeconds
           : null
       // retryAfterSeconds 存在时以服务端为准(它是唯一计时依据);缺失时才用 ≥30s 下限

@@ -13,7 +13,13 @@ async function root(): Promise<string> {
 }
 
 afterEach(async () => {
-  await Promise.all(roots.splice(0).map(async (path) => (await import('node:fs/promises')).rm(path, { recursive: true, force: true })))
+  await Promise.all(
+    roots
+      .splice(0)
+      .map(async (path) =>
+        (await import('node:fs/promises')).rm(path, { recursive: true, force: true })
+      )
+  )
 })
 
 describe('local spaces', () => {

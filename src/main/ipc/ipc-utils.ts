@@ -26,7 +26,10 @@ import type { Vault } from '../vault/vault'
 export type IpcWrap = <T>(task: () => Promise<T> | T) => Promise<IpcResult<T>>
 
 /** 构造失败信封；`code` 必须是 IPC 白名单内的稳定错误码。 */
-const fail = (code: IpcErrorCode, message: string): { ok: false; code: IpcErrorCode; message: string } => ({
+const fail = (
+  code: IpcErrorCode,
+  message: string
+): { ok: false; code: IpcErrorCode; message: string } => ({
   ok: false,
   code,
   message
@@ -45,7 +48,10 @@ export async function wrap<T>(task: () => Promise<T> | T): Promise<IpcResult<T>>
     // 打开项目主页失败:同口径,不静默成功
     if (error instanceof HomepageOpenError) return fail(error.code, error.message)
     // 内部错误不透传细节(可能含 fs 路径),只记主进程日志;只记错误类型与消息,不序列化整个错误对象
-    console.error('[ipc] 未预期错误：', error instanceof Error ? `${error.name}: ${error.message}` : String(error))
+    console.error(
+      '[ipc] 未预期错误：',
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+    )
     return fail('internal', '内部错误，请查看应用日志')
   }
 }
@@ -78,12 +84,18 @@ export function externalAccessToken(raw: unknown, port: number): string {
     url.password !== '' ||
     url.hash !== ''
   ) {
-    throw new InstanceStoreError('invalid-input', '访问链接必须匹配已检测的本机 dsh 端口并包含 token')
+    throw new InstanceStoreError(
+      'invalid-input',
+      '访问链接必须匹配已检测的本机 dsh 端口并包含 token'
+    )
   }
   const token = url.searchParams.get('token')
   const containsControl = (value: string): boolean => /[\p{C}]/u.test(value)
   if (token === null || token === '' || containsControl(token)) {
-    throw new InstanceStoreError('invalid-input', '访问链接必须匹配已检测的本机 dsh 端口并包含 token')
+    throw new InstanceStoreError(
+      'invalid-input',
+      '访问链接必须匹配已检测的本机 dsh 端口并包含 token'
+    )
   }
   return token
 }
@@ -109,9 +121,10 @@ export function toSummary(
         ? `${record.host}:${record.remotePort}`
         : record.endpointUrl
   // 运行中以实时状态版本为准，停止后回落到本机实例注册表固定的版本；'custom' 是占位符不是版本号。
-  const runtime = runtimeVersion !== undefined && runtimeVersion !== '' && runtimeVersion !== 'custom'
-    ? runtimeVersion
-    : undefined
+  const runtime =
+    runtimeVersion !== undefined && runtimeVersion !== '' && runtimeVersion !== 'custom'
+      ? runtimeVersion
+      : undefined
   const persisted = record.transport === 'local' ? (record.dshVersion ?? undefined) : undefined
   const version = runtime ?? persisted
   return {
@@ -198,7 +211,8 @@ export async function autoLoginWithStored(
   if (state === null) return state
   const needsAuth = state.phase === 'needs-auth' || state.phase === 'await-credentials'
   if (!needsAuth || state.lockedForMs > 0) return state
-  if (memory.storedLoginAttempted.has(instanceId) || memory.logoutSuppressed.has(instanceId)) return state
+  if (memory.storedLoginAttempted.has(instanceId) || memory.logoutSuppressed.has(instanceId))
+    return state
   // 登出清理窗口内不静默登录：与 logoutSuppressed 同向，只是还没来得及落抑制记忆。
   if (deps.auth.isLoggingOut(instanceId)) return state
   if (!deps.vault.getPolicy(instanceId).rememberPassword) return state

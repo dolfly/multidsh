@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isAllowedExternalOpen, isAllowedInstanceNavigation, openExternalSafely } from './window-host-policy'
+import {
+  isAllowedExternalOpen,
+  isAllowedInstanceNavigation,
+  openExternalSafely
+} from './window-host-policy'
 
 describe('isAllowedInstanceNavigation（实例窗口外跳拦截 ）', () => {
   const origin = 'http://127.0.0.1:30000/?token=abc'
@@ -7,7 +11,9 @@ describe('isAllowedInstanceNavigation（实例窗口外跳拦截 ）', () => {
   it('同源回环导航放行（含路径与查询）', () => {
     expect(isAllowedInstanceNavigation('http://127.0.0.1:30000/', origin)).toBe(true)
     expect(isAllowedInstanceNavigation('http://127.0.0.1:30000/api/jobs', origin)).toBe(true)
-    expect(isAllowedInstanceNavigation('http://127.0.0.1:30000/?token=abc#/chat', origin)).toBe(true)
+    expect(isAllowedInstanceNavigation('http://127.0.0.1:30000/?token=abc#/chat', origin)).toBe(
+      true
+    )
   })
 
   it('回环别名（localhost / ::1 / 127.1 省略写法）同端口放行', () => {
@@ -55,13 +61,17 @@ describe('isAllowedInstanceNavigation（用户#4:远程 http 实例的登录页�
     expect(isAllowedInstanceNavigation('https://gw.example.com/login', remote)).toBe(true)
     expect(isAllowedInstanceNavigation('https://gw.example.com/login/auth', remote)).toBe(true)
     expect(isAllowedInstanceNavigation('https://gw.example.com/dsh/otp/verify', remote)).toBe(true)
-    expect(isAllowedInstanceNavigation('https://gw.example.com/dsh/onboarding/password', remote)).toBe(true)
+    expect(
+      isAllowedInstanceNavigation('https://gw.example.com/dsh/onboarding/password', remote)
+    ).toBe(true)
     expect(isAllowedInstanceNavigation('https://gw.example.com/dsh/', remote)).toBe(true)
   })
 
   it('http(明文)远程实例的同 origin 导航同样放行', () => {
     const plain = 'http://remote.internal.example.com/dsh/'
-    expect(isAllowedInstanceNavigation('http://remote.internal.example.com/login', plain)).toBe(true)
+    expect(isAllowedInstanceNavigation('http://remote.internal.example.com/login', plain)).toBe(
+      true
+    )
   })
 
   it('远程实例:跨 origin(外部钓鱼/其他网关)一律拒绝 —— 分区 Cookie 不出实例服务', () => {

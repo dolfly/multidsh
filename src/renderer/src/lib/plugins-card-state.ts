@@ -98,9 +98,7 @@ export function showsIncompatibleWarning(check: PluginCheckState): boolean {
  */
 export function showsUnknownCompatibility(check: PluginCheckState): boolean {
   return (
-    showsIncompatibleWarning(check) &&
-    check.result !== null &&
-    check.result.dshVersion === null
+    showsIncompatibleWarning(check) && check.result !== null && check.result.dshVersion === null
   )
 }
 

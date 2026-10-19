@@ -41,7 +41,9 @@ export default function UpgradeConfirmDialog(props: {
   const npmRegistry = useAppStore((state) => state.settings.npmRegistry)
 
   // 默认安装源跟随应用设置的镜像档位：与 check 的默认源同口径（主进程同一设置推导）。
-  const [registry, setRegistry] = useState<PluginRegistryOption>(() => pluginRegistryFromUrl(npmRegistry))
+  const [registry, setRegistry] = useState<PluginRegistryOption>(() =>
+    pluginRegistryFromUrl(npmRegistry)
+  )
   const [plan, setPlan] = useState<PluginInstallPlan | null>(null)
   const [resolving, setResolving] = useState(true)
   const [upgrading, setUpgrading] = useState(false)
@@ -55,15 +57,17 @@ export default function UpgradeConfirmDialog(props: {
     let cancelled = false
     setResolving(true)
     setResolveError(null)
-    void bridge.plugin.resolveInstall(instanceId, `${name}@${version}`, { registry }).then((result) => {
-      if (cancelled) return
-      setResolving(false)
-      if (!result.ok) {
-        setResolveError(result.message)
-        return
-      }
-      setPlan(result.value)
-    })
+    void bridge.plugin
+      .resolveInstall(instanceId, `${name}@${version}`, { registry })
+      .then((result) => {
+        if (cancelled) return
+        setResolving(false)
+        if (!result.ok) {
+          setResolveError(result.message)
+          return
+        }
+        setPlan(result.value)
+      })
     return () => {
       cancelled = true
     }

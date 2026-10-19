@@ -18,10 +18,5 @@
       "@shared/*": ["src/shared/*"]
     }
   },
-  "include": [
-    "tests/**/*",
-    "playwright.config.ts",
-    "src/preload/index.d.ts",
-    "src/shared/**/*"
-  ]
+  "include": ["tests/**/*", "playwright.config.ts", "src/preload/index.d.ts", "src/shared/**/*"]
 }

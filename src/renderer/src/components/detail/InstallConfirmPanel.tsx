@@ -78,7 +78,8 @@ export default function InstallConfirmPanel(props: InstallConfirmPanelProps): Re
    * 未安装与同版本仍走单徽标 + 说明（未安装 / 版本已相符（重装））。
    */
   const installed = plan.installedVersion
-  const versionEvolution = installed !== null && targetVersion !== null && installed !== targetVersion
+  const versionEvolution =
+    installed !== null && targetVersion !== null && installed !== targetVersion
   const installedNote =
     installed === null
       ? t('detail.plugin.confirmUninstalled')

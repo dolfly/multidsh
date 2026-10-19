@@ -20,7 +20,15 @@ import { join, resolve } from 'node:path'
 
 const VERSION = '0.1.7-rc.2'
 const DATA_DIR = resolve(__dirname, '..', '..', 'hub-data', 'e2e-plugins')
-const ENTRY_DIR = join(DATA_DIR, 'runtimes', `dsh-${VERSION}`, 'node_modules', '@deepseek-ai', 'dsh', 'lib')
+const ENTRY_DIR = join(
+  DATA_DIR,
+  'runtimes',
+  `dsh-${VERSION}`,
+  'node_modules',
+  '@deepseek-ai',
+  'dsh',
+  'lib'
+)
 /** 假 dsh 记录的插桩文件：每次 add/remove 追加一行 JSON。 */
 const MUTATION_LOG = join(DATA_DIR, 'plugin-mutations.jsonl')
 
@@ -344,7 +352,6 @@ test('一键检查：批量进行中锁定单行检查按钮，结束后解锁',
   await expect(win.getByTestId('log-more')).toBeHidden()
 })
 
-
 test('禁用/启用：禁用后仍在列表可见并标注已禁用，可再次启用', async () => {
   test.setTimeout(90_000)
   await openDetail()
@@ -538,7 +545,9 @@ test('升级二次确认：弹窗给出目标版本，取消不执行、确认�
   await upgrade.click()
   const dialog = win.getByTestId('upgrade-confirm-dialog')
   await expect(dialog).toBeVisible()
-  await expect(win.getByTestId('upgrade-confirm-submit')).toContainText(LATEST_VERSION, { timeout: 20_000 })
+  await expect(win.getByTestId('upgrade-confirm-submit')).toContainText(LATEST_VERSION, {
+    timeout: 20_000
+  })
   // 升级不改启用态：不出现「安装后启用」勾选，也没有它的说明气泡。
   await expect(win.getByTestId('install-confirm-enable-after')).toHaveCount(0)
   await expect(dialog.locator('.info-tip')).toHaveCount(0)

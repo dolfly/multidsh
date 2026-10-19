@@ -8,7 +8,7 @@ electronDist: node_modules/electron/dist
 # legacy 3.0.4.1 的 mac 端 makensis 只有 x86_64，在未装 Rosetta 的 Apple Silicon 上
 # 打包直接失败（spawn EBADCPU）；统一 bundle 按 uname 选 mac/arm64 原生二进制。
 toolsets:
-  nsis: "1.2.1"
+  nsis: '1.2.1'
 directories:
   buildResources: build
   output: dist

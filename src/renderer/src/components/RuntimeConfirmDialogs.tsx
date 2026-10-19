@@ -60,7 +60,10 @@ export default function RuntimeConfirmDialogs(): ReactNode {
         }
       : {
           title: t('runtime.confirm.upgradeTitle'),
-          body: t('runtime.confirm.upgradeBody', { latest: prompt.latest, current: prompt.current }),
+          body: t('runtime.confirm.upgradeBody', {
+            latest: prompt.latest,
+            current: prompt.current
+          }),
           registry: null,
           hint: t('runtime.confirm.upgradeHint'),
           accept: t('runtime.confirm.upgradeAccept'),
@@ -100,7 +103,10 @@ export default function RuntimeConfirmDialogs(): ReactNode {
         {copy.body}
       </p>
       {copy.registry !== null && (
-        <p data-testid="runtime-confirm-registry" style={{ fontSize: '12px', color: 'var(--muted)' }}>
+        <p
+          data-testid="runtime-confirm-registry"
+          style={{ fontSize: '12px', color: 'var(--muted)' }}
+        >
           {copy.registry}
         </p>
       )}

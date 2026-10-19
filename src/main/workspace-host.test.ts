@@ -94,8 +94,14 @@ describe('createWorkspaceHost', () => {
 
   it('creates a main-owned, sandboxed view with popup, permission, download, and navigation guards', async () => {
     const hub = hubWindow()
-    const host = createWorkspaceHost(() => hub as never, () => 'zh-Hans-CN')
-    const view = host.prepare('11111111-1111-4111-8111-111111111111', 'http://127.0.0.1:3080/?token=abc')
+    const host = createWorkspaceHost(
+      () => hub as never,
+      () => 'zh-Hans-CN'
+    )
+    const view = host.prepare(
+      '11111111-1111-4111-8111-111111111111',
+      'http://127.0.0.1:3080/?token=abc'
+    )
     const created = fakeViews()[0]
     expect(created).toBeDefined()
     expect(hub.contentView.addChildView).toHaveBeenCalledWith(created)
@@ -111,9 +117,12 @@ describe('createWorkspaceHost', () => {
     // 后续布局变化不得再次抢夺焦点，否则会打断用户正在输入的登录表单。
     host.setBounds({ x: 64, y: 92, width: 1100, height: 688 })
     expect(created?.webContents.focus).toHaveBeenCalledTimes(1)
-    expect(created?.webContents.setWindowOpenHandler.mock.calls[0]?.[0]({ url: '' })).toEqual({ action: 'deny' })
+    expect(created?.webContents.setWindowOpenHandler.mock.calls[0]?.[0]({ url: '' })).toEqual({
+      action: 'deny'
+    })
 
-    const permissionRequest = created?.webContents.session.setPermissionRequestHandler.mock.calls[0]?.[0] as (
+    const permissionRequest = created?.webContents.session.setPermissionRequestHandler.mock
+      .calls[0]?.[0] as (
       contents: unknown,
       permission: string,
       callback: (allowed: boolean) => void,
@@ -127,16 +136,24 @@ describe('createWorkspaceHost', () => {
     expect(callback).toHaveBeenLastCalledWith(true)
     permissionRequest(null, 'media', callback, { mediaTypes: ['video'] })
     expect(callback).toHaveBeenLastCalledWith(false)
-    const permissionCheck = created?.webContents.session.setPermissionCheckHandler.mock.calls[0]?.[0] as (
+    const permissionCheck = created?.webContents.session.setPermissionCheckHandler.mock
+      .calls[0]?.[0] as (
       contents: unknown,
       permission: string,
       requestingOrigin: string,
       details?: unknown
     ) => boolean
     expect(permissionCheck(null, 'notifications', 'http://127.0.0.1:3080/')).toBe(false)
-    expect(permissionCheck(null, 'media', 'http://127.0.0.1:3080/', { mediaType: 'audio' })).toBe(true)
-    expect(permissionCheck(null, 'media', 'http://127.0.0.1:3080/', { mediaType: 'video' })).toBe(false)
-    expect(created?.webContents.session.on).toHaveBeenCalledWith('will-download', expect.any(Function))
+    expect(permissionCheck(null, 'media', 'http://127.0.0.1:3080/', { mediaType: 'audio' })).toBe(
+      true
+    )
+    expect(permissionCheck(null, 'media', 'http://127.0.0.1:3080/', { mediaType: 'video' })).toBe(
+      false
+    )
+    expect(created?.webContents.session.on).toHaveBeenCalledWith(
+      'will-download',
+      expect.any(Function)
+    )
 
     for (const eventName of ['will-navigate', 'will-redirect']) {
       const navigate = created?.webContents.handlers.get(eventName)
@@ -154,7 +171,10 @@ describe('createWorkspaceHost', () => {
 
   it('弹窗 URL 走外跳白名单:危险协议不触达系统,外部 http(s) 才交给系统浏览器', () => {
     const hub = hubWindow()
-    const host = createWorkspaceHost(() => hub as never, () => 'en-US')
+    const host = createWorkspaceHost(
+      () => hub as never,
+      () => 'en-US'
+    )
     host.prepare('22222222-2222-4222-8222-222222222222', 'http://127.0.0.1:3080/?token=abc')
     const created = fakeViews()[0]
     const handler = created?.webContents.setWindowOpenHandler.mock.calls[0]?.[0] as (args: {
@@ -179,7 +199,10 @@ describe('createWorkspaceHost', () => {
   it('updates locale for cached workspace views when the Hub language changes', () => {
     let locale = 'zh'
     const hub = hubWindow()
-    const host = createWorkspaceHost(() => hub as never, () => locale)
+    const host = createWorkspaceHost(
+      () => hub as never,
+      () => locale
+    )
     host.prepare('77777777-7777-4777-8777-777777777777', 'https://gw.example.com/')
     const created = fakeViews()[0]
     locale = 'en'
@@ -263,7 +286,11 @@ describe('createWorkspaceHost', () => {
   it('reloadSession 对未缓存视图是 no-op', async () => {
     const host = createWorkspaceHost(() => hubWindow() as never)
     await expect(
-      host.reloadSession('99999999-9999-4999-8999-999999999999', { name: 'dsh_auth', value: 'x', expiresAt: null })
+      host.reloadSession('99999999-9999-4999-8999-999999999999', {
+        name: 'dsh_auth',
+        value: 'x',
+        expiresAt: null
+      })
     ).resolves.toBeUndefined()
     expect(fakeViews()).toHaveLength(0)
   })
@@ -337,7 +364,11 @@ describe('createWorkspaceHost', () => {
   it('白名单转发工作区的切换修饰键与其数字组合,其余输入不转发、不拦截', () => {
     const forward = vi.fn()
     const hub = hubWindow()
-    const host = createWorkspaceHost(() => hub as never, () => 'en-US', forward)
+    const host = createWorkspaceHost(
+      () => hub as never,
+      () => 'en-US',
+      forward
+    )
     host.prepare('22222222-2222-4222-8222-222222222222', 'https://gw.example.com/')
     const beforeInput = fakeViews()[0]?.webContents.handlers.get('before-input-event')
     expect(beforeInput).toBeDefined()

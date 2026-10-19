@@ -49,16 +49,21 @@ test('空态 → 向导三步创建本地实例 → 表格与侧栏可见', asyn
   await expect(win.getByTestId('wizard-launcher')).toHaveValue('dsh')
   // dsh 恒在且为默认；dush/duush 只在本机探测到时才渲染（未检测到直接隐藏，不是禁用）。
   // 选项集合随宿主安装状态变化，故只断言集合约束，不断言具体数量。
-  const launcherOptions = await win.getByTestId('wizard-launcher').evaluate((select) =>
-    Array.from((select as HTMLSelectElement).options).map((option) => option.value)
-  )
+  const launcherOptions = await win
+    .getByTestId('wizard-launcher')
+    .evaluate((select) =>
+      Array.from((select as HTMLSelectElement).options).map((option) => option.value)
+    )
   expect(launcherOptions[0]).toBe('dsh')
   expect(new Set(launcherOptions).size).toBe(launcherOptions.length)
   expect(launcherOptions.every((value) => ['dsh', 'dush', 'duush'].includes(value))).toBe(true)
   await expect(win.getByTestId('wizard-launcher').locator('option:disabled')).toHaveCount(0)
   // 版本管理下拉已接线：选项首项恒为「跟随最新版本」（空值），与镜像拉取结果无关（离线安全）。
   await expect(win.getByTestId('wizard-version')).toBeVisible()
-  await expect(win.getByTestId('wizard-version').locator('option').first()).toHaveAttribute('value', '')
+  await expect(win.getByTestId('wizard-version').locator('option').first()).toHaveAttribute(
+    'value',
+    ''
+  )
   await expect(win.getByText('请填写实例名称')).toBeHidden()
   await win.getByRole('button', { name: '下一步' }).click()
 
@@ -114,23 +119,37 @@ test('按住修饰键显示序号,修饰键+数字切换实例', async () => {
   const demoId = (await listIds())[0]!
   const aId = await createHttpInstance('快捷键实例一', 'https://hotkey-a.example.com/dsh')
   const bId = await createHttpInstance('快捷键实例二', 'https://hotkey-b.example.com/dsh')
-  const reordered = await win.evaluate(async (order) => {
-    const r = await window.dshHub.instances.reorder(order)
-    return r.ok
-  }, [aId, bId, demoId])
+  const reordered = await win.evaluate(
+    async (order) => {
+      const r = await window.dshHub.instances.reorder(order)
+      return r.ok
+    },
+    [aId, bId, demoId]
+  )
   expect(reordered).toBe(true)
   await win.reload()
   await expect(win.getByTestId('view-home')).toBeVisible()
   expect(await listIds()).toEqual([aId, bId, demoId])
 
   const reachedTerminal = async (): Promise<boolean> => {
-    const back = await win.getByTestId('workspace-back-btn').isVisible().catch(() => false)
-    const detail = await win.getByTestId('view-detail').isVisible().catch(() => false)
+    const back = await win
+      .getByTestId('workspace-back-btn')
+      .isVisible()
+      .catch(() => false)
+    const detail = await win
+      .getByTestId('view-detail')
+      .isVisible()
+      .catch(() => false)
     return back || detail
   }
   // 切换的终态有两种:工作区打开,或回落详情页(启动失败/被拒)。
   const expectShowing = async (name: string): Promise<void> => {
-    if (await win.getByTestId('workspace-back-btn').isVisible().catch(() => false)) {
+    if (
+      await win
+        .getByTestId('workspace-back-btn')
+        .isVisible()
+        .catch(() => false)
+    ) {
       await expect(win.getByTestId('tb-title')).toHaveText(name)
     } else {
       await expect(win.getByRole('heading', { name })).toBeVisible()
@@ -235,11 +254,17 @@ test('按住修饰键显示序号,修饰键+数字切换实例', async () => {
   for (const id of [aId, bId]) {
     await table.getByTestId(`delete-${id}`).click()
     await expect(win.getByTestId('home-confirm-delete')).toBeVisible()
-    await win.getByTestId('home-confirm-delete').getByRole('button', { name: '删除', exact: true }).click()
+    await win
+      .getByTestId('home-confirm-delete')
+      .getByRole('button', { name: '删除', exact: true })
+      .click()
     await expect(win.getByTestId(`inst-${id}`)).toBeHidden()
   }
   await expect(win.getByTestId('view-home')).toBeVisible()
-  await expect(win.locator('[data-testid^="inst-"]').first()).toHaveAttribute('data-testid', `inst-${demoId}`)
+  await expect(win.locator('[data-testid^="inst-"]').first()).toHaveAttribute(
+    'data-testid',
+    `inst-${demoId}`
+  )
 })
 
 test('侧栏实例名称进入工作区或错误详情，随后可删除实例', async () => {
@@ -248,28 +273,53 @@ test('侧栏实例名称进入工作区或错误详情，随后可删除实例',
   await expect(win.getByTestId('instances-table')).toBeVisible()
   const firstSidebarItem = win.locator('[data-testid^="inst-"]').first()
   await firstSidebarItem.click()
-  await expect.poll(async () => {
-    const workspaceLoading = await win.getByTestId('workspace-loading').isVisible().catch(() => false)
-    const detail = await win.getByTestId('view-detail').isVisible().catch(() => false)
-    return workspaceLoading || detail
-  }).toBe(true)
-  const workspaceOpened = await win.getByTestId('workspace-loading').isVisible().catch(() => false)
+  await expect
+    .poll(async () => {
+      const workspaceLoading = await win
+        .getByTestId('workspace-loading')
+        .isVisible()
+        .catch(() => false)
+      const detail = await win
+        .getByTestId('view-detail')
+        .isVisible()
+        .catch(() => false)
+      return workspaceLoading || detail
+    })
+    .toBe(true)
+  const workspaceOpened = await win
+    .getByTestId('workspace-loading')
+    .isVisible()
+    .catch(() => false)
   if (workspaceOpened) {
     // loading 消失后的确定终态有两种:工作区打开(启动成功)或回落详情页(启动被拒/失败)。
-    await expect.poll(async () => {
-      const back = await win.getByTestId('workspace-back-btn').isVisible().catch(() => false)
-      const detail = await win.getByTestId('view-detail').isVisible().catch(() => false)
-      return back || detail
-    }).toBe(true)
-    const opened = await win.getByTestId('workspace-back-btn').isVisible().catch(() => false)
+    await expect
+      .poll(async () => {
+        const back = await win
+          .getByTestId('workspace-back-btn')
+          .isVisible()
+          .catch(() => false)
+        const detail = await win
+          .getByTestId('view-detail')
+          .isVisible()
+          .catch(() => false)
+        return back || detail
+      })
+      .toBe(true)
+    const opened = await win
+      .getByTestId('workspace-back-btn')
+      .isVisible()
+      .catch(() => false)
     if (opened) {
       const toolbarLayout = await win.evaluate(() => {
         const topbar = document.querySelector('.topbar')?.getBoundingClientRect()
-        const back = document.querySelector('[data-testid="workspace-back-btn"]')?.getBoundingClientRect()
+        const back = document
+          .querySelector('[data-testid="workspace-back-btn"]')
+          ?.getBoundingClientRect()
         return topbar && back ? { topbarRight: topbar.right, backRight: back.right } : null
       })
       expect(toolbarLayout).not.toBeNull()
-      if (toolbarLayout) expect(toolbarLayout.topbarRight - toolbarLayout.backRight).toBeLessThanOrEqual(16)
+      if (toolbarLayout)
+        expect(toolbarLayout.topbarRight - toolbarLayout.backRight).toBeLessThanOrEqual(16)
       await win.getByTestId('workspace-back-btn').click()
     }
   }
@@ -288,7 +338,11 @@ test('侧栏实例名称进入工作区或错误详情，随后可删除实例',
     if (!button) return null
     const box = button.getBoundingClientRect()
     const style = getComputedStyle(button)
-    return { right: window.innerWidth - box.right, bottom: window.innerHeight - box.bottom, position: style.position }
+    return {
+      right: window.innerWidth - box.right,
+      bottom: window.innerHeight - box.bottom,
+      position: style.position
+    }
   })
   // 删除按钮悬在底部信息栏之上（信息栏 44px + 16px 间隙），右缘 20px。
   expect(deletePosition).toEqual({ right: 20, bottom: 60, position: 'fixed' })
@@ -303,6 +357,9 @@ test('侧栏实例名称进入工作区或错误详情，随后可删除实例',
   // 删除(二次确认)→ 回空态
   await deleteButton.click()
   await expect(win.getByTestId('confirm-delete')).toBeVisible()
-  await win.getByTestId('confirm-delete').getByRole('button', { name: '删除', exact: true }).click({ force: true })
+  await win
+    .getByTestId('confirm-delete')
+    .getByRole('button', { name: '删除', exact: true })
+    .click({ force: true })
   await expect(win.getByTestId('view-empty')).toBeVisible()
 })

@@ -80,7 +80,9 @@ test('明文警告显示为短标签，完整详情通过 data-tip 提供', asyn
 
   // 「连接方式」「运行环境」两张事实卡放开文本选中（body 默认 user-select:none）。
   const selectable = await win.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll<HTMLElement>('.detail-page .card.selectable'))
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>('.detail-page .card.selectable')
+    )
     return {
       count: cards.length,
       selects: cards.map((card) => getComputedStyle(card).userSelect)
@@ -90,7 +92,10 @@ test('明文警告显示为短标签，完整详情通过 data-tip 提供', asyn
   expect(selectable.selects).toEqual(['text', 'text'])
   // 视觉取证:详情页(含胶囊 + 编辑按钮)。
   // animations:'disabled' —— CSS 动画(如 modal fade/rise)快进到终态,避免截到半透明中间帧
-  await win.screenshot({ path: join(SHOT_DIR, 'detail-cleartext-pill.png'), animations: 'disabled' })
+  await win.screenshot({
+    path: join(SHOT_DIR, 'detail-cleartext-pill.png'),
+    animations: 'disabled'
+  })
 })
 
 test('本地实例可编辑，端口留空时回到自动分配', async () => {
@@ -119,9 +124,7 @@ test('本地实例可编辑，端口留空时回到自动分配', async () => {
 
   // 打开即聚焦对话框本身;Tab / Shift+Tab 只在对话框内圈闭,不落到背后的主窗口。
   await expect
-    .poll(() =>
-      win.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? '')
-    )
+    .poll(() => win.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? ''))
     .toBe('edit-dialog')
   const focusInside = (): Promise<boolean> =>
     win.evaluate(() => {

@@ -66,7 +66,9 @@ describe('retryProbe', () => {
 
   it('首次即就绪：只探测一次', async () => {
     const probe = vi.fn(async () => true)
-    await expect(retryProbe({ ...base, probe, retries: 5, shouldAbort: () => false })).resolves.toBe(true)
+    await expect(
+      retryProbe({ ...base, probe, retries: 5, shouldAbort: () => false })
+    ).resolves.toBe(true)
     expect(probe).toHaveBeenCalledTimes(1)
   })
 
@@ -76,7 +78,9 @@ describe('retryProbe', () => {
       calls += 1
       return calls >= 3
     }
-    await expect(retryProbe({ ...base, probe, retries: 5, shouldAbort: () => false })).resolves.toBe(true)
+    await expect(
+      retryProbe({ ...base, probe, retries: 5, shouldAbort: () => false })
+    ).resolves.toBe(true)
     expect(calls).toBe(3)
   })
 
@@ -86,13 +90,17 @@ describe('retryProbe', () => {
       calls += 1
       return false
     }
-    await expect(retryProbe({ ...base, probe, retries: 3, shouldAbort: () => false })).resolves.toBe(false)
+    await expect(
+      retryProbe({ ...base, probe, retries: 3, shouldAbort: () => false })
+    ).resolves.toBe(false)
     expect(calls).toBe(3)
   })
 
   it('循环前已中止：返回 null 且不探测', async () => {
     const probe = vi.fn(async () => true)
-    await expect(retryProbe({ ...base, probe, retries: 3, shouldAbort: () => true })).resolves.toBeNull()
+    await expect(
+      retryProbe({ ...base, probe, retries: 3, shouldAbort: () => true })
+    ).resolves.toBeNull()
     expect(probe).not.toHaveBeenCalled()
   })
 
@@ -102,7 +110,9 @@ describe('retryProbe', () => {
       aborted = true
       return true
     }
-    await expect(retryProbe({ ...base, probe, retries: 3, shouldAbort: () => aborted })).resolves.toBeNull()
+    await expect(
+      retryProbe({ ...base, probe, retries: 3, shouldAbort: () => aborted })
+    ).resolves.toBeNull()
   })
 
   it('末次探测后不再等待（retries=1 不触发重试间隔）', async () => {

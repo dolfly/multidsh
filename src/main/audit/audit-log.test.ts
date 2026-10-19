@@ -2,11 +2,7 @@ import { mkdtemp, readFile, readdir, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  AUDIT_LOG_NAME,
-  createAuditLog,
-  projectAuditRecord
-} from './audit-log'
+import { AUDIT_LOG_NAME, createAuditLog, projectAuditRecord } from './audit-log'
 import type { AuditEntry } from './audit-log'
 
 let dir: string
@@ -64,12 +60,7 @@ describe('audit-log（ JSONL 审计）', () => {
       expect(raw).not.toContain(secret)
     }
     const lines = await readLines(join(dir, AUDIT_LOG_NAME))
-    expect(Object.keys(lines[0] ?? {}).sort()).toEqual([
-      'event',
-      'instanceId',
-      'result',
-      'ts'
-    ])
+    expect(Object.keys(lines[0] ?? {}).sort()).toEqual(['event', 'instanceId', 'result', 'ts'])
   })
 
   it('result 超长被截断(不会把长文本写进日志)', () => {

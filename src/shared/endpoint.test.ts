@@ -253,13 +253,19 @@ describe('tryParseEndpoint', () => {
 describe('isSameEndpoint', () => {
   it('默认端口与省略写法的端点视为同一个', () => {
     expect(
-      isSameEndpoint(parseEndpointUrl('http://DSH.example.com:80'), parseEndpointUrl('dsh.example.com'))
+      isSameEndpoint(
+        parseEndpointUrl('http://DSH.example.com:80'),
+        parseEndpointUrl('dsh.example.com')
+      )
     ).toBe(true)
   })
 
   it('不同端口或不同子路径视为不同端点', () => {
     expect(
-      isSameEndpoint(parseEndpointUrl('http://dsh.example.com'), parseEndpointUrl('http://dsh.example.com:3080'))
+      isSameEndpoint(
+        parseEndpointUrl('http://dsh.example.com'),
+        parseEndpointUrl('http://dsh.example.com:3080')
+      )
     ).toBe(false)
     expect(
       isSameEndpoint(
@@ -272,13 +278,29 @@ describe('isSameEndpoint', () => {
 
 describe('isLoopbackHost', () => {
   it('识别回环写法', () => {
-    for (const host of ['localhost', 'LOCALHOST', '127.0.0.1', '127.1.2.3', '127.1', '::1', '[::1]', 'dsh.localhost']) {
+    for (const host of [
+      'localhost',
+      'LOCALHOST',
+      '127.0.0.1',
+      '127.1.2.3',
+      '127.1',
+      '::1',
+      '[::1]',
+      'dsh.localhost'
+    ]) {
       expect(isLoopbackHost(host), host).toBe(true)
     }
   })
 
   it('不把远端地址与监听通配地址当作回环', () => {
-    for (const host of ['dsh.example.com', '10.0.0.1', '192.168.1.9', '0.0.0.0', '::', '127.0.0.1.example.com']) {
+    for (const host of [
+      'dsh.example.com',
+      '10.0.0.1',
+      '192.168.1.9',
+      '0.0.0.0',
+      '::',
+      '127.0.0.1.example.com'
+    ]) {
       expect(isLoopbackHost(host), host).toBe(false)
     }
   })

@@ -48,7 +48,11 @@ export default function Sidebar(): ReactNode {
     hoveredInstanceRef.current = { element, name }
     if (!rail) return
     const rect = element.getBoundingClientRect()
-    void window.dshHub?.runtime.showTooltip({ text: name, x: 72, y: Math.round(rect.top + rect.height / 2) })
+    void window.dshHub?.runtime.showTooltip({
+      text: name,
+      x: 72,
+      y: Math.round(rect.top + rect.height / 2)
+    })
   }
 
   const hideRailTooltip = (): void => {
@@ -237,7 +241,10 @@ export default function Sidebar(): ReactNode {
   const handleDrop = useCallback(
     (itemId: string): void => {
       if (!draggedId || draggedId === itemId) return
-      const order = dragStartOrderRef.current.length > 0 ? dragStartOrderRef.current : instances.map((i) => i.id)
+      const order =
+        dragStartOrderRef.current.length > 0
+          ? dragStartOrderRef.current
+          : instances.map((i) => i.id)
       const fromIndex = order.indexOf(draggedId)
       const toIndex = order.indexOf(itemId)
       if (fromIndex === -1 || toIndex === -1) return
@@ -330,20 +337,18 @@ export default function Sidebar(): ReactNode {
         </div>
       </div>
       <nav className="side-scroll" aria-label={t('nav.instanceList')}>
-        {grouped ? (
-          grouped.map((group) => (
-            <div key={group.transport}>
-              <div className="group-head">
-                <span>
-                  {t(TYPE_INFO[group.transport].labelKey)} · {group.items.length}
-                </span>
+        {grouped
+          ? grouped.map((group) => (
+              <div key={group.transport}>
+                <div className="group-head">
+                  <span>
+                    {t(TYPE_INFO[group.transport].labelKey)} · {group.items.length}
+                  </span>
+                </div>
+                {group.items.map((item) => renderItem(item, false))}
               </div>
-              {group.items.map((item) => renderItem(item, false))}
-            </div>
-          ))
-        ) : (
-          filtered.map((item) => renderItem(item, true))
-        )}
+            ))
+          : filtered.map((item) => renderItem(item, true))}
       </nav>
       <div className="side-foot">
         <button
@@ -416,7 +421,8 @@ function InstanceItem(props: {
   const classNames = ['inst']
   if (props.selected) classNames.push('selected')
   if (props.isDragging) classNames.push('dragging')
-  if (props.dragOver) classNames.push(props.dragPosition === 'top' ? 'drag-over-top' : 'drag-over-bottom')
+  if (props.dragOver)
+    classNames.push(props.dragPosition === 'top' ? 'drag-over-top' : 'drag-over-bottom')
 
   return (
     <button
@@ -451,7 +457,11 @@ function InstanceItem(props: {
         <span className="type-label">{t(TYPE_INFO[props.item.transport].labelKey)}</span>
       </span>
       {props.hotkey !== undefined && (
-        <span className="inst-hotkey" data-testid={`hotkey-badge-${props.hotkey}`} aria-hidden="true">
+        <span
+          className="inst-hotkey"
+          data-testid={`hotkey-badge-${props.hotkey}`}
+          aria-hidden="true"
+        >
           #{props.hotkey}
         </span>
       )}

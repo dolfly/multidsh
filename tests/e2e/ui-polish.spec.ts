@@ -23,7 +23,8 @@ function decodePng(buffer: Buffer): { width: number; height: number; pixels: Buf
     if (type === 'IHDR') {
       width = data.readUInt32BE(0)
       height = data.readUInt32BE(4)
-      if (data[8] !== 8 || data[9] !== 6) throw new Error(`unsupported png: depth=${data[8]} color=${data[9]}`)
+      if (data[8] !== 8 || data[9] !== 6)
+        throw new Error(`unsupported png: depth=${data[8]} color=${data[9]}`)
     } else if (type === 'IDAT') {
       chunks.push(data)
     }
@@ -72,8 +73,7 @@ function inspectTooltipCorners(png: Buffer): {
   const isBorder = (x: number, y: number): boolean => {
     const i = (y * width + x) * 4
     if (pixels.readUInt8(i + 3) < 200) return false
-    const luminance =
-      (pixels.readUInt8(i) + pixels.readUInt8(i + 1) + pixels.readUInt8(i + 2)) / 3
+    const luminance = (pixels.readUInt8(i) + pixels.readUInt8(i + 1) + pixels.readUInt8(i + 2)) / 3
     return luminance > 180 && luminance < 245
   }
   let minX = width
@@ -285,7 +285,9 @@ test('顶栏横跨全宽:sidebar 边框不到窗口顶,红绿灯落在顶栏带�
       shellW: shell.getBoundingClientRect().width,
       sidebarTop: sb.y,
       sidebarWidth: sb.width,
-      titleX: (topbar.querySelector('.tb-title') as HTMLElement | null)?.getBoundingClientRect().x ?? null,
+      titleX:
+        (topbar.querySelector('.tb-title') as HTMLElement | null)?.getBoundingClientRect().x ??
+        null,
       topbarBottom: tb.y + tb.height,
       templateAreas: style.gridTemplateAreas,
       columns: style.gridTemplateColumns
@@ -300,7 +302,8 @@ test('顶栏横跨全宽:sidebar 边框不到窗口顶,红绿灯落在顶栏带�
   expect(layout.sidebarTop).toBeGreaterThanOrEqual(layout.topbarBottom - 1)
   // macOS 展开态:标题与 sidebar 内容轴对齐，而不是紧贴红绿灯。Linux 无此约束。
   const isMac = process.platform === 'darwin'
-  if (isMac && layout.titleX !== null) expect(layout.titleX).toBeGreaterThanOrEqual(layout.sidebarWidth - 1)
+  if (isMac && layout.titleX !== null)
+    expect(layout.titleX).toBeGreaterThanOrEqual(layout.sidebarWidth - 1)
   const railItemId = await win.evaluate(async () => {
     const result = await window.dshHub.instances.create({
       transport: 'http',
@@ -323,10 +326,13 @@ test('顶栏横跨全宽:sidebar 边框不到窗口顶,红绿灯落在顶栏带�
   const sidebarBefore = await win.getByTestId('sidebar').boundingBox()
   expect(collapseBefore).not.toBeNull()
   expect(sidebarBefore).not.toBeNull()
-  if (collapseBefore && sidebarBefore) expect(collapseBefore.y).toBeGreaterThan(sidebarBefore.y + sidebarBefore.height / 2)
+  if (collapseBefore && sidebarBefore)
+    expect(collapseBefore.y).toBeGreaterThan(sidebarBefore.y + sidebarBefore.height / 2)
   // 收起按钮与设置/主题同排(位于 .side-foot .row 内),不再独占一行
-  const collapseInRow = await win.evaluate(
-    () => Boolean(document.querySelector('[data-testid="sidebar-collapse-btn"]')?.closest('.side-foot .row'))
+  const collapseInRow = await win.evaluate(() =>
+    Boolean(
+      document.querySelector('[data-testid="sidebar-collapse-btn"]')?.closest('.side-foot .row')
+    )
   )
   expect(collapseInRow).toBe(true)
   // 展开态 logo 保持设计尺寸 28×28(此前 rail 下被 flex:0 压成 16px)
@@ -344,13 +350,17 @@ test('顶栏横跨全宽:sidebar 边框不到窗口顶,红绿灯落在顶栏带�
   await expect
     .poll(() =>
       win.evaluate(
-        () => getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element).gridTemplateColumns
+        () =>
+          getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element)
+            .gridTemplateColumns
       )
     )
     .toContain('64px')
   await win.screenshot({ path: join(SHOT_DIR, 'shell-rail.png'), animations: 'disabled' })
   const railCols = await win.evaluate(
-    () => getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element).gridTemplateColumns
+    () =>
+      getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element)
+        .gridTemplateColumns
   )
   expect(railCols.split(' ')[0]).toBe('64px')
   await expect(railInstance).toHaveAttribute('title', '收起态留白检查')
@@ -358,14 +368,16 @@ test('顶栏横跨全宽:sidebar 边框不到窗口顶,红绿灯落在顶栏带�
   const brandAfter = await win.getByTestId('brand').boundingBox()
   expect(collapseAfter).not.toBeNull()
   expect(brandAfter).not.toBeNull()
-  if (collapseAfter && brandAfter) expect(collapseAfter.y).toBeGreaterThan(brandAfter.y + brandAfter.height)
+  if (collapseAfter && brandAfter)
+    expect(collapseAfter.y).toBeGreaterThan(brandAfter.y + brandAfter.height)
   // 折叠态 logo 不得小于展开态(此前被压缩到 16px)
   const railMark = await win.evaluate(() => {
     const mark = document.querySelector('[data-testid="brand"] .brand-mark') as HTMLElement | null
     return mark ? Math.round(mark.getBoundingClientRect().width) : null
   })
   expect(railMark).not.toBeNull()
-  if (railMark !== null && expandedMark !== null) expect(Math.abs(railMark - expandedMark)).toBeLessThanOrEqual(3)
+  if (railMark !== null && expandedMark !== null)
+    expect(Math.abs(railMark - expandedMark)).toBeLessThanOrEqual(3)
   const railItem = await win.getByTestId(`inst-${railItemId}`).boundingBox()
   expect(railItem).not.toBeNull()
   if (railItem) {
@@ -375,7 +387,11 @@ test('顶栏横跨全宽:sidebar 边框不到窗口顶,红绿灯落在顶栏带�
   await win.keyboard.press('Meta+b')
   // 收尾等展开真正生效：下一用例按 classList 归一化状态，读到中间态会二次按键来回翻转。
   await expect
-    .poll(() => win.evaluate(() => document.querySelector('[data-testid="app-shell"]')?.classList.contains('rail')))
+    .poll(() =>
+      win.evaluate(() =>
+        document.querySelector('[data-testid="app-shell"]')?.classList.contains('rail')
+      )
+    )
     .toBe(false)
 })
 
@@ -399,7 +415,11 @@ test('收起态悬停提示的四边与圆角一致', async () => {
   if (!collapsed) await win.keyboard.press('Meta+b')
   await expect
     .poll(() =>
-      win.evaluate(() => getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element).gridTemplateColumns)
+      win.evaluate(
+        () =>
+          getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element)
+            .gridTemplateColumns
+      )
     )
     .toContain('64px')
   const railItem = win.getByTestId(`inst-${instanceId}`)
@@ -413,12 +433,19 @@ test('收起态悬停提示的四边与圆角一致', async () => {
       async () => {
         const page = app.windows().find((candidate) => candidate.url().startsWith('data:text/html'))
         if (!page) return null
-        return (await page.locator('main').textContent().catch(() => null)) ?? null
+        return (
+          (await page
+            .locator('main')
+            .textContent()
+            .catch(() => null)) ?? null
+        )
       },
       { timeout: 10000 }
     )
     .toBe('收起态提示边框')
-  const tooltipPage = app.windows().find((candidate) => candidate.url().startsWith('data:text/html'))
+  const tooltipPage = app
+    .windows()
+    .find((candidate) => candidate.url().startsWith('data:text/html'))
   expect(tooltipPage).toBeDefined()
   const tooltipStyle = await tooltipPage?.evaluate(() => {
     const box = document.querySelector('main')
@@ -429,8 +456,18 @@ test('收起态悬停提示的四边与圆角一致', async () => {
     return {
       text: box.textContent,
       radius: style.borderTopLeftRadius,
-      widths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
-      colors: [style.borderTopColor, style.borderRightColor, style.borderBottomColor, style.borderLeftColor],
+      widths: [
+        style.borderTopWidth,
+        style.borderRightWidth,
+        style.borderBottomWidth,
+        style.borderLeftWidth
+      ],
+      colors: [
+        style.borderTopColor,
+        style.borderRightColor,
+        style.borderBottomColor,
+        style.borderLeftColor
+      ],
       // 圆角描边必须完整落在窗口内,否则四角会被窗口边界裁掉。
       inset: {
         top: rect.top - body.top,
@@ -456,9 +493,13 @@ test('收起态悬停提示的四边与圆角一致', async () => {
   // 隐藏窗口模式下 macOS 不为不显示的子窗口持续合成帧,page.screenshot 会等不到稳定帧,
   // 因此经主进程用 capturePage(stayHidden) 强制离屏渲染一帧;透明窗口的截图自带 alpha。
   const shot = await app.evaluate(({ BrowserWindow }) => {
-    const tooltip = BrowserWindow.getAllWindows().find((window) => window.webContents.getURL().startsWith('data:text/html'))
+    const tooltip = BrowserWindow.getAllWindows().find((window) =>
+      window.webContents.getURL().startsWith('data:text/html')
+    )
     if (!tooltip) return null
-    return tooltip.webContents.capturePage(undefined, { stayHidden: true }).then((image) => image.toPNG())
+    return tooltip.webContents
+      .capturePage(undefined, { stayHidden: true })
+      .then((image) => image.toPNG())
   })
   expect(shot).not.toBeNull()
   const corners = shot ? inspectTooltipCorners(Buffer.from(shot)) : null
@@ -471,10 +512,12 @@ test('收起态悬停提示的四边与圆角一致', async () => {
   await win.mouse.move(600, 400)
   await expect
     .poll(() =>
-      app.evaluate(({ BrowserWindow }) =>
-        BrowserWindow.getAllWindows().filter(
-          (candidate) => candidate.isVisible() && candidate.webContents.getURL().startsWith('data:text/html')
-        ).length
+      app.evaluate(
+        ({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows().filter(
+            (candidate) =>
+              candidate.isVisible() && candidate.webContents.getURL().startsWith('data:text/html')
+          ).length
       )
     )
     .toBe(0)
@@ -503,12 +546,14 @@ test('刷新后不会保留旧的原生工作区边界', async () => {
   await expect
     .poll(() =>
       app.evaluate(({ BrowserWindow }) => {
-        const workspace = BrowserWindow.getAllWindows()
-          .find((candidate) => candidate.contentView.children.length > 0)
-          ?.contentView.children[0] as
+        const workspace = BrowserWindow.getAllWindows().find(
+          (candidate) => candidate.contentView.children.length > 0
+        )?.contentView.children[0] as
           | { isVisible?: () => boolean; getBounds?: () => { width: number; height: number } }
           | undefined
-        return workspace ? { visible: workspace.isVisible?.() ?? true, bounds: workspace.getBounds?.() ?? null } : null
+        return workspace
+          ? { visible: workspace.isVisible?.() ?? true, bounds: workspace.getBounds?.() ?? null }
+          : null
       })
     )
     .toMatchObject({ bounds: { width: 0, height: 0 } })
@@ -535,8 +580,11 @@ test('SSH 认证对话框限制在右侧工作区且指纹复制行不溢出', a
   await workspaceRailItem.hover()
   await expect
     .poll(() =>
-      app.evaluate(({ BrowserWindow }) =>
-        BrowserWindow.getAllWindows().filter((candidate) => candidate !== BrowserWindow.getFocusedWindow() && candidate.isVisible()).length
+      app.evaluate(
+        ({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows().filter(
+            (candidate) => candidate !== BrowserWindow.getFocusedWindow() && candidate.isVisible()
+          ).length
       )
     )
     .toBeGreaterThan(0)
@@ -657,7 +705,10 @@ test('认证链路:按钮状态化 + 密码屏/OTP 屏 + 无 OTP 直连 + pill h
     await expect(win.getByTestId('login-btn')).toContainText('登录')
     await expect(win.getByTestId('login-btn')).not.toContainText('重新登录')
     expect(await win.getByTestId('logout-btn').count()).toBe(0)
-    await win.screenshot({ path: join(SHOT_DIR, 'detail-not-logged-in.png'), animations: 'disabled' })
+    await win.screenshot({
+      path: join(SHOT_DIR, 'detail-not-logged-in.png'),
+      animations: 'disabled'
+    })
 
     // 明文胶囊 hover 出现提示气泡
     const pill = win.getByTestId('cleartext-warning')
@@ -926,10 +977,17 @@ test('侧边栏拖拽排序 + 首页表格同步', async () => {
     const r = await window.dshHub.instances.list()
     return r.ok ? r.value.map((i) => ({ id: i.id, name: i.name })) : []
   })
-  expect(listBefore.slice(-3).map((i) => i.name)).toEqual(['排序实例 C', '排序实例 A', '排序实例 B'])
+  expect(listBefore.slice(-3).map((i) => i.name)).toEqual([
+    '排序实例 C',
+    '排序实例 A',
+    '排序实例 B'
+  ])
 
   // 把三个新实例重排为 A → B → C,同时保留其他实例在前面
-  const others = listBefore.slice(0, -3).map((i) => i.id).filter((id): id is string => id !== undefined)
+  const others = listBefore
+    .slice(0, -3)
+    .map((i) => i.id)
+    .filter((id): id is string => id !== undefined)
   const [idC, idA, idB] = ids
   const newOrder: string[] = [...others, idA!, idB!, idC!]
   const reordered = await win.evaluate(async (reorderedIds) => {
@@ -965,7 +1023,7 @@ test('侧边栏拖拽排序 + 首页表格同步', async () => {
   const rowCount = await rows.count()
   const rowTexts: string[] = []
   for (let i = 0; i < rowCount; i++) {
-    rowTexts.push(await rows.nth(i).textContent() ?? '')
+    rowTexts.push((await rows.nth(i).textContent()) ?? '')
   }
   const aRow = rowTexts.findIndex((t) => t.includes('排序实例 A'))
   const bRow = rowTexts.findIndex((t) => t.includes('排序实例 B'))
@@ -993,7 +1051,12 @@ test('收起侧栏时原生工作区跟随扩大（DOM 与原生边界一致）'
     })
 
   // 取面积最大的子视图 = 当前可见的原生工作区（其余子视图是 0×0 或小浮层）。
-  const nativeBounds = async (): Promise<{ x: number; y: number; width: number; height: number } | null> =>
+  const nativeBounds = async (): Promise<{
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null> =>
     app.evaluate(({ BrowserWindow }) => {
       const host = BrowserWindow.getAllWindows().find(
         (candidate) => candidate.contentView.children.length > 0
@@ -1014,16 +1077,19 @@ test('收起侧栏时原生工作区跟随扩大（DOM 与原生边界一致）'
     })
 
   try {
-    const instanceId = await win.evaluate(async ({ port: endpointPort }) => {
-      const created = await window.dshHub.instances.create({
-        transport: 'http',
-        name: '边界跟随检查',
-        authMode: 'none',
-        endpointUrl: `http://127.0.0.1:${endpointPort}/dsh`
-      })
-      if (!created.ok) throw new Error(created.message)
-      return created.value.id
-    }, { port })
+    const instanceId = await win.evaluate(
+      async ({ port: endpointPort }) => {
+        const created = await window.dshHub.instances.create({
+          transport: 'http',
+          name: '边界跟随检查',
+          authMode: 'none',
+          endpointUrl: `http://127.0.0.1:${endpointPort}/dsh`
+        })
+        if (!created.ok) throw new Error(created.message)
+        return created.value.id
+      },
+      { port }
+    )
     await win.reload()
     await expect(win.getByTestId('app-shell')).toBeVisible()
     await expect(win.getByTestId(`inst-${instanceId}`)).toBeVisible()

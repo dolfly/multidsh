@@ -28,7 +28,9 @@ describe('GatewayClient integration', () => {
     expect(login.ok).toBe(true)
     expect(client.hasSession()).toBe(true)
     // Cookie 属性与真实网关一致(Path=/; HttpOnly; SameSite=Strict)
-    const record = (client.jar as unknown as { get(name: string): { attributes: string } | null }).get('dsh_auth')
+    const record = (
+      client.jar as unknown as { get(name: string): { attributes: string } | null }
+    ).get('dsh_auth')
     expect(record).not.toBeNull()
     expect(record?.attributes).toMatch(/HttpOnly/)
     expect(record?.attributes).toMatch(/SameSite=Strict/)

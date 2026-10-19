@@ -64,7 +64,15 @@ test.beforeAll(async () => {
   ].join('\n')
   fakeDsh = spawn(
     process.execPath,
-    ['-e', script, '/tmp/fake-dsh/dsh', 'web', '--patch', '/tmp/fake-dsh/cordis.dush.patch.yml', '--no-open'],
+    [
+      '-e',
+      script,
+      '/tmp/fake-dsh/dsh',
+      'web',
+      '--patch',
+      '/tmp/fake-dsh/cordis.dush.patch.yml',
+      '--no-open'
+    ],
     { stdio: ['ignore', 'pipe', 'ignore'], detached: false }
   )
   await new Promise<void>((resolvePromise, reject) => {
@@ -123,26 +131,28 @@ test('远程网关登录重定向不把正常 ERR_FAILED 写入主进程错误�
     await win.getByTestId('instances-table').getByText('远程登录重定向', { exact: true }).click()
     await expect(win.getByTestId('open-view-btn')).toBeEnabled()
     await win.getByTestId('open-view-btn').click()
-    await expect.poll(async () =>
-      app.evaluate(({ BrowserWindow }) => {
-        const workspace = BrowserWindow.getAllWindows()
-          .find((candidate) => candidate.contentView.children.length > 0)
-          ?.contentView.children[0] as
-          | { webContents?: { getURL(): string } }
-          | undefined
-        return workspace?.webContents?.getURL() ?? ''
-      })
-    ).toContain('/login')
-    await expect.poll(async () =>
-      app.evaluate(({ BrowserWindow }) => {
-        const workspace = BrowserWindow.getAllWindows()
-          .find((candidate) => candidate.contentView.children.length > 0)
-          ?.contentView.children[0] as
-          | { getBounds?: () => { x: number; y: number; width: number; height: number } }
-          | undefined
-        return workspace?.getBounds?.() ?? null
-      })
-    ).toMatchObject({ x: 262, y: 46, width: expect.any(Number), height: expect.any(Number) })
+    await expect
+      .poll(async () =>
+        app.evaluate(({ BrowserWindow }) => {
+          const workspace = BrowserWindow.getAllWindows().find(
+            (candidate) => candidate.contentView.children.length > 0
+          )?.contentView.children[0] as { webContents?: { getURL(): string } } | undefined
+          return workspace?.webContents?.getURL() ?? ''
+        })
+      )
+      .toContain('/login')
+    await expect
+      .poll(async () =>
+        app.evaluate(({ BrowserWindow }) => {
+          const workspace = BrowserWindow.getAllWindows().find(
+            (candidate) => candidate.contentView.children.length > 0
+          )?.contentView.children[0] as
+            | { getBounds?: () => { x: number; y: number; width: number; height: number } }
+            | undefined
+          return workspace?.getBounds?.() ?? null
+        })
+      )
+      .toMatchObject({ x: 262, y: 46, width: expect.any(Number), height: expect.any(Number) })
     await expect(win.getByTestId('tb-title')).toHaveText('远程登录重定向')
     // 认证页由右侧 WebContentsView 自己呈现；全局认证 Modal 只能由用户主动打开。
     await expect(win.getByTestId('auth-panel')).toBeHidden()
@@ -180,7 +190,10 @@ test('HTTP 实例未启动也能直接打开视图', async () => {
   // 关键:没有点过「启动」,开窗按钮必须可用
   const openBtn = win.getByTestId('open-view-btn')
   await expect(openBtn).toBeEnabled()
-  await win.screenshot({ path: join(SHOT_DIR, 'http-open-without-start.png'), animations: 'disabled' })
+  await win.screenshot({
+    path: join(SHOT_DIR, 'http-open-without-start.png'),
+    animations: 'disabled'
+  })
 })
 
 test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，不新建实例', async () => {
@@ -194,15 +207,19 @@ test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，
   await win.getByRole('button', { name: '下一步' }).click()
   await win.getByTestId('wizard-create').click()
   await expect(win.getByTestId('wizard')).toBeHidden({ timeout: 30_000 })
-  await expect.poll(async () =>
-    win.evaluate(async () => {
-      const result = await window.dshHub.instances.list()
-      return result.ok ? result.value.filter((item) => item.name === '重启后复用实例') : []
-    })
-  ).toHaveLength(1)
+  await expect
+    .poll(async () =>
+      win.evaluate(async () => {
+        const result = await window.dshHub.instances.list()
+        return result.ok ? result.value.filter((item) => item.name === '重启后复用实例') : []
+      })
+    )
+    .toHaveLength(1)
   const firstAddress = await win.evaluate(async () => {
     const result = await window.dshHub.instances.list()
-    return result.ok ? result.value.find((item) => item.name === '重启后复用实例')?.address ?? null : null
+    return result.ok
+      ? (result.value.find((item) => item.name === '重启后复用实例')?.address ?? null)
+      : null
   })
   expect(firstAddress).toMatch(/^127\.0\.0\.1:\d+$/)
   const registry = await readFile(join(DATA_DIR, 'registry', 'instances.json'), 'utf8')
@@ -222,20 +239,23 @@ test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，
   await win.getByRole('button', { name: '下一步' }).click()
   await win.getByTestId('wizard-create').click()
   await expect(win.getByTestId('wizard')).toBeHidden({ timeout: 30_000 })
-  await expect.poll(async () =>
-    win.evaluate(async () => {
-      const result = await window.dshHub.instances.list()
-      return result.ok ? result.value.filter((item) => item.name === '重启后复用实例') : []
-    })
-  ).toHaveLength(1)
+  await expect
+    .poll(async () =>
+      win.evaluate(async () => {
+        const result = await window.dshHub.instances.list()
+        return result.ok ? result.value.filter((item) => item.name === '重启后复用实例') : []
+      })
+    )
+    .toHaveLength(1)
   const restartedAddress = await win.evaluate(async () => {
     const result = await window.dshHub.instances.list()
-    return result.ok ? result.value.find((item) => item.name === '重启后复用实例')?.address ?? null : null
+    return result.ok
+      ? (result.value.find((item) => item.name === '重启后复用实例')?.address ?? null)
+      : null
   })
   expect(restartedAddress).toBe(firstAddress)
   await expect(win.getByTestId('tb-sub')).toHaveText(/127\.0\.0\.1:\d+/)
 })
-
 
 test('探测到已运行的 dsh web 后可接管并直接开窗', async () => {
   test.setTimeout(60_000)
@@ -263,19 +283,26 @@ test('探测到已运行的 dsh web 后可接管并直接开窗', async () => {
   // 详情页出现「本机已在运行的 dsh web」卡片(只读探测命中假 dsh web)
   const card = win.getByTestId('external-dsh-card')
   await expect(card).toBeVisible({ timeout: 25_000 })
-  await win.screenshot({ path: join(SHOT_DIR, 'external-dsh-detected.png'), animations: 'disabled' })
+  await win.screenshot({
+    path: join(SHOT_DIR, 'external-dsh-detected.png'),
+    animations: 'disabled'
+  })
 
   await card.locator('[data-testid^="external-access-"]').first().fill('external-token')
   await card.locator('[data-testid^="adopt-btn-"]:not([disabled])').first().click()
-  await expect.poll(async () =>
-    app.evaluate(({ BrowserWindow }) =>
-      BrowserWindow.getAllWindows()
-        .find((candidate) => candidate.contentView.children.length > 0)
-        ?.contentView.children.map((child) =>
-        (child as { webContents?: { getURL(): string } }).webContents?.getURL() ?? ''
-      ) ?? []
+  await expect
+    .poll(async () =>
+      app.evaluate(
+        ({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()
+            .find((candidate) => candidate.contentView.children.length > 0)
+            ?.contentView.children.map(
+              (child) =>
+                (child as { webContents?: { getURL(): string } }).webContents?.getURL() ?? ''
+            ) ?? []
+      )
     )
-  ).toContainEqual(expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+/))
+    .toContainEqual(expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+/))
   await expect(win.getByTestId('workspace-back-btn')).toBeVisible()
   await win.getByTestId('new-instance-btn').click()
   await expect(win.getByTestId('wizard')).toBeVisible()

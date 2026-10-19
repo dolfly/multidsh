@@ -26,10 +26,7 @@ export const initialAuthPanelModel: AuthPanelModel = {
 }
 
 /** 打开面板(详情页/浮层触发) */
-export function openAuthPanel(
-  model: AuthPanelModel,
-  target: AuthPanelTarget
-): AuthPanelModel {
+export function openAuthPanel(model: AuthPanelModel, target: AuthPanelTarget): AuthPanelModel {
   return { ...model, target, state: model.target?.id === target.id ? model.state : null }
 }
 
@@ -58,8 +55,7 @@ export function applyAuthState(
   return {
     target,
     state: event.state,
-    lockUntil:
-      event.state.lockedForMs > 0 ? now + event.state.lockedForMs : null
+    lockUntil: event.state.lockedForMs > 0 ? now + event.state.lockedForMs : null
   }
 }
 

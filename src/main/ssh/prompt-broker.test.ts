@@ -96,7 +96,12 @@ describe('prompt-broker（用户提示代理）', () => {
     expect(sent[0]?.channel).toBe('dsh-version:confirmRequest')
     const requestId = sent[0]?.payload.requestId ?? ''
     expect(broker.listConfirms()).toEqual([
-      { requestId, kind: 'dsh-download', version: '0.1.7-rc.1', registry: 'https://registry.npmmirror.com' }
+      {
+        requestId,
+        kind: 'dsh-download',
+        version: '0.1.7-rc.1',
+        registry: 'https://registry.npmmirror.com'
+      }
     ])
     expect(broker.replyConfirm(requestId, true)).toBe(true)
     await expect(promise).resolves.toBe(true)

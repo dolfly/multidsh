@@ -121,7 +121,8 @@ export function evaluateHostTrust(
   }
   // 已信任但服务端不再出示（含同类型不同值、类型消失）——两者都应告警
   const mismatched = trusted.filter(
-    (entry) => !scanned.some((candidate) => candidate.type === entry.type && candidate.blob === entry.blob)
+    (entry) =>
+      !scanned.some((candidate) => candidate.type === entry.type && candidate.blob === entry.blob)
   )
   return { verdict: 'changed', scanned, mismatched }
 }

@@ -63,9 +63,17 @@ function releaseInput(): { repoUrl: string; version: string; fallbackPageUrl: st
 }
 
 describe('extractChangelogSection', () => {
-  const doc = ['# 变更日志', '', '## 1.2.3', '', '- 支持安装两步', '', '## 1.2.2', '', '- 旧版'].join(
-    '\n'
-  )
+  const doc = [
+    '# 变更日志',
+    '',
+    '## 1.2.3',
+    '',
+    '- 支持安装两步',
+    '',
+    '## 1.2.2',
+    '',
+    '- 旧版'
+  ].join('\n')
 
   it('命中 `## 1.2.3` 标题：截到下一个版本标题之前', () => {
     expect(extractChangelogSection(doc, '1.2.3')).toEqual({
@@ -157,7 +165,9 @@ describe('createPackageInfoFetchers.fetchDownloads', () => {
     await expect(createPackageInfoFetchers(failing.deps).fetchDownloads('nope')).resolves.toBeNull()
 
     const malformed = stubFetchers(() => ({ downloads: 'many', start: '', end: null }))
-    await expect(createPackageInfoFetchers(malformed.deps).fetchDownloads('demo')).resolves.toBeNull()
+    await expect(
+      createPackageInfoFetchers(malformed.deps).fetchDownloads('demo')
+    ).resolves.toBeNull()
   })
 
   it('缓存 30 分钟：期内不再请求，过期后重新取', async () => {

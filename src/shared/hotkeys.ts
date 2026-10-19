@@ -26,6 +26,9 @@ export function switchModifierKey(platform: string): 'Meta' | 'Alt' {
 }
 
 /** 该瞬间的修饰键状态是否满足当前平台的「切换修饰键被按住」。 */
-export function hasSwitchModifier(platform: string, mods: { meta: boolean; alt: boolean }): boolean {
+export function hasSwitchModifier(
+  platform: string,
+  mods: { meta: boolean; alt: boolean }
+): boolean {
   return platform === 'darwin' ? mods.meta : mods.alt
 }

@@ -57,7 +57,11 @@ test('create 通过真实桥接写入注册表并落盘', async () => {
 
 test('list 返回摘要,get 读回完整记录,delete 生效', async () => {
   const created = await win.evaluate(async () =>
-    window.dshHub.instances.create({ transport: 'http', name: 'E2E 网关实例', endpointUrl: 'https://gw.example.com/dsh/' })
+    window.dshHub.instances.create({
+      transport: 'http',
+      name: 'E2E 网关实例',
+      endpointUrl: 'https://gw.example.com/dsh/'
+    })
   )
   expect(created.ok).toBe(true)
   if (!created.ok) return
@@ -77,7 +81,10 @@ test('list 返回摘要,get 读回完整记录,delete 生效', async () => {
     expect(detail.value.endpointUrl).toBe('https://gw.example.com/dsh')
   }
 
-  const removed = await win.evaluate(async (id) => window.dshHub.instances.remove(id), created.value.id)
+  const removed = await win.evaluate(
+    async (id) => window.dshHub.instances.remove(id),
+    created.value.id
+  )
   expect(removed.ok).toBe(true)
   if (removed.ok) expect(removed.value.removed).toBe(true)
 })

@@ -82,7 +82,10 @@ export const MESSAGES = {
   'detail.runtime': { zh: '运行环境', en: 'Runtime' },
   'detail.relogin': { zh: '重新登录', en: 'Re-sign in' },
   'detail.address': { zh: '地址', en: 'Address' },
-  'detail.deleteConfirm': { zh: '删除后不可恢复，确认删除？', en: 'This cannot be undone. Delete?' },
+  'detail.deleteConfirm': {
+    zh: '删除后不可恢复，确认删除？',
+    en: 'This cannot be undone. Delete?'
+  },
 
   // —— 认证面板 ——
   'auth.title': { zh: '需要登录', en: 'Sign in required' },
@@ -95,7 +98,10 @@ export const MESSAGES = {
   'auth.useOtp': { zh: '改用动态验证码', en: 'Use a verification code' },
   'auth.submit': { zh: '登录', en: 'Sign in' },
   'auth.submitting': { zh: '提交中…', en: 'Submitting…' },
-  'auth.locked': { zh: '失败次数过多，请等待 {seconds}s', en: 'Too many failures. Wait {seconds}s' },
+  'auth.locked': {
+    zh: '失败次数过多，请等待 {seconds}s',
+    en: 'Too many failures. Wait {seconds}s'
+  },
   'auth.lockButton': { zh: '锁定 {seconds}s', en: 'Locked {seconds}s' },
   'auth.credentialsLocalOnly': {
     zh: '密码和登录态默认安全保存在系统钥匙串；可在实例详情中取消记住。',
@@ -155,7 +161,10 @@ export const MESSAGES = {
     en: 'Remember sign-in: reuse session'
   },
   'vault.clear': { zh: '清除已记住的凭据', en: 'Clear remembered credentials' },
-  'vault.remembered': { zh: '该实例已记住凭据', en: 'Credentials are remembered for this instance' },
+  'vault.remembered': {
+    zh: '该实例已记住凭据',
+    en: 'Credentials are remembered for this instance'
+  },
   'vault.notRemembered': {
     zh: '该实例未记住任何凭据',
     en: 'No credentials are remembered for this instance'
@@ -211,7 +220,10 @@ export const MESSAGES = {
     zh: '环境已刷新，发现变化',
     en: 'Environment refreshed: changes found'
   },
-  'settings.refreshEnvNoChange': { zh: '环境已刷新，无变化', en: 'Environment refreshed; no changes' },
+  'settings.refreshEnvNoChange': {
+    zh: '环境已刷新，无变化',
+    en: 'Environment refreshed; no changes'
+  },
   'settings.refreshEnvIncomparable': {
     zh: '环境已刷新，环境不可解析，无法对比',
     en: 'Environment refreshed; environment unresolvable, nothing to compare'
@@ -222,8 +234,14 @@ export const MESSAGES = {
     zh: '环境变量：新增 {added}、删除 {removed}、变更 {changed}',
     en: 'Variables: {added} added, {removed} removed, {changed} changed'
   },
-  'settings.refreshEnvFailed': { zh: '刷新环境缓存失败', en: 'Failed to refresh environment cache' },
-  'settings.refreshEnvRestartTitle': { zh: '重启实例以应用新环境', en: 'Restart instances to apply' },
+  'settings.refreshEnvFailed': {
+    zh: '刷新环境缓存失败',
+    en: 'Failed to refresh environment cache'
+  },
+  'settings.refreshEnvRestartTitle': {
+    zh: '重启实例以应用新环境',
+    en: 'Restart instances to apply'
+  },
   'settings.refreshEnvRestartBody': {
     zh: '已刷新环境缓存。检测到 {count} 个正在运行的本机实例，是否立即重启以应用新环境？重启会短暂中断正在使用的工作区。',
     en: 'Environment cache refreshed. {count} local instance(s) are running. Restart them now to apply the new environment? Restarting briefly interrupts the workspaces in use.'
@@ -234,7 +252,10 @@ export const MESSAGES = {
     zh: '已重启 {count} 个实例以应用新环境',
     en: 'Restarted {count} instance(s) to apply the new environment'
   },
-  'settings.refreshEnvRestartFailed': { zh: '重启部分实例失败', en: 'Failed to restart some instances' },
+  'settings.refreshEnvRestartFailed': {
+    zh: '重启部分实例失败',
+    en: 'Failed to restart some instances'
+  },
 
   'settings.dataDir': { zh: '数据目录', en: 'Data directory' },
   // 数据目录提供「打开」控件。
@@ -251,13 +272,22 @@ export const MESSAGES = {
   'settings.saveFailed': { zh: '设置保存失败', en: 'Failed to save settings' },
   'settings.cleared': { zh: '已清除所有记住的凭据', en: 'All remembered credentials cleared' },
   'spaces.title': { zh: '空间管理', en: 'Space management' },
-  'spaces.summary': { zh: '已有空间 {count} 个 · 占用 {size}', en: '{count} existing spaces · {size}' },
-  'spaces.description': { zh: '管理 Hub 创建但尚未关联实例的隔离 DSH_HOME。', en: 'Manage isolated DSH_HOME directories created by Hub but not linked to an instance.' },
+  'spaces.summary': {
+    zh: '已有空间 {count} 个 · 占用 {size}',
+    en: '{count} existing spaces · {size}'
+  },
+  'spaces.description': {
+    zh: '管理 Hub 创建但尚未关联实例的隔离 DSH_HOME。',
+    en: 'Manage isolated DSH_HOME directories created by Hub but not linked to an instance.'
+  },
   'spaces.empty': { zh: '没有可管理的隔离空间', en: 'No isolated spaces to manage' },
   'spaces.createInstance': { zh: '以此空间创建实例', en: 'Create instance with this space' },
   'spaces.delete': { zh: '移入废纸篓', en: 'Move to Trash' },
   'spaces.trashTitle': { zh: '移入废纸篓', en: 'Move to Trash' },
-  'spaces.trashConfirm': { zh: '确定将此空间移入系统废纸篓吗？可在废纸篓中恢复。', en: 'Move this space to the system Trash? You can restore it from there.' },
+  'spaces.trashConfirm': {
+    zh: '确定将此空间移入系统废纸篓吗？可在废纸篓中恢复。',
+    en: 'Move this space to the system Trash? You can restore it from there.'
+  },
   'spaces.trashFailed': { zh: '移动空间失败', en: 'Failed to move space' },
   'spaces.trashed': { zh: '空间已移入废纸篓', en: 'Space moved to Trash' },
   'spaces.instanceDetail': { zh: '实例详情', en: 'Instance details' },
@@ -280,32 +310,62 @@ export const MESSAGES = {
   'wizard.created': { zh: '「{name}」已创建', en: 'Created "{name}"' },
   'wizard.startFailed': { zh: '启动失败', en: 'Failed to start' },
   'wizard.title': { zh: '新建实例', en: 'New instance' },
-  'wizard.sub': { zh: '三步创建一个可连接的 dsh 实例', en: 'Create a connectable dsh instance in three steps' },
+  'wizard.sub': {
+    zh: '三步创建一个可连接的 dsh 实例',
+    en: 'Create a connectable dsh instance in three steps'
+  },
   'wizard.nextShortcut': { zh: '⌘D 下一步', en: '⌘D Next' },
   'wizard.creating': { zh: '创建中…', en: 'Creating…' },
   'wizard.create': { zh: '创建', en: 'Create' },
   'wizard.nameLabel': { zh: '实例名称', en: 'Instance name' },
   'wizard.namePlaceholder': { zh: '例如：开发 · 日常', en: 'e.g. Development · Daily' },
-  'wizard.nameHint': { zh: '只在本机使用，便于在侧边栏区分不同环境。', en: 'Local only; helps tell environments apart in the sidebar.' },
-  'wizard.advanced': { zh: '高级设置（启动器 / 版本 / 端口）', en: 'Advanced (launcher / version / port)' },
+  'wizard.nameHint': {
+    zh: '只在本机使用，便于在侧边栏区分不同环境。',
+    en: 'Local only; helps tell environments apart in the sidebar.'
+  },
+  'wizard.advanced': {
+    zh: '高级设置（启动器 / 版本 / 端口）',
+    en: 'Advanced (launcher / version / port)'
+  },
   'wizard.versionLabel': { zh: 'dsh 版本', en: 'dsh version' },
   'wizard.versionLatest': { zh: '跟随最新版本', en: 'Follow latest' },
   'wizard.versionLoading': { zh: '正在获取版本列表…', en: 'Loading version list…' },
-  'wizard.versionFetchFailed': { zh: '获取版本列表失败：{msg}', en: 'Failed to load version list: {msg}' },
+  'wizard.versionFetchFailed': {
+    zh: '获取版本列表失败：{msg}',
+    en: 'Failed to load version list: {msg}'
+  },
   'wizard.versionHint': {
     zh: '版本列表来自当前镜像，仅显示最近 10 个（最新在前）；默认与本地版本相同，选择后将固定该版本。',
     en: 'From the current registry: the latest 10 versions (newest first); defaults to your local version, and a selection pins it.'
   },
-  'wizard.externalDetected': { zh: '检测到正在运行的 dsh web（127.0.0.1:{port}）', en: 'A running dsh web was detected (127.0.0.1:{port})' },
+  'wizard.externalDetected': {
+    zh: '检测到正在运行的 dsh web（127.0.0.1:{port}）',
+    en: 'A running dsh web was detected (127.0.0.1:{port})'
+  },
   'wizard.currentWorkspace': { zh: '当前工作区', en: 'Current workspace' },
   'wizard.externalPatch': { zh: '补丁：{patch}', en: 'Patch: {patch}' },
   'wizard.externalNoPatch': { zh: '未使用 patch', en: 'No patch in use' },
-  'wizard.connectExistingNote': { zh: '将直接连接当前工作区，不会安装、启动或结束本机 dsh。', en: 'This connects directly to the current workspace; it will not install, start, or stop local dsh.' },
-  'wizard.createNewNote': { zh: '将使用本机 dsh 创建新的隔离实例。', en: 'This creates a new isolated instance using local dsh.' },
-  'wizard.useExistingExternal': { zh: '连接当前运行的工作区', en: 'Connect to the running workspace' },
+  'wizard.connectExistingNote': {
+    zh: '将直接连接当前工作区，不会安装、启动或结束本机 dsh。',
+    en: 'This connects directly to the current workspace; it will not install, start, or stop local dsh.'
+  },
+  'wizard.createNewNote': {
+    zh: '将使用本机 dsh 创建新的隔离实例。',
+    en: 'This creates a new isolated instance using local dsh.'
+  },
+  'wizard.useExistingExternal': {
+    zh: '连接当前运行的工作区',
+    en: 'Connect to the running workspace'
+  },
   'wizard.externalAccessLabel': { zh: '访问 token 或完整链接', en: 'Access token or full URL' },
-  'wizard.externalAccessHint': { zh: '粘贴 dsh web 输出的完整 URL，或仅粘贴其中的 token。验证成功后会加密保存在本机，dsh 重启并更换 token 后可在实例详情中更新。', en: 'Paste the full URL printed by dsh web, or just its token. After verification it is encrypted on this machine; update it in the instance details if dsh restarts with a new token.' },
-  'wizard.errExternalAccess': { zh: '请填写当前工作区的访问 token 或完整链接', en: 'Enter the current workspace access token or full URL' },
+  'wizard.externalAccessHint': {
+    zh: '粘贴 dsh web 输出的完整 URL，或仅粘贴其中的 token。验证成功后会加密保存在本机，dsh 重启并更换 token 后可在实例详情中更新。',
+    en: 'Paste the full URL printed by dsh web, or just its token. After verification it is encrypted on this machine; update it in the instance details if dsh restarts with a new token.'
+  },
+  'wizard.errExternalAccess': {
+    zh: '请填写当前工作区的访问 token 或完整链接',
+    en: 'Enter the current workspace access token or full URL'
+  },
   'wizard.portLabel': { zh: '端口', en: 'Port' },
   'wizard.portPlaceholder': { zh: '留空 = 自动分配（30000+）', en: 'Blank = auto-assign (30000+)' },
   'wizard.profileLabel': { zh: 'Profile', en: 'Profile' },
@@ -314,38 +374,71 @@ export const MESSAGES = {
   'wizard.spaceIsolated': { zh: '隔离实例', en: 'Isolated instance' },
   'wizard.spaceShared': { zh: '公共空间：~/.dsh', en: 'Shared space: ~/.dsh' },
   'wizard.spaceSharedPath': { zh: '本机路径：{path}', en: 'Local path: {path}' },
-  'wizard.spaceHint': { zh: '公共空间复用现有 dsh 的配置、插件与会话；同一时间请只运行一个实例。', en: 'The shared space reuses existing dsh config, plugins, and sessions; run only one instance at a time.' },
+  'wizard.spaceHint': {
+    zh: '公共空间复用现有 dsh 的配置、插件与会话；同一时间请只运行一个实例。',
+    en: 'The shared space reuses existing dsh config, plugins, and sessions; run only one instance at a time.'
+  },
   'wizard.errProfile': { zh: 'Profile 不能包含 ..', en: 'Profile cannot contain ..' },
   'wizard.launcherLabel': { zh: '启动器', en: 'Launcher' },
-  'wizard.launcherMissing': { zh: '未检测到，将自动下载 dsh', en: 'Not detected; dsh will be downloaded automatically' },
-  'wizard.launcherMissingHint': { zh: '未检测到 dsh、dush 或 duush；创建后启动时将提示下载 dsh。', en: 'None of dsh, dush, duush was detected; starting after creation will prompt to download dsh.' },
+  'wizard.launcherMissing': {
+    zh: '未检测到，将自动下载 dsh',
+    en: 'Not detected; dsh will be downloaded automatically'
+  },
+  'wizard.launcherMissingHint': {
+    zh: '未检测到 dsh、dush 或 duush；创建后启动时将提示下载 dsh。',
+    en: 'None of dsh, dush, duush was detected; starting after creation will prompt to download dsh.'
+  },
   'wizard.hostLabel': { zh: '主机（或 ~/.ssh/config 别名）', en: 'Host (or ~/.ssh/config alias)' },
-  'wizard.hostPlaceholder': { zh: 'build-01.internal 或 build-01', en: 'build-01.internal or build-01' },
+  'wizard.hostPlaceholder': {
+    zh: 'build-01.internal 或 build-01',
+    en: 'build-01.internal or build-01'
+  },
   'wizard.userLabel': { zh: '用户名', en: 'Username' },
   'wizard.userPlaceholder': { zh: 'dev', en: 'dev' },
   'wizard.sshPortLabel': { zh: 'SSH 端口', en: 'SSH port' },
   'wizard.remotePortLabel': { zh: '远端 dsh 端口', en: 'Remote dsh port' },
   'wizard.urlLabel': { zh: '实例网址', en: 'Instance URL' },
-  'wizard.urlHint': { zh: '粘贴完整 URL 会自动解析，不支持内嵌凭据。', en: 'Pasting a full URL parses it automatically; embedded credentials are not supported.' },
-  'wizard.confirmHint': { zh: '最后确认一遍，名称与地址之后仍可在实例详情里修改。', en: 'One last check — the name and address can still be changed in the instance details.' },
+  'wizard.urlHint': {
+    zh: '粘贴完整 URL 会自动解析，不支持内嵌凭据。',
+    en: 'Pasting a full URL parses it automatically; embedded credentials are not supported.'
+  },
+  'wizard.confirmHint': {
+    zh: '最后确认一遍，名称与地址之后仍可在实例详情里修改。',
+    en: 'One last check — the name and address can still be changed in the instance details.'
+  },
   'wizard.dtName': { zh: '名称', en: 'Name' },
   'wizard.dtTransport': { zh: '连接方式', en: 'Transport' },
   'wizard.dtAddress': { zh: '地址', en: 'Address' },
   'wizard.autoPort': { zh: '127.0.0.1（自动分配端口）', en: '127.0.0.1 (port auto-assigned)' },
-  'wizard.noteLocal': { zh: '本机实例创建完成后会自动安装 dsh 并启动，就绪后直接打开工作区。', en: 'A local instance installs dsh and starts automatically, then opens the workspace.' },
-  'wizard.noteSsh': { zh: '首次连接需要核对服务器指纹，确认后才会建立加密通道。', en: 'The first connection verifies the server fingerprint before the encrypted channel is established.' },
-  'wizard.noteHttp': { zh: '粘贴网址后已在第二步实时探测登录方式。', en: 'The sign-in mode was probed live in step two.' },
+  'wizard.noteLocal': {
+    zh: '本机实例创建完成后会自动安装 dsh 并启动，就绪后直接打开工作区。',
+    en: 'A local instance installs dsh and starts automatically, then opens the workspace.'
+  },
+  'wizard.noteSsh': {
+    zh: '首次连接需要核对服务器指纹，确认后才会建立加密通道。',
+    en: 'The first connection verifies the server fingerprint before the encrypted channel is established.'
+  },
+  'wizard.noteHttp': {
+    zh: '粘贴网址后已在第二步实时探测登录方式。',
+    en: 'The sign-in mode was probed live in step two.'
+  },
   // 保存前显示直连 HTTP 实例的数据面明文警告。
   'wizard.cleartextWarning': {
     zh: '该地址是 http://，数据面为明文：密码、动态验证码与会话 Cookie 都会以明文经过网络。http 实例完全可用；若希望数据面也被加密，https 端点或 SSH 隧道更稳妥。',
     en: 'This address uses http://, so the data plane is cleartext: the password, verification code and session cookie travel over the network unencrypted. http instances work fine; an https endpoint or an SSH tunnel is simply more private if you want the data plane encrypted too.'
   },
   'wizard.typeLocal': { zh: '本机运行的 dsh', en: 'dsh running locally' },
-  'wizard.typeLocalDesc': { zh: '版本按需安装，互不干扰', en: 'Versions installed on demand, isolated' },
+  'wizard.typeLocalDesc': {
+    zh: '版本按需安装，互不干扰',
+    en: 'Versions installed on demand, isolated'
+  },
   'wizard.typeSsh': { zh: '经 SSH 隧道连接', en: 'Over an SSH tunnel' },
   'wizard.typeSshDesc': { zh: '复用系统密钥与 ssh-agent', en: 'Reuses system keys and ssh-agent' },
   'wizard.typeHttp': { zh: '直连远程网址', en: 'Direct remote URL' },
-  'wizard.typeHttpDesc': { zh: 'dsh 网关登录统一管理', en: 'Sign-in managed through the dsh gateway' },
+  'wizard.typeHttpDesc': {
+    zh: 'dsh 网关登录统一管理',
+    en: 'Sign-in managed through the dsh gateway'
+  },
   'wizard.prev': { zh: '上一步', en: 'Back' },
   'wizard.next': { zh: '下一步', en: 'Next' },
   'wizard.sshAgentHint': {
@@ -364,7 +457,10 @@ export const MESSAGES = {
 
   // —— 实例详情 ——
   'detail.loggedOut': { zh: '已登出', en: 'Signed out' },
-  'detail.loggedOutDetail': { zh: '该实例的分区会话已清除', en: 'The instance partition session was cleared' },
+  'detail.loggedOutDetail': {
+    zh: '该实例的分区会话已清除',
+    en: 'The instance partition session was cleared'
+  },
   'detail.addressCopied': { zh: '地址已复制', en: 'Address copied' },
   'detail.copyFailed': { zh: '复制失败', en: 'Copy failed' },
   'detail.deleteFailed': { zh: '删除失败', en: 'Delete failed' },
@@ -423,8 +519,14 @@ export const MESSAGES = {
   'detail.plugin.title': { zh: '插件管理', en: 'Plugins' },
   'detail.plugin.install': { zh: '安装插件', en: 'Install plugin' },
   'detail.plugin.refresh': { zh: '刷新', en: 'Refresh' },
-  'detail.plugin.empty': { zh: '该实例暂无已安装插件', en: 'No plugins installed for this instance' },
-  'detail.plugin.loadFailed': { zh: '加载插件列表失败：{msg}', en: 'Failed to load plugins: {msg}' },
+  'detail.plugin.empty': {
+    zh: '该实例暂无已安装插件',
+    en: 'No plugins installed for this instance'
+  },
+  'detail.plugin.loadFailed': {
+    zh: '加载插件列表失败：{msg}',
+    en: 'Failed to load plugins: {msg}'
+  },
   'detail.plugin.loading': { zh: '正在加载插件…', en: 'Loading plugins…' },
   'detail.plugin.checkUpdate': { zh: '检查升级', en: 'Check update' },
   'detail.plugin.checking': { zh: '检查中…', en: 'Checking…' },
@@ -449,7 +551,10 @@ export const MESSAGES = {
   'detail.plugin.checkFailed': { zh: '检查失败：{msg}', en: 'Check failed: {msg}' },
   'detail.plugin.remove': { zh: '卸载', en: 'Uninstall' },
   'detail.plugin.removing': { zh: '卸载中…', en: 'Uninstalling…' },
-  'detail.plugin.autoDisabledTitle': { zh: '已自动禁用不兼容的插件', en: 'Incompatible plugins disabled' },
+  'detail.plugin.autoDisabledTitle': {
+    zh: '已自动禁用不兼容的插件',
+    en: 'Incompatible plugins disabled'
+  },
   'detail.plugin.autoDisabledBody': {
     zh: 'dsh {dshVersion} 与以下插件的声明不兼容，已禁用它们以免启动异常：{list}。升级插件后可在列表中重新启用。',
     en: 'dsh {dshVersion} is incompatible with these plugins, so they were disabled to avoid startup problems: {list}. Upgrade them, then re-enable them in the list.'
@@ -518,7 +623,10 @@ export const MESSAGES = {
     zh: '请确认插件来源可信。插件在本机以你的权限运行，来源不明的插件可能损坏 DSH，或读取和泄露你的数据。',
     en: 'Make sure the plugin source is trustworthy. Plugins run on this machine with your permissions, so an unknown plugin can damage DSH or read and leak your data.'
   },
-  'detail.plugin.resolveFailed': { zh: '无法解析该版本：{msg}', en: 'Cannot resolve the version: {msg}' },
+  'detail.plugin.resolveFailed': {
+    zh: '无法解析该版本：{msg}',
+    en: 'Cannot resolve the version: {msg}'
+  },
   // —— 安装/升级确认区（第二步，两者共用）——
   'detail.plugin.confirmInstallSection': { zh: '将安装', en: 'To install' },
   'detail.plugin.confirmUpgradeSection': { zh: '将升级到', en: 'To upgrade to' },
@@ -597,19 +705,40 @@ export const MESSAGES = {
   'detail.plugin.openLinkFailed': { zh: '打开链接失败', en: 'Failed to open link' },
   'detail.plugin.log.installing': { zh: '开始安装插件 {spec}', en: 'Installing plugin {spec}' },
   'detail.plugin.log.installed': { zh: '插件已安装：{spec}', en: 'Plugin installed: {spec}' },
-  'detail.plugin.log.installFailed': { zh: '插件安装失败（{spec}）：{msg}', en: 'Failed to install {spec}: {msg}' },
-  'detail.plugin.log.upgrading': { zh: '开始升级 {name} 到 {version}', en: 'Upgrading {name} to {version}' },
-  'detail.plugin.log.upgraded': { zh: '{name} 已升级到 {version}', en: '{name} upgraded to {version}' },
-  'detail.plugin.log.upgradeFailed': { zh: '{name} 升级失败：{msg}', en: 'Failed to upgrade {name}: {msg}' },
+  'detail.plugin.log.installFailed': {
+    zh: '插件安装失败（{spec}）：{msg}',
+    en: 'Failed to install {spec}: {msg}'
+  },
+  'detail.plugin.log.upgrading': {
+    zh: '开始升级 {name} 到 {version}',
+    en: 'Upgrading {name} to {version}'
+  },
+  'detail.plugin.log.upgraded': {
+    zh: '{name} 已升级到 {version}',
+    en: '{name} upgraded to {version}'
+  },
+  'detail.plugin.log.upgradeFailed': {
+    zh: '{name} 升级失败：{msg}',
+    en: 'Failed to upgrade {name}: {msg}'
+  },
   'detail.plugin.log.removing': { zh: '开始卸载 {name}', en: 'Uninstalling {name}' },
   'detail.plugin.log.removed': { zh: '已卸载 {name}', en: '{name} uninstalled' },
-  'detail.plugin.log.removeFailed': { zh: '{name} 卸载失败：{msg}', en: 'Failed to uninstall {name}: {msg}' },
+  'detail.plugin.log.removeFailed': {
+    zh: '{name} 卸载失败：{msg}',
+    en: 'Failed to uninstall {name}: {msg}'
+  },
   'detail.plugin.log.enabling': { zh: '正在启用 {name}', en: 'Enabling {name}' },
   'detail.plugin.log.disabling': { zh: '正在禁用 {name}', en: 'Disabling {name}' },
   'detail.plugin.log.enabled': { zh: '已启用 {name}', en: '{name} enabled' },
   'detail.plugin.log.disabled': { zh: '已禁用 {name}', en: '{name} disabled' },
-  'detail.plugin.log.enableFailed': { zh: '{name} 启用失败：{msg}', en: 'Failed to enable {name}: {msg}' },
-  'detail.plugin.log.disableFailed': { zh: '{name} 禁用失败：{msg}', en: 'Failed to disable {name}: {msg}' },
+  'detail.plugin.log.enableFailed': {
+    zh: '{name} 启用失败：{msg}',
+    en: 'Failed to enable {name}: {msg}'
+  },
+  'detail.plugin.log.disableFailed': {
+    zh: '{name} 禁用失败：{msg}',
+    en: 'Failed to disable {name}: {msg}'
+  },
   'detail.plugin.log.restartHint': {
     zh: '{name} 的改动需重启实例后生效',
     en: 'Changes to {name} take effect after restarting the instance'
@@ -656,7 +785,10 @@ export const MESSAGES = {
     zh: '检查更新失败：{count} 个插件（{list}）',
     en: 'Update check failed for {count} plugin(s) ({list})'
   },
-  'detail.plugin.exemptionGrantedTitle': { zh: '已授予兼容豁免', en: 'Compatibility exemption granted' },
+  'detail.plugin.exemptionGrantedTitle': {
+    zh: '已授予兼容豁免',
+    en: 'Compatibility exemption granted'
+  },
   'detail.plugin.exemptionGrantedBody': {
     zh: '「{name}@{version}」与 dsh {dshVersion} 不兼容，已按你的操作授予豁免（接受风险）并启用；运行可能崩溃或丢失数据。',
     en: '"{name}@{version}" is incompatible with dsh {dshVersion}; an exemption was granted at your action (risk accepted) and the plugin was enabled. It may crash or lose data.'
@@ -675,19 +807,31 @@ export const MESSAGES = {
     en: 'No usable dsh was found in the hub store or on PATH. @deepseek-ai/dsh@{version} must be downloaded (the first download can be slow). Continue?'
   },
   'runtime.confirm.downloadAccept': { zh: '下载并启动', en: 'Download & start' },
-  'runtime.confirm.downloadHint': { zh: '取消则跳过下载，本次启动取消。', en: 'Cancelling skips the download and stops this start.' },
-  'runtime.confirm.downloadRegistry': { zh: '下载来源：{registry}', en: 'Download from: {registry}' },
+  'runtime.confirm.downloadHint': {
+    zh: '取消则跳过下载，本次启动取消。',
+    en: 'Cancelling skips the download and stops this start.'
+  },
+  'runtime.confirm.downloadRegistry': {
+    zh: '下载来源：{registry}',
+    en: 'Download from: {registry}'
+  },
   'runtime.confirm.downloadRegistryDefault': {
     zh: '下载来源：系统 npm 默认配置',
     en: 'Download from: default npm configuration'
   },
-  'runtime.confirm.upgradeTitle': { zh: '升级系统默认 dsh？', en: 'Upgrade the system default dsh?' },
+  'runtime.confirm.upgradeTitle': {
+    zh: '升级系统默认 dsh？',
+    en: 'Upgrade the system default dsh?'
+  },
   'runtime.confirm.upgradeBody': {
     zh: '该实例使用公共空间 ~/.dsh，运行的是 PATH 上的系统默认 dsh（当前 {current}）。升级将全局更新为 @deepseek-ai/dsh@{latest}，所有使用系统默认 dsh 的实例与终端都会跟随。是否继续？',
     en: 'This instance uses the shared ~/.dsh space and runs the system default dsh from PATH (currently {current}). The upgrade updates it globally to @deepseek-ai/dsh@{latest}; every instance and terminal using the system default dsh will follow. Continue?'
   },
   'runtime.confirm.upgradeAccept': { zh: '升级', en: 'Upgrade' },
-  'runtime.confirm.upgradeHint': { zh: '拒绝则不执行任何升级。', en: 'Declining performs no upgrade.' },
+  'runtime.confirm.upgradeHint': {
+    zh: '拒绝则不执行任何升级。',
+    en: 'Declining performs no upgrade.'
+  },
   'detail.log.title': { zh: '安装与运行日志', en: 'Install & runtime log' },
   'detail.log.empty': { zh: '暂无日志', en: 'No log yet' },
   'detail.log.clear': { zh: '清空', en: 'Clear' },
@@ -712,7 +856,10 @@ export const MESSAGES = {
   'detail.openDirFailed': { zh: '打开实例目录失败', en: 'Failed to open instance folder' },
   'detail.openLogDirFailed': { zh: '打开日志目录失败', en: 'Failed to open log folder' },
   'detail.disconnected': { zh: '工作区已断开', en: 'Workspace disconnected' },
-  'detail.externalTitle': { zh: '本机已在运行的 dsh web', en: 'dsh web already running on this machine' },
+  'detail.externalTitle': {
+    zh: '本机已在运行的 dsh web',
+    en: 'dsh web already running on this machine'
+  },
   'detail.externalCount': { zh: '检测到 {n} 个', en: '{n} detected' },
   'detail.externalBody': {
     zh: '这是你自己启动的 dsh 进程（hub 不会结束它）。接管后可直接打开视图，无需 hub 再启动一个。',
@@ -725,7 +872,10 @@ export const MESSAGES = {
   'detail.adopted': { zh: '已接管外部 dsh web', en: 'Adopted external dsh web' },
   'detail.adoptFailed': { zh: '接管失败', en: 'Adopt failed' },
   'detail.externalTokenTitle': { zh: '本机 dsh 访问 token', en: 'Local dsh access token' },
-  'detail.externalTokenBody': { zh: '其他进程重启 dsh 后，访问 token 可能变化。粘贴最新 token 或完整链接后重新连接。', en: 'The access token can change when another process restarts dsh. Paste the latest token or full URL, then reconnect.' },
+  'detail.externalTokenBody': {
+    zh: '其他进程重启 dsh 后，访问 token 可能变化。粘贴最新 token 或完整链接后重新连接。',
+    en: 'The access token can change when another process restarts dsh. Paste the latest token or full URL, then reconnect.'
+  },
   'detail.externalTokenUpdate': { zh: '更新 token 并连接', en: 'Update token and connect' },
   'detail.externalTokenUpdating': { zh: '正在更新…', en: 'Updating…' },
   'detail.externalDataDir': {
@@ -735,7 +885,10 @@ export const MESSAGES = {
   'detail.deleteInstance': { zh: '删除实例', en: 'Delete instance' },
   'detail.deleteTitle': { zh: '删除实例', en: 'Delete instance' },
   'detail.deleteCannotUndo': { zh: '此操作不可撤销', en: 'This cannot be undone' },
-  'detail.deleteSpace': { zh: '同时将隔离空间移入废纸篓', en: 'Also move the isolated space to Trash' },
+  'detail.deleteSpace': {
+    zh: '同时将隔离空间移入废纸篓',
+    en: 'Also move the isolated space to Trash'
+  },
   'detail.missingHint': { zh: '实例不存在或已被删除。', en: 'This instance no longer exists.' },
   'detail.logout': { zh: '登出', en: 'Sign out' },
   'detail.deleted': { zh: '「{name}」已删除', en: 'Deleted "{name}"' },
@@ -748,7 +901,10 @@ export const MESSAGES = {
   // —— 实例编辑 ——
   'edit.openButton': { zh: '编辑', en: 'Edit' },
   'edit.title': { zh: '编辑实例', en: 'Edit instance' },
-  'edit.sub': { zh: '{name}：连接方式创建后不可更改；其余字段随时可改。', en: '{name}: the transport cannot be changed after creation; other fields can be edited any time.' },
+  'edit.sub': {
+    zh: '{name}：连接方式创建后不可更改；其余字段随时可改。',
+    en: '{name}: the transport cannot be changed after creation; other fields can be edited any time.'
+  },
   'edit.nameLabel': { zh: '名称', en: 'Name' },
   'edit.nameRequired': { zh: '名称不能为空', en: 'Name is required' },
   'edit.notesLabel': { zh: '备注', en: 'Notes' },
@@ -756,28 +912,52 @@ export const MESSAGES = {
   'edit.authModeAuto': { zh: '自动探测', en: 'Auto-detect' },
   'edit.authModeNone': { zh: '无需登录', en: 'No login' },
   'edit.authModeGateway': { zh: '网关登录', en: 'Gateway login' },
-  'edit.authModeHint': { zh: '自动探测在连接时识别是否需要登录', en: 'Auto-detect probes the endpoint when connecting' },
+  'edit.authModeHint': {
+    zh: '自动探测在连接时识别是否需要登录',
+    en: 'Auto-detect probes the endpoint when connecting'
+  },
   'edit.portLabel': { zh: '端口', en: 'Port' },
   'edit.portPlaceholder': { zh: '留空 = 自动分配', en: 'Empty = auto-assign' },
   'edit.launcherLabel': { zh: '启动器', en: 'Launcher' },
-  'edit.launcherHint': { zh: 'Hub 固定使用 web、回环地址、端口和 --no-open；保存后下次启动生效。', en: 'Hub fixes web, the loopback host, port, and --no-open. Changes apply on the next start.' },
+  'edit.launcherHint': {
+    zh: 'Hub 固定使用 web、回环地址、端口和 --no-open；保存后下次启动生效。',
+    en: 'Hub fixes web, the loopback host, port, and --no-open. Changes apply on the next start.'
+  },
   'edit.profileLabel': { zh: 'Profile', en: 'Profile' },
   'edit.profilePlaceholder': { zh: '留空 = web', en: 'Empty = web' },
-  'edit.profileInvalid': { zh: 'Profile 只能使用相对路径，且不能包含 .. 或以 - 开头', en: 'Profile must be a relative path without .. or a leading -' },
-  'edit.registryInvalid': { zh: '镜像地址必须是 https URL（本地镜像允许回环 http）', en: 'The mirror must be an https URL (loopback http is allowed for local mirrors)' },
+  'edit.profileInvalid': {
+    zh: 'Profile 只能使用相对路径，且不能包含 .. 或以 - 开头',
+    en: 'Profile must be a relative path without .. or a leading -'
+  },
+  'edit.registryInvalid': {
+    zh: '镜像地址必须是 https URL（本地镜像允许回环 http）',
+    en: 'The mirror must be an https URL (loopback http is allowed for local mirrors)'
+  },
   'edit.autoStartLabel': { zh: '应用启动时自动拉起', en: 'Start automatically with the app' },
   'edit.hostLabel': { zh: '主机', en: 'Host' },
   'edit.usernameLabel': { zh: '用户名', en: 'Username' },
   'edit.remotePortLabel': { zh: '远端端口', en: 'Remote port' },
   'edit.identityLabel': { zh: '私钥路径', en: 'Identity file' },
-  'edit.identityPlaceholder': { zh: '留空 = 默认（agent 优先）', en: 'Empty = default (agent first)' },
-  'edit.sshRequired': { zh: '主机、用户名与远端端口不能为空', en: 'Host, username and remote port are required' },
+  'edit.identityPlaceholder': {
+    zh: '留空 = 默认（agent 优先）',
+    en: 'Empty = default (agent first)'
+  },
+  'edit.sshRequired': {
+    zh: '主机、用户名与远端端口不能为空',
+    en: 'Host, username and remote port are required'
+  },
   'edit.endpointLabel': { zh: '端点 URL', en: 'Endpoint URL' },
-  'edit.endpointHint': { zh: '仅支持 http/https，禁止内嵌凭据', en: 'http/https only; inline credentials are rejected' },
+  'edit.endpointHint': {
+    zh: '仅支持 http/https，禁止内嵌凭据',
+    en: 'http/https only; inline credentials are rejected'
+  },
   'edit.endpointRequired': { zh: '端点 URL 不能为空', en: 'Endpoint URL is required' },
   'edit.saved': { zh: '已保存', en: 'Saved' },
   'edit.failed': { zh: '保存失败', en: 'Failed to save' },
-  'edit.restartHint': { zh: '实例运行中：端口与配置改动将在下次启动生效。', en: 'Instance is running: port and config changes take effect on next start.' },
+  'edit.restartHint': {
+    zh: '实例运行中：端口与配置改动将在下次启动生效。',
+    en: 'Instance is running: port and config changes take effect on next start.'
+  },
   'detail.deleteBody': {
     zh: '删除后本地保存的登录信息与连接记录会一并移除，远端 dsh 本身不受影响。',
     en: 'Local sign-in data and connection history are removed too; the remote dsh itself is unaffected.'
@@ -788,7 +968,10 @@ export const MESSAGES = {
   'ssh.hostKeyChangedTitle': { zh: '服务器指纹已变化', en: 'Server fingerprint changed' },
   'ssh.hostKeyTitle': { zh: '连接安全确认', en: 'Confirm connection security' },
   'ssh.hostKeyChangedSub': { zh: '与此前信任的不一致', en: 'differs from what was trusted before' },
-  'ssh.hostKeyNewSub': { zh: '首次连接前需核对身份', en: 'verify the identity before first connecting' },
+  'ssh.hostKeyNewSub': {
+    zh: '首次连接前需核对身份',
+    en: 'verify the identity before first connecting'
+  },
   'ssh.hostKeyChangedHint': {
     zh: '连接已被拒绝：本应用不会在连接时覆盖已信任的指纹。请先与服务管理员核对；确属服务器重新生成密钥时，用「忘记该主机指纹」重新确认。',
     en: 'Connection refused: this app never overwrites a trusted fingerprint during a connection. Verify with the server administrator first; if the server really was re-keyed, use "Forget this host key" to verify it again.'
@@ -807,7 +990,10 @@ export const MESSAGES = {
     en: 'The passphrase is used for this connection only and is never written to disk or logs'
   },
   'ssh.askpassLabel': { zh: '口令 / 私钥口令', en: 'Passphrase / key passphrase' },
-  'ssh.trustAndConnect': { zh: '这是我的服务器，信任并连接', en: 'This is my server — trust and connect' },
+  'ssh.trustAndConnect': {
+    zh: '这是我的服务器，信任并连接',
+    en: 'This is my server — trust and connect'
+  },
   'ssh.changedWarning': {
     zh: '可能是服务器重装或密钥轮换，也可能是中间人攻击。为避免误信任，本应用不会在连接时覆盖已信任的指纹；确认服务器端确实换了密钥后，用「忘记该主机指纹」重新走首次确认。',
     en: 'This can be a reinstall or key rotation, but it can also be a man-in-the-middle attack. To avoid trusting the wrong key, this app never overwrites a trusted fingerprint during a connection; once you have confirmed the server really was re-keyed, use "Forget this host key" to verify it as a first-time host.'
@@ -837,7 +1023,10 @@ export const MESSAGES = {
   'ssh.continue': { zh: '继续', en: 'Continue' },
 
   // —— 总览表格 ——
-  'home.statInstances': { zh: '个实例，本地 / SSH / 远程统一入口', en: 'instances — one place for local, SSH and remote' },
+  'home.statInstances': {
+    zh: '个实例，本地 / SSH / 远程统一入口',
+    en: 'instances — one place for local, SSH and remote'
+  },
   'home.statConnected': { zh: '个已连接，通道正常', en: 'connected with a healthy channel' },
   'home.statAttention': { zh: '个需要处理，登录或重试', en: 'need attention — sign in or retry' },
   'home.allInstances': { zh: '全部实例', en: 'All instances' },
@@ -881,7 +1070,10 @@ export const MESSAGES = {
     zh: '已识别登录认证（密码 + 动态验证码），创建后打开登录面板',
     en: 'Login gateway detected (password + TOTP); the sign-in panel opens after creation'
   },
-  'detect.none': { zh: '无需登录认证，可直接访问', en: 'No authentication required; reachable directly' },
+  'detect.none': {
+    zh: '无需登录认证，可直接访问',
+    en: 'No authentication required; reachable directly'
+  },
   'detect.browserAuth': {
     zh: '检测到 dsh 内置浏览器认证，将在实例页面内自认证',
     en: "dsh's built-in browser auth detected; it self-authenticates inside the instance page"
@@ -911,7 +1103,10 @@ export const MESSAGES = {
   // —— 关于 ——
   'about.title': { zh: '关于 DSH Hub', en: 'About DSH Hub' },
   'about.open': { zh: '关于', en: 'About' },
-  'about.sectionHint': { zh: '版本、项目主页与运行组件', en: 'Version, homepage and runtime components' },
+  'about.sectionHint': {
+    zh: '版本、项目主页与运行组件',
+    en: 'Version, homepage and runtime components'
+  },
   'about.homepage': { zh: '项目主页', en: 'Homepage' },
   'about.build': { zh: '构建版本', en: 'Build' },
   'about.buildTime': { zh: '打包时间', en: 'Build time' },

@@ -45,7 +45,10 @@ export function hmrDisabledInPatchText(text: string): boolean | undefined {
       if (indent < minIndent) break
       const disabled = DISABLED.exec(child)
       if (disabled === null) continue
-      const value = (disabled[1] ?? '').replace(/[#,].*$/, '').trim().toLowerCase()
+      const value = (disabled[1] ?? '')
+        .replace(/[#,].*$/, '')
+        .trim()
+        .toLowerCase()
       if (value === 'true') declared = true
       else if (value === 'false') declared = false
       // 其它值（`!!js ...` 等表达式）无法在不复制 dsh 运行时的前提下求值 → 不判定。

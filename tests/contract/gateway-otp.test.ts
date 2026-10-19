@@ -23,7 +23,11 @@ afterEach(async () => {
 
 describe('GatewayClient OTP integration', () => {
   it('OTP 必需时缺码 → 400 otp-required(进入验证码提问的权威信号)', async () => {
-    const gw = await fixture({ password: 'contract-pass-123!', otpEnabled: true, otpRequired: true })
+    const gw = await fixture({
+      password: 'contract-pass-123!',
+      otpEnabled: true,
+      otpRequired: true
+    })
     const client = createGatewayClient({ baseUrl: gw.baseUrl })
     const login = await client.login({ password: gw.password })
     expect(login.ok).toBe(false)
@@ -34,7 +38,11 @@ describe('GatewayClient OTP integration', () => {
   }, 30_000)
 
   it('单请求完成 2FA:密码 + 有效 TOTP → 200', async () => {
-    const gw = await fixture({ password: 'contract-pass-123!', otpEnabled: true, otpRequired: true })
+    const gw = await fixture({
+      password: 'contract-pass-123!',
+      otpEnabled: true,
+      otpRequired: true
+    })
     const client = createGatewayClient({ baseUrl: gw.baseUrl })
     const code = gw.otpCode()
     expect(code).toMatch(/^\d{6}$/)
@@ -46,7 +54,11 @@ describe('GatewayClient OTP integration', () => {
   }, 30_000)
 
   it('密码对但验证码错 → 401 invalid-credentials(与密码错统一,不泄漏)', async () => {
-    const gw = await fixture({ password: 'contract-pass-123!', otpEnabled: true, otpRequired: true })
+    const gw = await fixture({
+      password: 'contract-pass-123!',
+      otpEnabled: true,
+      otpRequired: true
+    })
     const client = createGatewayClient({ baseUrl: gw.baseUrl })
     const bad = await client.login({ password: gw.password, otp: '000000' })
     expect(bad.ok).toBe(false)
@@ -57,7 +69,11 @@ describe('GatewayClient OTP integration', () => {
   }, 30_000)
 
   it('连续失败达上限 → 429 too-many-attempts + retryAfterSeconds(唯一计时依据)', async () => {
-    const gw = await fixture({ password: 'contract-pass-123!', maxLoginFailures: 2, lockMinutes: 5 })
+    const gw = await fixture({
+      password: 'contract-pass-123!',
+      maxLoginFailures: 2,
+      lockMinutes: 5
+    })
     const client = createGatewayClient({ baseUrl: gw.baseUrl })
     // 实测网关语义:第 maxLoginFailures 次失败即触发锁定(不是第 N+1 次)
     const first = await client.login({ password: 'wrong-1' })

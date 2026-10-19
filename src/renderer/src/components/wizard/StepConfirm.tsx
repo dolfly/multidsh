@@ -16,7 +16,15 @@ export interface StepConfirmProps {
 
 /** 第 3 步确认：汇总名称/传输/地址，并按传输给出创建须知。 */
 export default function StepConfirm(props: StepConfirmProps): ReactNode {
-  const { t, transport, form, configuredName, useExistingExternal, externalWorkspace, localLaunchersCount } = props
+  const {
+    t,
+    transport,
+    form,
+    configuredName,
+    useExistingExternal,
+    externalWorkspace,
+    localLaunchersCount
+  } = props
   return (
     <div data-testid="wizard-step-3">
       <p className="meta">{t('wizard.confirmHint')}</p>

@@ -31,7 +31,12 @@ import { parseId, type IpcWrap } from './ipc-utils'
 import { isAllowedPluginLink } from './plugin-link-policy'
 
 /** 升级目标版本：与 dsh 版本号同字符集，长度封顶。 */
-const PLUGIN_VERSION_SCHEMA = z.string().trim().min(1).max(64).regex(DSH_VERSION_PATTERN, '版本号含非法字符')
+const PLUGIN_VERSION_SCHEMA = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(DSH_VERSION_PATTERN, '版本号含非法字符')
 
 /** 插件元信息本地化语言；非法值回落 zh。 */
 const PLUGIN_LOCALE_SCHEMA = z.enum(['zh', 'en']).catch('zh')
@@ -43,7 +48,11 @@ export interface PluginHandlerDeps {
   openExternalUrl?: (url: string) => Promise<void>
 }
 
-export function registerPluginHandlers(store: InstanceStore, deps: PluginHandlerDeps, wrap: IpcWrap): void {
+export function registerPluginHandlers(
+  store: InstanceStore,
+  deps: PluginHandlerDeps,
+  wrap: IpcWrap
+): void {
   /** 取本机实例；非 local 一律拒绝（远程实例 v1 不做插件管理）。 */
   async function requireLocal(id: unknown): Promise<LocalInstance> {
     const record = await requireInstance(store, parseId(id))
@@ -53,39 +62,40 @@ export function registerPluginHandlers(store: InstanceStore, deps: PluginHandler
     return record
   }
 
-  ipcMain.handle(PLUGIN_IPC.list, (_event, id: unknown, locale: unknown): Promise<IpcResult<PluginInfo[]>> =>
-    wrap(async () => {
-      const instance = await requireLocal(id)
-      if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
-      return deps.pluginManager.list(instance, PLUGIN_LOCALE_SCHEMA.parse(locale))
-    })
+  ipcMain.handle(
+    PLUGIN_IPC.list,
+    (_event, id: unknown, locale: unknown): Promise<IpcResult<PluginInfo[]>> =>
+      wrap(async () => {
+        const instance = await requireLocal(id)
+        if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
+        return deps.pluginManager.list(instance, PLUGIN_LOCALE_SCHEMA.parse(locale))
+      })
   )
 
-  ipcMain.handle(PLUGIN_IPC.check, (_event, id: unknown, name: unknown): Promise<IpcResult<PluginUpdateCheck>> =>
-    wrap(async () => {
-      const instance = await requireLocal(id)
-      const pluginName = PLUGIN_NAME_SCHEMA.parse(name)
-      if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
-      return deps.pluginManager.check(instance, pluginName)
-    })
+  ipcMain.handle(
+    PLUGIN_IPC.check,
+    (_event, id: unknown, name: unknown): Promise<IpcResult<PluginUpdateCheck>> =>
+      wrap(async () => {
+        const instance = await requireLocal(id)
+        const pluginName = PLUGIN_NAME_SCHEMA.parse(name)
+        if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
+        return deps.pluginManager.check(instance, pluginName)
+      })
   )
 
-  ipcMain.handle(PLUGIN_IPC.checkState, (_event, id: unknown): Promise<IpcResult<PluginCheckSnapshot>> =>
-    wrap(async () => {
-      const instance = await requireLocal(id)
-      if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
-      return deps.pluginManager.checkState(instance)
-    })
+  ipcMain.handle(
+    PLUGIN_IPC.checkState,
+    (_event, id: unknown): Promise<IpcResult<PluginCheckSnapshot>> =>
+      wrap(async () => {
+        const instance = await requireLocal(id)
+        if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
+        return deps.pluginManager.checkState(instance)
+      })
   )
 
   ipcMain.handle(
     PLUGIN_IPC.resolveInstall,
-    (
-      _event,
-      id: unknown,
-      spec: unknown,
-      options: unknown
-    ): Promise<IpcResult<PluginInstallPlan>> =>
+    (_event, id: unknown, spec: unknown, options: unknown): Promise<IpcResult<PluginInstallPlan>> =>
       wrap(async () => {
         const instance = await requireLocal(id)
         const pluginSpec = PLUGIN_SPEC_SCHEMA.parse(spec)
@@ -143,18 +153,25 @@ export function registerPluginHandlers(store: InstanceStore, deps: PluginHandler
       })
   )
 
-  ipcMain.handle(PLUGIN_IPC.remove, (_event, id: unknown, name: unknown): Promise<IpcResult<PluginMutationResult>> =>
-    wrap(async () => {
-      const instance = await requireLocal(id)
-      const pluginName = PLUGIN_NAME_SCHEMA.parse(name)
-      if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
-      return deps.pluginManager.remove(instance, pluginName)
-    })
+  ipcMain.handle(
+    PLUGIN_IPC.remove,
+    (_event, id: unknown, name: unknown): Promise<IpcResult<PluginMutationResult>> =>
+      wrap(async () => {
+        const instance = await requireLocal(id)
+        const pluginName = PLUGIN_NAME_SCHEMA.parse(name)
+        if (!deps.pluginManager) throw new InstanceStoreError('internal', '插件管理能力不可用')
+        return deps.pluginManager.remove(instance, pluginName)
+      })
   )
 
   ipcMain.handle(
     PLUGIN_IPC.setEnabled,
-    (_event, id: unknown, name: unknown, enabled: unknown): Promise<IpcResult<PluginEnableResult>> =>
+    (
+      _event,
+      id: unknown,
+      name: unknown,
+      enabled: unknown
+    ): Promise<IpcResult<PluginEnableResult>> =>
       wrap(async () => {
         const instance = await requireLocal(id)
         const pluginName = PLUGIN_NAME_SCHEMA.parse(name)
@@ -168,7 +185,10 @@ export function registerPluginHandlers(store: InstanceStore, deps: PluginHandler
     wrap(async () => {
       const target = typeof url === 'string' ? url : ''
       if (!isAllowedPluginLink(target)) {
-        throw new InstanceStoreError('invalid-input', '链接必须是 npmjs.com 或 github.com 的 https 地址')
+        throw new InstanceStoreError(
+          'invalid-input',
+          '链接必须是 npmjs.com 或 github.com 的 https 地址'
+        )
       }
       if (!deps.openExternalUrl) throw new InstanceStoreError('internal', '打开外链不可用')
       await deps.openExternalUrl(target)

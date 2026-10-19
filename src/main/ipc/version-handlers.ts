@@ -28,55 +28,67 @@ export interface VersionHandlerDeps {
   promptBroker: PromptBroker
 }
 
-export function registerVersionHandlers(store: InstanceStore, deps: VersionHandlerDeps, wrap: IpcWrap): void {
-  ipcMain.handle(DSH_VERSION_IPC.check, (_event, id: unknown): Promise<IpcResult<DshVersionCheck>> =>
-    wrap(async () => {
-      const instanceId = parseId(id)
-      const record = await requireInstance(store, instanceId)
-      if (!deps.installer) throw new InstanceStoreError('internal', 'dsh 版本管理能力不可用')
-      const status = deps.runtime.statusOf(instanceId)
-      let current = status?.version ?? (record.transport === 'local' ? record.dshVersion : null)
-      // 'custom' 是未固定版本的占位符，不是版本号。
-      if (current === 'custom') current = null
-      const eligibility = upgradeEligibility(record, status?.runtimeSource)
-      let reason = eligibility.reason
-      // 公共空间可能跑系统默认 dsh：current 以 PATH 实测为准（注册表里的值不权威），并检测
-      // 安装来源——缺失或非 npm 全局安装时在「检查更新」就给出不可代管原因，不等点了升级才失败。
-      // 来源未知时经 dsh-source-policy 按启动路径同款计划推导，避免把将要运行的 hub 副本误当系统 dsh。
-      if (eligibility.canUpgrade && deps.pathProbe && record.transport === 'local') {
-        const pathProbe = deps.pathProbe
-        const installer = deps.installer
-        const decision = await resolveSystemDshUsage({
-          transport: record.transport,
-          useDefaultSpace: record.useDefaultSpace,
-          launcher: record.launcher,
-          runtimeSource: status?.runtimeSource,
-          desiredVersion: record.dshVersion,
-          listInstalledVersions: async () => {
-            try {
-              return (await installer.listInstalled()).map((item) => item.version)
-            } catch {
-              return [] as string[]
-            }
-          },
-          probePath: async () => (await pathProbe.probe().catch(() => null)) ?? null
-        })
-        if (decision.usesSystemDsh) {
-          const probed = decision.pathRuntime
-          current = probed?.version ?? null
-          const prefix =
-            probed === null
-              ? null
-              : ((await installer.resolveGlobalPrefix(probed.command).catch(() => null)) ?? null)
-          if (prefix === null) reason = 'global-unmanaged'
+export function registerVersionHandlers(
+  store: InstanceStore,
+  deps: VersionHandlerDeps,
+  wrap: IpcWrap
+): void {
+  ipcMain.handle(
+    DSH_VERSION_IPC.check,
+    (_event, id: unknown): Promise<IpcResult<DshVersionCheck>> =>
+      wrap(async () => {
+        const instanceId = parseId(id)
+        const record = await requireInstance(store, instanceId)
+        if (!deps.installer) throw new InstanceStoreError('internal', 'dsh 版本管理能力不可用')
+        const status = deps.runtime.statusOf(instanceId)
+        let current = status?.version ?? (record.transport === 'local' ? record.dshVersion : null)
+        // 'custom' 是未固定版本的占位符，不是版本号。
+        if (current === 'custom') current = null
+        const eligibility = upgradeEligibility(record, status?.runtimeSource)
+        let reason = eligibility.reason
+        // 公共空间可能跑系统默认 dsh：current 以 PATH 实测为准（注册表里的值不权威），并检测
+        // 安装来源——缺失或非 npm 全局安装时在「检查更新」就给出不可代管原因，不等点了升级才失败。
+        // 来源未知时经 dsh-source-policy 按启动路径同款计划推导，避免把将要运行的 hub 副本误当系统 dsh。
+        if (eligibility.canUpgrade && deps.pathProbe && record.transport === 'local') {
+          const pathProbe = deps.pathProbe
+          const installer = deps.installer
+          const decision = await resolveSystemDshUsage({
+            transport: record.transport,
+            useDefaultSpace: record.useDefaultSpace,
+            launcher: record.launcher,
+            runtimeSource: status?.runtimeSource,
+            desiredVersion: record.dshVersion,
+            listInstalledVersions: async () => {
+              try {
+                return (await installer.listInstalled()).map((item) => item.version)
+              } catch {
+                return [] as string[]
+              }
+            },
+            probePath: async () => (await pathProbe.probe().catch(() => null)) ?? null
+          })
+          if (decision.usesSystemDsh) {
+            const probed = decision.pathRuntime
+            current = probed?.version ?? null
+            const prefix =
+              probed === null
+                ? null
+                : ((await installer.resolveGlobalPrefix(probed.command).catch(() => null)) ?? null)
+            if (prefix === null) reason = 'global-unmanaged'
+          }
         }
-      }
-      const canUpgrade = reason === undefined
-      const latest = await deps.installer.resolveLatestVersion()
-      // 当前版本未知时：可升级的实例按「装上即最新」算有更新；来源不可知的实例不妄报。
-      const hasUpdate = current !== null ? compareDshVersions(current, latest) < 0 : canUpgrade
-      return { current, latest, hasUpdate, canUpgrade, ...(reason === undefined ? {} : { reason }) }
-    })
+        const canUpgrade = reason === undefined
+        const latest = await deps.installer.resolveLatestVersion()
+        // 当前版本未知时：可升级的实例按「装上即最新」算有更新；来源不可知的实例不妄报。
+        const hasUpdate = current !== null ? compareDshVersions(current, latest) < 0 : canUpgrade
+        return {
+          current,
+          latest,
+          hasUpdate,
+          canUpgrade,
+          ...(reason === undefined ? {} : { reason })
+        }
+      })
   )
 
   ipcMain.handle(DSH_VERSION_IPC.list, (): Promise<IpcResult<DshVersionCatalog>> =>
@@ -129,8 +141,10 @@ export function registerVersionHandlers(store: InstanceStore, deps: VersionHandl
       })
   )
 
-  ipcMain.handle(DSH_VERSION_IPC.confirmList, (): Promise<IpcResult<RuntimeConfirmPromptPayload[]>> =>
-    // 快照只含 requestId/kind/版本号等非敏感字段；渲染层挂载时补拉，防止错过推送事件。
-    wrap(() => deps.promptBroker.listConfirms())
+  ipcMain.handle(
+    DSH_VERSION_IPC.confirmList,
+    (): Promise<IpcResult<RuntimeConfirmPromptPayload[]>> =>
+      // 快照只含 requestId/kind/版本号等非敏感字段；渲染层挂载时补拉，防止错过推送事件。
+      wrap(() => deps.promptBroker.listConfirms())
   )
 }

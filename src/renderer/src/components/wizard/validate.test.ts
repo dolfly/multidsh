@@ -73,6 +73,8 @@ describe('validateWizardForm', () => {
   it('http：endpointUrl 解析失败返回解析错误文案，合法端点通过', () => {
     const bad = run({ transport: 'http', form: { name: 'a', endpointUrl: 'ftp://nope' } })
     expect(bad).not.toBeNull()
-    expect(run({ transport: 'http', form: { name: 'a', endpointUrl: 'https://gw.example.com/dsh' } })).toBeNull()
+    expect(
+      run({ transport: 'http', form: { name: 'a', endpointUrl: 'https://gw.example.com/dsh' } })
+    ).toBeNull()
   })
 })

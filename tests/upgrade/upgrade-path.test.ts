@@ -183,7 +183,9 @@ describe('注册表跨版本升级路径', () => {
     expect(after.instances).toHaveLength(3)
     const ssh = after.instances.find((item) => item.id === '3f2504e0-4f89-41d3-9a0c-0305e82c3302')
     expect(ssh).toMatchObject({ transport: 'ssh', localPort: 32222, remotePort: 3080 })
-    const renamed = after.instances.find((item) => item.id === '3f2504e0-4f89-41d3-9a0c-0305e82c3301')
+    const renamed = after.instances.find(
+      (item) => item.id === '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+    )
     expect(renamed?.name).toBe('本地开发(改名)')
   })
 
@@ -191,7 +193,11 @@ describe('注册表跨版本升级路径', () => {
     const registryDir = join(dir, 'registry')
     await mkdir(registryDir, { recursive: true })
     // 关键回归:这些值在 v1 下合法、v2 收紧后会被拒。若无迁移，整表会被隔离、实例全部消失。
-    await writeFile(join(registryDir, 'instances.json'), await fixture('registry-v1-legacy.json'), 'utf8')
+    await writeFile(
+      join(registryDir, 'instances.json'),
+      await fixture('registry-v1-legacy.json'),
+      'utf8'
+    )
 
     const store = createInstanceStore({ dir: registryDir, migrations: REGISTRY_MIGRATIONS })
     const list = await store.list()
@@ -291,7 +297,11 @@ describe('设置跨版本升级路径', () => {
   it('来自更高版本的设置文件:未知字段忽略,非法字段逐字段回落,不影响合法字段', async () => {
     const settingsDir = join(dir, 'settings')
     await mkdir(settingsDir, { recursive: true })
-    await writeFile(join(settingsDir, 'settings.json'), await fixture('settings-future.json'), 'utf8')
+    await writeFile(
+      join(settingsDir, 'settings.json'),
+      await fixture('settings-future.json'),
+      'utf8'
+    )
 
     let errorSeen: unknown = null
     const store = createSettingsStore({

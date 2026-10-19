@@ -104,7 +104,11 @@ export function parseUpdateYaml(text) {
       const entryKey = line.slice(2)
       const entryColon = entryKey.indexOf(':')
       if (entryColon === -1) throw new UpdateMetadataError(`无法解析的 files 条目：${line}`)
-      assignFileField(current, entryKey.slice(0, entryColon).trim(), entryKey.slice(entryColon + 1).trim())
+      assignFileField(
+        current,
+        entryKey.slice(0, entryColon).trim(),
+        entryKey.slice(entryColon + 1).trim()
+      )
       continue
     }
     if (!current) throw new UpdateMetadataError(`files 下的缩进字段缺少所属条目：${line}`)
@@ -215,7 +219,9 @@ export function validateDistributionArtifacts(distribution, version, artifacts) 
   }
   if (distribution === 'source-only') {
     if (artifacts.length > 0) {
-      throw new UpdateMetadataError('source-only 发布说明不得声明桌面安装包、更新元数据或校验和资产')
+      throw new UpdateMetadataError(
+        'source-only 发布说明不得声明桌面安装包、更新元数据或校验和资产'
+      )
     }
     return
   }

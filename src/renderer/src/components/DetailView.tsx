@@ -24,7 +24,7 @@ export default function DetailView(): ReactNode {
   const record = useAppStore((state) => (selection ? state.records[selection] : undefined))
   const status = useAppStore((state) => (selection ? state.statuses[selection] : undefined))
   const workspaceConnected = useAppStore((state) =>
-    selection ? state.workspaceConnected[selection] ?? true : true
+    selection ? (state.workspaceConnected[selection] ?? true) : true
   )
   const authPhase = useAppStore((state) => (selection ? state.authPhases[selection] : undefined))
   const ensureRecord = useAppStore((state) => state.ensureRecord)
@@ -53,7 +53,9 @@ export default function DetailView(): ReactNode {
   const [showExternalTokenEditor, setShowExternalTokenEditor] = useState(false)
   const [externalToken, setExternalToken] = useState('')
   // dsh 版本管理仅本机实例：检查更新对比的是本机 npm 镜像，远程实例版本 hub 无从得知也不受 hub 管。
-  const versionControl = useDshVersionControl(record && record.transport === 'local' ? record.id : null)
+  const versionControl = useDshVersionControl(
+    record && record.transport === 'local' ? record.id : null
+  )
 
   useEffect(() => {
     if (selection) void ensureRecord(selection)
@@ -109,7 +111,8 @@ export default function DetailView(): ReactNode {
 
   const display = toDisplayStatus(status?.status, workspaceConnected)
   const info = STATUS_INFO[display]
-  const version = status?.version ?? (record.transport === 'local' ? record.dshVersion : null) ?? '—'
+  const version =
+    status?.version ?? (record.transport === 'local' ? record.dshVersion : null) ?? '—'
   /** 最近一次启动命令：运行中以状态事件为准，其后回落到注册表回写的值；外部接管的进程不归 hub 启动。 */
   const runCommand: string | null =
     record.transport === 'local' && status?.runtimeSource !== 'external'
@@ -118,7 +121,9 @@ export default function DetailView(): ReactNode {
 
   /** 重启与关闭只针对 hub 拉起的运行中本地进程；外部接管的进程归用户所有。 */
   const canControlRuntime =
-    record.transport === 'local' && status?.status === 'running' && status.runtimeSource !== 'external'
+    record.transport === 'local' &&
+    status?.status === 'running' &&
+    status.runtimeSource !== 'external'
 
   const copyAddress = async (): Promise<void> => {
     try {
@@ -151,7 +156,9 @@ export default function DetailView(): ReactNode {
   const copyActivity = async (): Promise<void> => {
     if (activity === undefined || activity.length === 0) return
     try {
-      await navigator.clipboard.writeText(activity.map((line) => formatActivity(t, line)).join('\n'))
+      await navigator.clipboard.writeText(
+        activity.map((line) => formatActivity(t, line)).join('\n')
+      )
       toast('ok', t('detail.log.copied'))
     } catch {
       toast('err', t('detail.copyFailed'))
@@ -320,7 +327,9 @@ export default function DetailView(): ReactNode {
           onLogin={openAuthPanel}
           onCopyAddress={() => void copyAddress()}
           onOpenInBrowser={() => void openInBrowser()}
-          onOpenDirectory={record.transport === 'local' ? () => void openInstanceDirectory() : undefined}
+          onOpenDirectory={
+            record.transport === 'local' ? () => void openInstanceDirectory() : undefined
+          }
           onDisconnect={() => void disconnectWorkspace(record.id)}
           onLogout={() => void logout()}
         />
@@ -379,7 +388,9 @@ export default function DetailView(): ReactNode {
         setShowMore={setShowLogMore}
         onCopy={() => void copyActivity()}
         onClear={() => clearActivity(record.id)}
-        onOpenLogDir={record.transport === 'local' ? () => void openInstanceLogDirectory() : undefined}
+        onOpenLogDir={
+          record.transport === 'local' ? () => void openInstanceLogDirectory() : undefined
+        }
       />
 
       <div className="detail-delete" data-testid="detail-delete-area">

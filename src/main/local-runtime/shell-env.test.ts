@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { CommandResult, CommandRunner } from './exec-file'
-import {
-  PROTECTED_KEYS,
-  createShellEnvResolver,
-  mergeShellEnv,
-  resolveShellEnv
-} from './shell-env'
+import { PROTECTED_KEYS, createShellEnvResolver, mergeShellEnv, resolveShellEnv } from './shell-env'
 
 function runReturning(result: CommandResult | (() => Promise<CommandResult>)): CommandRunner {
   return vi.fn(typeof result === 'function' ? result : async () => result)

@@ -23,8 +23,18 @@ export interface ConnectionCardProps {
 
 /** 连接方式卡：地址/端口/认证模式等事实文本，登录/复制地址/在浏览器中打开/打开目录/断开/登出操作。 */
 export default function ConnectionCard(props: ConnectionCardProps): ReactNode {
-  const { t, record, authPhase, canOpenInBrowser, onLogin, onCopyAddress, onOpenInBrowser, onOpenDirectory, onDisconnect, onLogout } =
-    props
+  const {
+    t,
+    record,
+    authPhase,
+    canOpenInBrowser,
+    onLogin,
+    onCopyAddress,
+    onOpenInBrowser,
+    onOpenDirectory,
+    onDisconnect,
+    onLogout
+  } = props
   return (
     <div className="card selectable">
       <div className="card-head">
@@ -83,8 +93,7 @@ export default function ConnectionCard(props: ConnectionCardProps): ReactNode {
       <div className="row mt12">
         {showAuthActions(record) && (
           <button className="btn btn-primary btn-sm" data-testid="login-btn" onClick={onLogin}>
-            <Icon name="key" />{' '}
-            {/* 已连接时显示“重新登录”，否则显示“登录”。 */}
+            <Icon name="key" /> {/* 已连接时显示“重新登录”，否则显示“登录”。 */}
             {authPhase === 'connected' ? t('detail.relogin') : t('detail.login')}
           </button>
         )}
@@ -109,7 +118,11 @@ export default function ConnectionCard(props: ConnectionCardProps): ReactNode {
             <Icon name="folder" /> {t('detail.openDir')}
           </button>
         )}
-        <button className="btn btn-secondary btn-sm" data-testid="disconnect-view-btn" onClick={onDisconnect}>
+        <button
+          className="btn btn-secondary btn-sm"
+          data-testid="disconnect-view-btn"
+          onClick={onDisconnect}
+        >
           <Icon name="close" /> {t('detail.disconnect')}
         </button>
         {/* 仅在已连接时显示登出操作。 */}

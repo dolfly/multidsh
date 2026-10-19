@@ -36,7 +36,17 @@ describe('settings-store（偏好落盘）', () => {
     await store.update({ tray: true })
     const raw = JSON.parse(await readFile(store.filePath(), 'utf8')) as Record<string, unknown>
     expect(Object.keys(raw).sort()).toEqual(
-      ['autoStart', 'inheritShellEnv', 'language', 'notifications', 'npmRegistry', 'preventSleepWhenRunning', 'theme', 'tray', 'workspaceCacheSize'].sort()
+      [
+        'autoStart',
+        'inheritShellEnv',
+        'language',
+        'notifications',
+        'npmRegistry',
+        'preventSleepWhenRunning',
+        'theme',
+        'tray',
+        'workspaceCacheSize'
+      ].sort()
     )
     expect(raw['tray']).toBe(true)
   })
@@ -74,7 +84,7 @@ describe('settings-store（偏好落盘）', () => {
     expect(store.read()).toEqual(raw)
   })
 
-  it("并发 update 不得丢失改动", async () => {
+  it('并发 update 不得丢失改动', async () => {
     const store = createSettingsStore({ dir })
     // 并发发起多笔互不相同的改动;串行化后每一笔都必须留下
     await Promise.all([
@@ -83,7 +93,9 @@ describe('settings-store（偏好落盘）', () => {
       store.update({ tray: true }),
       store.update({ notifications: false })
     ])
-    const persisted = JSON.parse(await readFile(store.filePath(), 'utf8')) as typeof DEFAULT_SETTINGS
+    const persisted = JSON.parse(
+      await readFile(store.filePath(), 'utf8')
+    ) as typeof DEFAULT_SETTINGS
     expect(persisted).toEqual({
       language: 'en',
       theme: 'dark',

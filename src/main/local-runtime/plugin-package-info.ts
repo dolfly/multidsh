@@ -81,11 +81,14 @@ function versionHeadingPattern(version: string): RegExp {
 }
 
 /** 任意版本标题行：把目标段落截到下一个版本标题之前。 */
-const ANY_VERSION_HEADING = /^(?:#{1,6}|-{1,2})\s*[<[]?v?\d+(?:\.\d+)*(?:[-+][0-9A-Za-z.-]+)?[>\]]?(?![0-9A-Za-z.+-])/i
+const ANY_VERSION_HEADING =
+  /^(?:#{1,6}|-{1,2})\s*[<[]?v?\d+(?:\.\d+)*(?:[-+][0-9A-Za-z.-]+)?[>\]]?(?![0-9A-Za-z.+-])/i
 
 /** 超过上限即截断并标记；未超上限原样返回。 */
 function truncateText(text: string, limit: number): { text: string; truncated: boolean } {
-  return text.length <= limit ? { text, truncated: false } : { text: text.slice(0, limit), truncated: true }
+  return text.length <= limit
+    ? { text, truncated: false }
+    : { text: text.slice(0, limit), truncated: true }
 }
 
 /**
@@ -104,7 +107,10 @@ export function extractChangelogSection(
   const start = lines.findIndex((line) => wanted.test(line))
   if (start < 0) return truncateText(markdown.trim(), limit)
   const next = lines.findIndex((line, index) => index > start && ANY_VERSION_HEADING.test(line))
-  const section = lines.slice(start, next < 0 ? undefined : next).join('\n').trim()
+  const section = lines
+    .slice(start, next < 0 ? undefined : next)
+    .join('\n')
+    .trim()
   return section === '' ? null : truncateText(section, limit)
 }
 
@@ -112,7 +118,9 @@ export function extractChangelogSection(
  * 从 GitHub 仓库网页地址解析 owner/repo；非 github.com 地址或形态不符返回 null。
  * 只接受 `https://github.com/<owner>/<repo>`（githubUrlFrom 的输出形态）。
  */
-export function ownerRepoFrom(url: string | null | undefined): { owner: string; repo: string } | null {
+export function ownerRepoFrom(
+  url: string | null | undefined
+): { owner: string; repo: string } | null {
   if (typeof url !== 'string') return null
   const match = /^https?:\/\/github\.com\/([^/\s]+)\/([^/\s#?]+?)(?:\.git)?\/?$/i.exec(url.trim())
   if (match?.[1] === undefined || match[2] === undefined) return null
@@ -136,7 +144,8 @@ function parseDownloads(raw: unknown): PluginDownloads | null {
   const start = record.start
   const end = record.end
   if (typeof count !== 'number' || !Number.isFinite(count) || count < 0) return null
-  if (typeof start !== 'string' || start === '' || typeof end !== 'string' || end === '') return null
+  if (typeof start !== 'string' || start === '' || typeof end !== 'string' || end === '')
+    return null
   return { count: Math.trunc(count), start, end }
 }
 

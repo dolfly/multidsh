@@ -34,12 +34,7 @@ export interface HubNativeDeps<TTray extends TrayLike> {
   /** 生产 = `tray.ts` 的 `createHubTray` */
   createTray(options: CreateTrayOptionsLike): TTray
   /** 生产 = `tray.ts` 的 `updateTrayStatus`(菜单状态行跟随实例数) */
-  refreshTrayMenu(
-    tray: TTray,
-    labels: HubTrayLabels,
-    onShow: () => void,
-    onQuit: () => void
-  ): void
+  refreshTrayMenu(tray: TTray, labels: HubTrayLabels, onShow: () => void, onQuit: () => void): void
   /** 生产 = `app.setLoginItemSettings`(真正把登录项写进 OS) */
   applyLoginItem(value: { openAtLogin: boolean; openAsHidden: boolean }): void
   onShow(): void

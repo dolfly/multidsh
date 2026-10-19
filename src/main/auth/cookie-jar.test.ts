@@ -3,7 +3,10 @@ import { createCookieJar, parseSetCookie } from './cookie-jar'
 
 describe('cookie-jar（内存 Cookie 罐）', () => {
   it('解析真实网关的 Set-Cookie(Path=/; HttpOnly; SameSite=Strict; Max-Age)', () => {
-    const record = parseSetCookie('dsh_auth=abc123; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000', 0)
+    const record = parseSetCookie(
+      'dsh_auth=abc123; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000',
+      0
+    )
     expect(record?.name).toBe('dsh_auth')
     expect(record?.value).toBe('abc123')
     expect(record?.expiresAt).toBe(2592000 * 1000)

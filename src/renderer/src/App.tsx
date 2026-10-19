@@ -35,7 +35,7 @@ export default function App() {
   // 只订阅当前选中实例的状态切片，避免非选中实例的状态事件重渲染整个外壳。
   const selectedStatus = useAppStore((state) => (selection ? state.statuses[selection] : undefined))
   const selectedConnected = useAppStore((state) =>
-    selection ? state.workspaceConnected[selection] ?? true : true
+    selection ? (state.workspaceConnected[selection] ?? true) : true
   )
   const workspaceOpen = useAppStore((state) => state.workspaceOpen)
   const workspaceOpening = useAppStore((state) => state.workspaceOpening)
@@ -130,10 +130,13 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [setWizardOpen, toggleRail])
 
-  const selectedInstance = selection ? instances.find((instance) => instance.id === selection) : undefined
-  const workspaceAddress = workspaceOpen && selectedInstance
-    ? compactWorkspaceAddress(selectedInstance.address)
+  const selectedInstance = selection
+    ? instances.find((instance) => instance.id === selection)
     : undefined
+  const workspaceAddress =
+    workspaceOpen && selectedInstance
+      ? compactWorkspaceAddress(selectedInstance.address)
+      : undefined
   const title = t('nav.overview')
 
   return (
@@ -158,12 +161,9 @@ export default function App() {
           <span className="tb-sub" data-testid="tb-sub">
             {/* 副标题只给必要信息（地址 / 状态短标签 / 实例数）；状态详情在详情页底部信息栏。 */}
             {workspaceOpen
-              ? workspaceAddress ?? selectedInstance?.name ?? t('common.unknown')
+              ? (workspaceAddress ?? selectedInstance?.name ?? t('common.unknown'))
               : selectedStatus !== undefined && selection !== null
-                ? t(
-                    STATUS_INFO[toDisplayStatus(selectedStatus.status, selectedConnected)]
-                      .labelKey
-                  )
+                ? t(STATUS_INFO[toDisplayStatus(selectedStatus.status, selectedConnected)].labelKey)
                 : t('nav.instanceCount', { n: instances.length })}
           </span>
         </div>
@@ -188,7 +188,12 @@ export default function App() {
           {settingsOpen ? (
             <SettingsView />
           ) : workspaceOpening ? (
-            <section className="workspace-loading" aria-busy="true" aria-live="polite" data-testid="workspace-loading">
+            <section
+              className="workspace-loading"
+              aria-busy="true"
+              aria-live="polite"
+              data-testid="workspace-loading"
+            >
               <Icon name="refresh" />
               <h2>{t('detail.openingWorkspace')}</h2>
               <p>{selectedInstance?.name ?? t('common.loading')}</p>

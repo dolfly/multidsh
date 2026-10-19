@@ -65,10 +65,24 @@ describe('版本与发布说明一致性', () => {
   })
 
   it('parseReleaseNotes 拒绝缺失或未知的分发模式', () => {
-    const valid = ['# DSH Hub v1.2.3', '', '- 发布日期: 2026-09-18', '', '## 分发方式', '', '- `source-only`'].join('\n')
-    expect(parseReleaseNotes(valid)).toMatchObject({ version: '1.2.3', distribution: 'source-only', artifacts: [] })
+    const valid = [
+      '# DSH Hub v1.2.3',
+      '',
+      '- 发布日期: 2026-09-18',
+      '',
+      '## 分发方式',
+      '',
+      '- `source-only`'
+    ].join('\n')
+    expect(parseReleaseNotes(valid)).toMatchObject({
+      version: '1.2.3',
+      distribution: 'source-only',
+      artifacts: []
+    })
     expect(() => parseReleaseNotes(valid.replace('- `source-only`', ''))).toThrow(/分发方式/)
-    expect(() => parseReleaseNotes(valid.replace('source-only', 'signed-binary'))).toThrow(/分发方式/)
+    expect(() => parseReleaseNotes(valid.replace('source-only', 'signed-binary'))).toThrow(
+      /分发方式/
+    )
   })
 
   it('windows-unsigned 只接受安装包与校验清单，其它资产与缺失安装包一律拒绝', () => {
@@ -103,9 +117,9 @@ describe('版本与发布说明一致性', () => {
     expect(() =>
       parseReleaseNotes(notesFor('windows-unsigned', ['DSH-Hub-Setup-1.2.3.exe', 'latest.yml']))
     ).toThrow(/不得声明资产/)
-    expect(() =>
-      parseReleaseNotes(notesFor('windows-unsigned', ['DSH Hub-1.2.3.dmg']))
-    ).toThrow(/不得声明资产/)
+    expect(() => parseReleaseNotes(notesFor('windows-unsigned', ['DSH Hub-1.2.3.dmg']))).toThrow(
+      /不得声明资产/
+    )
     // 不在白名单内的资产拒绝
     expect(() =>
       parseReleaseNotes(notesFor('windows-unsigned', ['DSH-Hub-Setup-1.2.3.exe', 'notes.pdf']))
@@ -180,7 +194,7 @@ describe('更新元数据解析与校验', () => {
     '  - url: DSH-Hub-0.1.0-arm64-mac.zip',
     '    sha512: AAAABBBB',
     '    size: 120994809',
-    "path: DSH-Hub-0.1.0-arm64-mac.zip",
+    'path: DSH-Hub-0.1.0-arm64-mac.zip',
     'sha512: AAAABBBB',
     "releaseDate: '2026-09-15T20:24:52.305Z'"
   ].join('\n')
@@ -208,9 +222,7 @@ describe('更新元数据解析与校验', () => {
 
   it('磁盘产物名带空格、元数据 url 带连字符时仍能对上', () => {
     // electron-builder 把空格换成连字符写进 URL,磁盘上是 'DSH Hub-0.1.0-arm64-mac.zip'
-    expect(normalizeArtifactUrl('DSH-Hub-0.1.0-arm64-mac.zip')).toBe(
-      'DSH-Hub-0.1.0-arm64-mac.zip'
-    )
+    expect(normalizeArtifactUrl('DSH-Hub-0.1.0-arm64-mac.zip')).toBe('DSH-Hub-0.1.0-arm64-mac.zip')
     expect(normalizeArtifactUrl('DSH%20Hub-0.1.0-arm64-mac.zip')).toBe(
       'DSH-Hub-0.1.0-arm64-mac.zip'
     )
@@ -223,9 +235,7 @@ describe('更新元数据解析与校验', () => {
       metadata,
       appVersion: '0.1.0',
       // 磁盘实测:原名带空格,sha512/size 与元数据一致
-      artifacts: [
-        { name: 'DSH Hub-0.1.0-arm64-mac.zip', sha512: 'AAAABBBB', size: 120994809 }
-      ]
+      artifacts: [{ name: 'DSH Hub-0.1.0-arm64-mac.zip', sha512: 'AAAABBBB', size: 120994809 }]
     })
     expect(verdict.problems).toEqual([])
     expect(verdict.ok).toBe(true)
@@ -286,7 +296,9 @@ describe('已构建产物与更新元数据端到端自洽', () => {
       // 必须**扫描目录后按归一化名比对**,方向无关 —— 直接对 url 做空格替换是错的
       // (连字符形态里没有空格,替换等于没做)。
       const target = normalizeArtifactUrl(entry.url)
-      const name = readdirSync(distDir).find((candidate) => normalizeArtifactUrl(candidate) === target)
+      const name = readdirSync(distDir).find(
+        (candidate) => normalizeArtifactUrl(candidate) === target
+      )
       expect(name, `元数据引用的产物在 dist/ 下不存在:${entry.url}`).toBeTruthy()
       const full = join(distDir, name!)
       const bytes = readFileSync(full)

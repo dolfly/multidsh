@@ -233,9 +233,13 @@ function defaultReadIcon(path: string): string | null {
   }
 }
 
-function defaultReadLocale(path: string): { meta?: { title?: string; description?: string } } | null {
+function defaultReadLocale(
+  path: string
+): { meta?: { title?: string; description?: string } } | null {
   try {
-    return JSON.parse(readFileSync(path, 'utf8')) as { meta?: { title?: string; description?: string } }
+    return JSON.parse(readFileSync(path, 'utf8')) as {
+      meta?: { title?: string; description?: string }
+    }
   } catch {
     return null
   }
@@ -260,7 +264,11 @@ function installSourceOf(entry: {
   const from = entry.from ?? ''
   const version = entry.version ?? ''
   const resolved = entry.resolved ?? ''
-  if (/^(github:|git\+|git@)/.test(from) || /github\.com/.test(from) || /github\.com/.test(version)) {
+  if (
+    /^(github:|git\+|git@)/.test(from) ||
+    /github\.com/.test(from) ||
+    /github\.com/.test(version)
+  ) {
     return 'github'
   }
   if (/^(file:|link:)/.test(from) || /^(file:|link:)/.test(version)) return 'file'
@@ -312,7 +320,9 @@ function pickTargetVersion(
 ): string | null {
   const stable = versions.filter((version) => !version.includes('-'))
   const candidates = stable.length > 0 ? [latest, maxVersion(stable)] : [...versions]
-  const best = maxVersion(candidates.filter((item): item is string => typeof item === 'string' && item !== ''))
+  const best = maxVersion(
+    candidates.filter((item): item is string => typeof item === 'string' && item !== '')
+  )
   return best ?? fallback
 }
 
@@ -324,7 +334,9 @@ function installedVersionOf(plugins: readonly PluginInfo[], name: string): strin
 
 /** registry 未收录（与 check 同判据）：pnpm view 对未发布的包/不存在的版本返回 404。 */
 function isRegistryNotFound(error: unknown): boolean {
-  return error instanceof InstanceStoreError && /404|Not Found|ERR_PNPM_FETCH_404/i.test(error.message)
+  return (
+    error instanceof InstanceStoreError && /404|Not Found|ERR_PNPM_FETCH_404/i.test(error.message)
+  )
 }
 
 /** 解析 view 的 JSON 输出；输出不可解析时给不出计划，按内部错误报错。 */
@@ -370,20 +382,25 @@ function publishedAtOf(timeMap: Record<string, string> | null, version: string):
 }
 
 export function createPluginManager(options: PluginManagerOptions): PluginManager {
-  const run = options.run ?? ((command, args, opts) => execFileResult(command, args, {
-    env: opts?.env,
-    timeout: PLUGIN_COMMAND_TIMEOUT_MS,
-    maxBuffer: 16 * 1024 * 1024
-  }))
+  const run =
+    options.run ??
+    ((command, args, opts) =>
+      execFileResult(command, args, {
+        env: opts?.env,
+        timeout: PLUGIN_COMMAND_TIMEOUT_MS,
+        maxBuffer: 16 * 1024 * 1024
+      }))
   const readManifest = options.readManifest ?? defaultReadManifest
   const readIcon = options.readIcon ?? defaultReadIcon
   const readLocale = options.readLocale ?? defaultReadLocale
   const homeDir = options.homeDir ?? homedir
   const defaultProfile = options.profile ?? 'web'
   const resolveNode = options.resolveNode ?? defaultResolveNode
-  const nodeInvocation =
-    options.nodeInvocation ??
-    { command: nodeModeExecutable(), args: [], env: { ELECTRON_RUN_AS_NODE: '1' } }
+  const nodeInvocation = options.nodeInvocation ?? {
+    command: nodeModeExecutable(),
+    args: [],
+    env: { ELECTRON_RUN_AS_NODE: '1' }
+  }
   const inheritShellEnv = options.inheritShellEnv ?? ((): boolean => true)
   const shellEnv = options.shellEnv ?? resolveShellEnvOnce
   const loginPath = options.loginPath ?? resolveLoginPathOnce
@@ -391,7 +408,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   const bundleStore = options.bundleStore ?? createProfileBundleStore()
   const packageInfoFetchers = options.packageInfoFetchers ?? createPackageInfoFetchers()
   /** 未显式指定安装源时的默认档位（由设置项注入；缺省国内镜像）。 */
-  const defaultRegistry = options.defaultRegistry ?? ((): PluginRegistryOption => DEFAULT_PLUGIN_REGISTRY)
+  const defaultRegistry =
+    options.defaultRegistry ?? ((): PluginRegistryOption => DEFAULT_PLUGIN_REGISTRY)
 
   /**
    * 在飞检查的插件名（实例 id → 名字集合）。检查在后台跑到结束（用户切走也不中止），
@@ -442,7 +460,13 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     const pluginVersion = manifest?.version ?? listedVersion
     await runPlugin(
       instance,
-      ['allow-version', `${name}@${pluginVersion}`, '--dsh-version', resolved.version, '--accept-risk'],
+      [
+        'allow-version',
+        `${name}@${pluginVersion}`,
+        '--dsh-version',
+        resolved.version,
+        '--accept-risk'
+      ],
       resolved
     )
     return { pluginVersion, dshVersion: resolved.version }
@@ -584,7 +608,10 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     const newest = [...installed].sort((a, b) => compareDshVersions(a.version, b.version)).at(-1)
     if (newest !== undefined) return { entry: newest.entry, version: newest.version }
     if (pathRuntime !== null) return { entry: pathRuntime.command, version: pathRuntime.version }
-    throw new InstanceStoreError('invalid-state', '未找到可用的 dsh：hub 隔离目录与 PATH 上都没有已安装的运行时')
+    throw new InstanceStoreError(
+      'invalid-state',
+      '未找到可用的 dsh：hub 隔离目录与 PATH 上都没有已安装的运行时'
+    )
   }
 
   /**
@@ -614,7 +641,10 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     registry?: PluginRegistryOption | null
   ): Promise<CommandResult> {
     const { home, profile } = homeAndProfile(instance)
-    const fullArgs = registry === undefined || registry === null ? args : [...args, '--registry', pluginRegistryUrl(registry)]
+    const fullArgs =
+      registry === undefined || registry === null
+        ? args
+        : [...args, '--registry', pluginRegistryUrl(registry)]
     const pluginArgs = ['plugin', '--profile', profile, ...fullArgs]
     const node = resolveNode(resolved.entry)
     // 登录 shell 完整环境 / 仅登录 PATH（见 resolveBaseEnv）：打包后 GUI 启动缺 pnpm/node 目录，
@@ -678,7 +708,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         registry
       )
     } catch (error) {
-      if (isRegistryNotFound(error)) throw new InstanceStoreError('not-found', `版本不存在：${name}@${version}`)
+      if (isRegistryNotFound(error))
+        throw new InstanceStoreError('not-found', `版本不存在：${name}@${version}`)
       throw error
     }
     return {
@@ -731,7 +762,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     bundles: readonly string[] | null
   ): PluginInfo {
     const topLevelDir = join(profileNodeModules, ...name.split('/'))
-    const manifestDir = readManifest(topLevelDir) !== null ? topLevelDir : (entry.path ?? topLevelDir)
+    const manifestDir =
+      readManifest(topLevelDir) !== null ? topLevelDir : (entry.path ?? topLevelDir)
     const manifest = readManifest(manifestDir) ?? {}
     const dsh = manifest.dsh ?? {}
     const iconBase64 =
@@ -739,7 +771,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     // locale/<lang>.json 的 meta：title 本地化插件名，description 本地化简介；缺失回落 package.json。
     const localeMeta = readLocale(join(manifestDir, 'locale', `${locale}.json`))?.meta
     const localizedTitle = localeMeta?.title?.trim() || null
-    const localizedDescription = localeMeta?.description?.trim() || manifest.description?.trim() || null
+    const localizedDescription =
+      localeMeta?.description?.trim() || manifest.description?.trim() || null
     return {
       name,
       version: entry.version ?? manifest.version ?? '—',
@@ -926,7 +959,16 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
           hasUpdate ? { current: current.version, latest, compatible, dshPeer, dshVersion } : null,
           publishedAt !== null ? { version: current.version, at: publishedAt } : null
         )
-        return { name, current: current.version, latest, hasUpdate, compatible, dshPeer, dshVersion, publishedAt }
+        return {
+          name,
+          current: current.version,
+          latest,
+          hasUpdate,
+          compatible,
+          dshPeer,
+          dshVersion,
+          publishedAt
+        }
       } finally {
         done()
       }
@@ -1055,7 +1097,10 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         )
       } catch (error) {
         if (isRegistryNotFound(error)) {
-          throw new InstanceStoreError('not-found', `无法解析版本：插件 ${name} 未发布到 npm registry`)
+          throw new InstanceStoreError(
+            'not-found',
+            `无法解析版本：插件 ${name} 未发布到 npm registry`
+          )
         }
         throw error
       }
@@ -1133,7 +1178,9 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       const resolved = await resolveDshEntry(instance)
       await runPlugin(instance, ['add', spec], resolved, registry)
       const plugins = await listPlugins(instance, 'zh', resolved)
-      const hasHostSide = plugins.some((plugin) => plugin.hasHostSide && specMatchesName(spec, plugin.name))
+      const hasHostSide = plugins.some(
+        (plugin) => plugin.hasHostSide && specMatchesName(spec, plugin.name)
+      )
       // 「安装后启用」缺省勾选，与 dsh 默认行为一致；取消时按真实包名把包移出加载清单
       // （add 已把包写进 bundles），保留 dependency → 列表显示「已禁用」。
       // 纯 client 插件不由清单控制，标识不出可禁用的包，无需额外动作。
@@ -1142,7 +1189,11 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
         await applyEnabled(instance, profileDir, installed.name, false, { resolved, plugins })
       }
       const after = await bundleStore.read(profileDir)
-      const hmr = await hmrAvailable(instance, profileDir, after?.bundles ?? before?.bundles ?? null)
+      const hmr = await hmrAvailable(
+        instance,
+        profileDir,
+        after?.bundles ?? before?.bundles ?? null
+      )
       // 与 dsh 同口径：替换/重装已装包同样热生效（dsh-hmr 按磁盘身份换模块代），只看 HMR。
       return {
         hasHostSide,

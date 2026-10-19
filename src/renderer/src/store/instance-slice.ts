@@ -46,12 +46,19 @@ export const createInstanceSlice: SliceCreator<InstanceSlice> = (set, get) => ({
     if (!bridge) return
     const result = await bridge.instances.list()
     if (result.ok) {
-      const snapshotStatuses = result.value.reduce<Record<string, InstanceStatusEvent>>((statuses, instance) => {
-        if (instance.runtimeStatus) {
-          statuses[instance.id] = { id: instance.id, status: instance.runtimeStatus, at: instance.updatedAt }
-        }
-        return statuses
-      }, {})
+      const snapshotStatuses = result.value.reduce<Record<string, InstanceStatusEvent>>(
+        (statuses, instance) => {
+          if (instance.runtimeStatus) {
+            statuses[instance.id] = {
+              id: instance.id,
+              status: instance.runtimeStatus,
+              at: instance.updatedAt
+            }
+          }
+          return statuses
+        },
+        {}
+      )
       // 推送事件优先于列表快照，避免列表读取期间的旧快照覆盖最新状态。
       set((state) => ({
         instances: result.value,
@@ -90,13 +97,15 @@ export const createInstanceSlice: SliceCreator<InstanceSlice> = (set, get) => ({
       const current = state.activityLog[instanceId] ?? []
       const last = current[current.length - 1]
       const duplicateRuntime =
-        last !== undefined && last.source === 'runtime' && line.source === 'runtime' && last.detail === line.detail
+        last !== undefined &&
+        last.source === 'runtime' &&
+        line.source === 'runtime' &&
+        last.detail === line.detail
       const duplicateVersion =
         last !== undefined &&
         last.source === 'version' &&
         line.source === 'version' &&
         last.event.phase === line.event.phase &&
-
         last.event.detail === line.event.detail &&
         last.event.error === line.event.error
       // 连续重复行去重：状态重播与同值进度事件不刷屏。
@@ -106,7 +115,8 @@ export const createInstanceSlice: SliceCreator<InstanceSlice> = (set, get) => ({
       return {
         activityLog: {
           ...state.activityLog,
-          [instanceId]: next.length > ACTIVITY_LIMIT ? next.slice(next.length - ACTIVITY_LIMIT) : next
+          [instanceId]:
+            next.length > ACTIVITY_LIMIT ? next.slice(next.length - ACTIVITY_LIMIT) : next
         }
       }
     })
@@ -196,7 +206,9 @@ export const createInstanceSlice: SliceCreator<InstanceSlice> = (set, get) => ({
         pendingOpen,
         loginGate,
         workspaceConnected:
-          event.status === 'stopped' ? { ...state.workspaceConnected, [event.id]: false } : state.workspaceConnected
+          event.status === 'stopped'
+            ? { ...state.workspaceConnected, [event.id]: false }
+            : state.workspaceConnected
       }
     })
     if (shouldGate !== null) void get().openWorkspaceOrLogin(shouldGate)

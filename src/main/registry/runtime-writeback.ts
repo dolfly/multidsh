@@ -1,4 +1,3 @@
-
 import type { InstanceStatusEvent, PatchInstanceInput, Transport } from '@shared/contracts'
 import { isExternalRuntime, isHubOwnedRuntime } from '../local-runtime/dsh-source-policy'
 
