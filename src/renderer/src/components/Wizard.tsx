@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { DshVersionCatalog } from '@shared/contracts'
 import { buildVersionOptions } from '../lib/version-options'
@@ -11,8 +11,10 @@ import SshConfig from './wizard/SshConfig'
 import HttpConfig from './wizard/HttpConfig'
 import StepConfirm from './wizard/StepConfirm'
 import { useCreateInstance } from './wizard/useCreateInstance'
+import { selectExternalWorkspaces } from './wizard/external-selection'
 import {
   EMPTY_FORM,
+  isAdoptableExternal,
   type ExternalWorkspace,
   type WizardForm,
   type WizardTransport
@@ -35,7 +37,7 @@ export default function Wizard(): ReactNode {
   const [localLaunchers, setLocalLaunchers] = useState<
     Array<{ launcher: WizardForm['launcher']; version: string }>
   >([])
-  const [externalWorkspace, setExternalWorkspace] = useState<ExternalWorkspace | null>(null)
+  const [externalCandidates, setExternalCandidates] = useState<ExternalWorkspace[]>([])
   const [useExistingExternal, setUseExistingExternal] = useState(false)
   const [localProbeDone, setLocalProbeDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,11 +62,10 @@ export default function Wizard(): ReactNode {
     ]).then(([runtime, external]) => {
       if (!cancelled) {
         setLocalLaunchers(runtime?.ok ? runtime.value : [])
-        setExternalWorkspace(
+        setExternalCandidates(
           external?.ok
-            ? ((external.value.find((item) => item.port !== null) as
-                ExternalWorkspace | undefined) ?? null)
-            : null
+            ? external.value.filter((item): item is ExternalWorkspace => isAdoptableExternal(item))
+            : []
         )
         setLocalProbeDone(true)
       }
@@ -129,6 +130,21 @@ export default function Wizard(): ReactNode {
       setForm((current) => ({ ...current, [key]: value }))
       if (key === 'name' && value.trim() !== '') setError(null)
     }
+
+  // 探测到的外部 dsh：可能同时有好几个（用户自己起了几个、别的工具拉起的）。
+  // 排序固定（见 selectExternalWorkspaces）：注册表里已有的本机实例优先，其次端口最小。
+  const externalWorkspaces = useMemo(
+    () => selectExternalWorkspaces(externalCandidates, instances),
+    [externalCandidates, instances]
+  )
+
+  // 用户可在多个候选里挑一个接管；默认取排序后的第一个。
+  const [selectedExternalPid, setSelectedExternalPid] = useState<number | null>(null)
+  const selectedExternal =
+    externalWorkspaces.find((item) => item.pid === selectedExternalPid) ??
+    externalWorkspaces[0] ??
+    null
+  const externalWorkspace = selectedExternal
 
   const reusableExternalInstance =
     transport === 'local' && useExistingExternal && externalWorkspace
@@ -257,7 +273,9 @@ export default function Wizard(): ReactNode {
               set={set}
               setForm={setForm}
               external={{
-                workspace: externalWorkspace,
+                workspaces: externalWorkspaces,
+                selectedPid: externalWorkspace?.pid ?? null,
+                onSelect: setSelectedExternalPid,
                 useExisting: useExistingExternal,
                 setUseExisting: setUseExistingExternal
               }}

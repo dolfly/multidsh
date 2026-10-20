@@ -112,6 +112,16 @@ export interface LocalRuntimeManager {
   urlOf(id: string): string | null
   statusOf(id: string): InstanceStatusEvent | null
   runningIds(): string[]
+  /**
+   * Hub 自己 spawn 的实例所占的端口。
+   *
+   * 外部 dsh 探测用它排除 Hub 托管的实例:包装器进程先于它的 dsh 子进程退出时,
+   * dsh 的父 pid 被 init 收养,不再挂在 Hub 主进程的进程树下,只靠进程树会漏。
+   *
+   * 只含 hub spawn 的实例:接管进来的外部实例不算 —— 它本来就该继续作为
+   * 「外部 dsh」被识别出来(详情页的接管卡片依赖这一点)。
+   */
+  managedPorts(): number[]
   start(instance: LocalInstance): Promise<void>
   stop(id: string): Promise<void>
   stopAll(): Promise<void>
@@ -303,6 +313,18 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
 
     runningIds() {
       return [...entries.keys()]
+    },
+
+    managedPorts() {
+      // 只收 hub 自己 spawn 的实例所占的端口(child 非 null)。
+      // 接管进来的外部实例 child 为 null:它本来就是「外部 dsh」,被接管之后
+      // 仍要能被再次识别(详情页的接管卡片靠它出现),不能被排除掉。
+      const ports: number[] = []
+      for (const entry of entries.values()) {
+        if (entry.child === null) continue
+        if (entry.port !== null && entry.port > 0) ports.push(entry.port)
+      }
+      return ports
     },
 
     async refreshEnv() {

@@ -9,7 +9,11 @@ import type { ExternalWorkspace, WizardForm } from './types'
 
 /** 外部 dsh 接管相关字段。 */
 export interface ExternalAdoption {
-  workspace: ExternalWorkspace | null
+  /** 探测到的全部外部 dsh（端口已确定）；一个都没有时不显示接管入口 */
+  workspaces: ExternalWorkspace[]
+  /** 当前选中的外部 dsh pid */
+  selectedPid: number | null
+  onSelect: (pid: number) => void
   useExisting: boolean
   setUseExisting: (value: boolean) => void
 }
@@ -39,7 +43,9 @@ export interface LocalConfigProps {
 export default function LocalConfig(props: LocalConfigProps): ReactNode {
   const { t, form, set, setForm, external, versions, persistRegistry } = props
   const {
-    workspace: externalWorkspace,
+    workspaces: externalWorkspaces,
+    selectedPid,
+    onSelect: onSelectExternal,
     useExisting: useExistingExternal,
     setUseExisting: setUseExistingExternal
   } = external
@@ -55,11 +61,34 @@ export default function LocalConfig(props: LocalConfigProps): ReactNode {
   } = versions
   return (
     <>
-      {externalWorkspace && (
+      {externalWorkspaces.length > 0 && (
         <div className="note n-info mt12" data-testid="wizard-external-dsh">
           <Icon name="info" />
           <div>
-            <b>{t('wizard.externalDetected', { port: externalWorkspace.port })}</b>
+            <b>
+              {externalWorkspaces.length === 1
+                ? t('wizard.externalDetected', { port: externalWorkspaces[0]?.port ?? '' })
+                : t('wizard.externalDetectedMany', { n: externalWorkspaces.length })}
+            </b>
+            {/* 同时有多个 dsh 在跑时必须让用户选：端口各不相同，接管错一个就白填 token。 */}
+            {externalWorkspaces.length > 1 && (
+              <div className="field mt8">
+                <label htmlFor="wizard-external-pick">{t('wizard.externalPickLabel')}</label>
+                <select
+                  className="input num"
+                  id="wizard-external-pick"
+                  value={selectedPid ?? ''}
+                  onChange={(event) => onSelectExternal(Number(event.target.value))}
+                  data-testid="wizard-external-pick"
+                >
+                  {externalWorkspaces.map((item) => (
+                    <option key={item.pid} value={item.pid}>
+                      127.0.0.1:{item.port} · pid {item.pid}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <label className="check mt8">
               <input
                 type="checkbox"

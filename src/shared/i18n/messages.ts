@@ -342,6 +342,14 @@ export const MESSAGES = {
     zh: '检测到正在运行的 dsh web（127.0.0.1:{port}）',
     en: 'A running dsh web was detected (127.0.0.1:{port})'
   },
+  'wizard.externalDetectedMany': {
+    zh: '检测到 {n} 个正在运行的 dsh web，请选择要接管的一个',
+    en: '{n} running dsh web instances were detected; choose the one to adopt'
+  },
+  'wizard.externalPickLabel': {
+    zh: '要接管的 dsh',
+    en: 'dsh to adopt'
+  },
   'wizard.currentWorkspace': { zh: '当前工作区', en: 'Current workspace' },
   'wizard.externalPatch': { zh: '补丁：{patch}', en: 'Patch: {patch}' },
   'wizard.externalNoPatch': { zh: '未使用 patch', en: 'No patch in use' },

@@ -33,7 +33,7 @@ describe('buildCreateInput', () => {
       form: { ...EMPTY_FORM, name: 'a', externalAccess: ' tok ' },
       name: 'a',
       useExistingExternal: true,
-      externalWorkspace: { pid: 42, port: 3080, patch: null },
+      externalWorkspace: { pid: 42, port: 3080, patch: null, command: 'dsh --profile web' },
       existingSpaceId: null
     })
     expect(input).toMatchObject({

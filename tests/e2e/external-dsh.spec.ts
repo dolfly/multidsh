@@ -14,7 +14,9 @@ import { join } from 'node:path'
  * - 可探测并接管本机已运行的 dsh web，然后直接开窗
  *
  * 假 dsh web:用 `node -e` 起一个**监听端口的进程**,并让它的命令行包含
- * `dsh web --patch <file>`(探测器按命令行识别,不依赖真实 dsh 安装)。
+ * dsh 的入口与 web profile 参数(探测器按命令行识别,不依赖真实 dsh 安装)。
+ * 命令行形态与当前 dsh CLI 一致(`<dsh 入口> --profile web …`),旧形态
+ * `dsh web …` 同样被支持 —— 两种形态各起一个进程,验证探测不挑形态。
  */
 
 const DATA_DIR = e2eDataDir('e2e-external')
@@ -25,6 +27,25 @@ let win: Page
 let fakeDsh: ChildProcess | null = null
 let fakeDshPort: number | null = null
 let fakeGatewayPort: number | null = null
+/** 旧命令行形态的假 dsh(`dsh web …`):与新形态并存,验证探测不挑形态 */
+let fakeDshLegacy: ChildProcess | null = null
+let fakeDshLegacyPort: number | null = null
+/** 当前形态假 dsh 的监听端口 */
+let fixturePort: number | null = null
+
+/**
+ * 在向导里挑中指定的外部 dsh。
+ *
+ * 本机上可能还有别的 dsh 在跑(开发实例、别的工具拉起的):向导一次只能接管一个,
+ * 多个候选时用下拉挑,只有一个时无需操作。用例必须挑夹具自己的那个,
+ * 否则会随机接管到无关进程。
+ */
+async function selectFixtureDsh(page: Page, pid: number): Promise<void> {
+  const picker = page.getByTestId('wizard-external-pick')
+  if (await picker.isVisible()) {
+    await picker.selectOption(String(pid))
+  }
+}
 
 const launchArgs = buildLaunchArgs()
 
@@ -61,17 +82,19 @@ test.beforeAll(async () => {
   const script = [
     "const http = require('node:http')",
     // HTML 必须显式声明 UTF-8(响应头 + meta):缺省时 Chromium 按非 UTF-8 猜测编码,中文渲染成乱码
-    `const server = http.createServer((req, res) => { const page = (body) => { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end('<html><head><meta charset="utf-8"></head>' + body + '</html>') }; if (req.url.startsWith('/login')) { page('<body><h1>本地网关登录</h1></body>'); return } const token = new URL(req.url, 'http://127.0.0.1').searchParams.get('token'); if (!['external-token', 'test-restart-token'].includes(token ?? '')) { res.writeHead(302, { location: '/login' }); res.end(); return } page('<body><h1 id="external-dsh">外部 dsh web</h1></body>') }); server.listen(0, '127.0.0.1', () => { console.log('PORT=' + server.address().port); setTimeout(() => {}, 600000) })`
+    `const server = http.createServer((req, res) => { const page = (body) => { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end('<html><head><meta charset="utf-8"></head>' + body + '</html>') }; if (req.url.startsWith('/login')) { page('<body><h1>本地网关登录</h1></body>'); return } const token = new URL(req.url, 'http://127.0.0.1').searchParams.get('token'); if (!['external-token', 'test-restart-token', 'legacy-token'].includes(token ?? '')) { res.writeHead(302, { location: '/login' }); res.end(); return } page('<body><h1 id="external-dsh">外部 dsh web</h1></body>') }); server.listen(0, '127.0.0.1', () => { console.log('PORT=' + server.address().port); setTimeout(() => {}, 600000) })`
   ].join('\n')
+  // 当前 dsh CLI 形态:`<dsh 入口> --profile web …`
   fakeDsh = spawn(
     process.execPath,
     [
       '-e',
       script,
       '/tmp/fake-dsh/dsh',
-      'web',
       '--patch',
       '/tmp/fake-dsh/cordis.dush.patch.yml',
+      '--profile',
+      'web',
       '--no-open'
     ],
     { stdio: ['ignore', 'pipe', 'ignore'], detached: false }
@@ -86,11 +109,32 @@ test.beforeAll(async () => {
       if (!portMatch?.[1]) return
       fakeGatewayPort = Number(portMatch[1])
       fakeDshPort = fakeGatewayPort
+      fixturePort = fakeGatewayPort
       clearTimeout(timeout)
       resolvePromise()
     })
   })
   expect(fakeDshPort).toBeGreaterThan(0)
+
+  // 旧命令行形态:`<dsh 入口> web …`。与新形态并存,验证探测器两种形态都认。
+  fakeDshLegacy = spawn(process.execPath, ['-e', script, '/tmp/fake-dsh/dsh', 'web', '--no-open'], {
+    stdio: ['ignore', 'pipe', 'ignore'],
+    detached: false
+  })
+  await new Promise<void>((resolvePromise, reject) => {
+    let output = ''
+    const timeout = setTimeout(() => reject(new Error(`旧形态假 dsh 未输出端口：${output}`)), 5_000)
+    fakeDshLegacy?.once('error', reject)
+    fakeDshLegacy?.stdout?.on('data', (chunk) => {
+      output += String(chunk)
+      const portMatch = /PORT=(\d{1,5})/.exec(output)
+      if (!portMatch?.[1]) return
+      fakeDshLegacyPort = Number(portMatch[1])
+      clearTimeout(timeout)
+      resolvePromise()
+    })
+  })
+  expect(fakeDshLegacyPort).toBeGreaterThan(0)
 
   app = await electron.launch({
     args: launchArgs,
@@ -103,6 +147,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await app?.close()
   fakeDsh?.kill('SIGTERM')
+  fakeDshLegacy?.kill('SIGTERM')
 })
 
 test('远程网关登录重定向不把正常 ERR_FAILED 写入主进程错误日志', async () => {
@@ -201,7 +246,12 @@ test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，
   // Windows 首次扫描走 PowerShell/CIM,冷启动明显慢于 POSIX 的 ps+lsof;
   // 两轮各等 30s + 重启复扫,给足扫描器最坏预算
   test.setTimeout(180_000)
+  // 本机上可能还有别的 dsh 在跑(开发实例等):向导一次只能接管一个,
+  // 有多个候选时必须挑夹具自己的那个,不能依赖扫描顺序。
+  const newShapePid = fakeDsh?.pid ?? 0
+  expect(newShapePid).toBeGreaterThan(0)
   const external = await openWizardAwaitingExternalScan()
+  await selectFixtureDsh(win, newShapePid)
   await win.getByTestId('wizard-name').fill('重启后复用实例')
   await external.getByRole('checkbox').check()
   await win.getByTestId('wizard-external-access').fill('test-restart-token')
@@ -222,7 +272,8 @@ test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，
       ? (result.value.find((item) => item.name === '重启后复用实例')?.address ?? null)
       : null
   })
-  expect(firstAddress).toMatch(/^127\.0\.0\.1:\d+$/)
+  // 接管的正是选中的那个端口
+  expect(firstAddress).toBe(`127.0.0.1:${fixturePort}`)
   const registry = await readFile(join(DATA_DIR, 'registry', 'instances.json'), 'utf8')
   expect(registry).not.toContain('test-restart-token')
 
@@ -234,6 +285,7 @@ test('重启后接管同一外部 dsh 会复用端口实例和已保存 token，
   win = await app.firstWindow()
   await expect(win.getByTestId('app-shell')).toBeVisible()
   const reopenedExternal = await openWizardAwaitingExternalScan()
+  await selectFixtureDsh(win, newShapePid)
   await reopenedExternal.getByRole('checkbox').check()
   await expect(win.getByTestId('wizard-name')).toHaveValue('重启后复用实例')
   await expect(win.getByTestId('wizard-external-access')).toHaveValue('')
@@ -289,8 +341,22 @@ test('探测到已运行的 dsh web 后可接管并直接开窗', async () => {
     animations: 'disabled'
   })
 
-  await card.locator('[data-testid^="external-access-"]').first().fill('external-token')
-  await card.locator('[data-testid^="adopt-btn-"]:not([disabled])').first().click()
+  // 本机上可能还有别的 dsh 在跑(例如开发用实例),向导会接管其中某一个,
+  // 断言必须定位到夹具自己的 pid,不能用「第一个」——否则会随机接管到无关进程。
+  const newShapePid = fakeDsh?.pid
+  const legacyShapePid = fakeDshLegacy?.pid
+  expect(newShapePid).toBeGreaterThan(0)
+  expect(legacyShapePid).toBeGreaterThan(0)
+  // 两种命令行形态都要被探测到:`--profile web`(当前 CLI)与 `web`(旧形态)
+  await expect(card.locator(`[data-testid="adopt-btn-${newShapePid}"]`)).toBeVisible({
+    timeout: 25_000
+  })
+  await expect(card.locator(`[data-testid="adopt-btn-${legacyShapePid}"]`)).toBeVisible({
+    timeout: 25_000
+  })
+
+  await card.locator(`[data-testid="external-access-${newShapePid}"]`).fill('external-token')
+  await card.locator(`[data-testid="adopt-btn-${newShapePid}"]:not([disabled])`).click()
   await expect
     .poll(async () =>
       app.evaluate(

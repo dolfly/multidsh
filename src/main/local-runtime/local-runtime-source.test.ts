@@ -72,6 +72,34 @@ describe('运行时来源与下载确认', () => {
     expect(events.at(-1)?.url).toBeUndefined()
   })
 
+  it('managedPorts 只含 hub spawn 的实例,不含接管进来的外部实例', async () => {
+    // 外部 dsh 探测用 managedPorts 排除「Hub 自己管的实例」:
+    // 接管进来的实例本来就该继续作为外部 dsh 被识别(详情页接管卡片依赖它),
+    // 不能被排除掉 —— 那会让它再也接管不了。
+    const { child, spawnImpl } = pathChild()
+    const manager = createLocalRuntime({
+      store: storeStub,
+      installer: makeFakeInstaller(),
+      dataRoot: '/tmp/hub-data',
+      spawnImpl: spawnImpl as never,
+      probe: async () => true,
+      readyTimeoutMs: 2000,
+      pathProbe: { probe: async () => ({ ...PATH_DSH }) }
+    })
+    const spawned = localInstance({ id: 'spawned-1' })
+    const starting = manager.start(spawned)
+    child.stdout.write(readyLine())
+    await starting
+    await waitForStatus(manager, spawned.id, 'running')
+    // hub spawn 的实例的端口在列
+    expect(manager.managedPorts()).toContain(31234)
+
+    const adopted = localInstance({ id: 'adopted-1' })
+    await manager.adopt(adopted, { pid: 77, port: 3080, patch: null })
+    // 接管进来的外部实例不在列
+    expect(manager.managedPorts()).not.toContain(3080)
+  })
+
   it('未固定实例:PATH 有 dsh → 不安装、直接用本机 dsh 启动,事件带 runtimeSource=path', async () => {
     const { child, spawnImpl } = pathChild()
     const installer = makeFakeInstaller()

@@ -20,3 +20,4 @@
 | [0008](./0008-semi-automated-publish.md) | 半自动发布脚本：人工发起、逐步幂等、停点可控 | 已采纳 |
 | [0009](./0009-e2e-data-dir-isolation.md) | E2E 数据目录隔离：只允许 `hub-data/`，静态守卫兜底 | 已采纳 |
 | [0010](./0010-markdown-release-notes.md) | 更新内容按 Markdown 渲染（引入 micromark/mdast 生态，AST → React 元素） | 已采纳 |
+| [0011](./0011-external-dsh-detection-by-process-tree.md) | 外部 dsh 探测按进程树排除 Hub 托管实例 | 已采纳 |

@@ -397,7 +397,11 @@ void app.whenReady().then(() => {
     auth,
     installer,
     pluginManager,
-    externalDshScanner: createExternalDshScanner(),
+    externalDshScanner: createExternalDshScanner({
+      hubPid: process.pid,
+      // 包装器先退出时 dsh 会脱离进程树,靠 hub 托管实例的端口补上这条缝
+      managedPorts: () => runtimeController.runtime.managedPorts()
+    }),
     pathProbe,
     vault: vault as Vault,
     settings,
