@@ -479,19 +479,25 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     'const detail = `下载依赖 (${downloadedPaths.size})：${info.path}`'
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-ready.ts',
     "detail: error instanceof Error ? `解析就绪地址失败：${error.message}` : '解析就绪地址失败'"
   ),
-  debt('src/main/local-runtime/local-runtime.ts', "failReady(new Error('就绪 URL 无法解析'))"),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-ready.ts',
+    "failReady(new Error('就绪 URL 无法解析'))"
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime-ready.ts',
     'failReady(new Error(`就绪 URL 主机非回环地址（${readyUrl.hostname}），已拒绝`))'
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
-    'detail: redactLine(`就绪 URL 无法访问（健康探测 ${healthProbeRetries} 次失败）：${url}`)'
+    'src/main/local-runtime/local-runtime-ready.ts',
+    '`就绪 URL 无法访问（健康探测 ${deps.healthProbeRetries} 次失败）：${url}`'
   ),
-  debt('src/main/local-runtime/local-runtime.ts', 'detail: `已在 ${entry.home} 启动（dsh web）`'),
+  debt(
+    'src/main/local-runtime/local-runtime-ready.ts',
+    'detail: `已在 ${entry.home} 启动（dsh web）`'
+  ),
   // Runtime source messages.
   debt('src/main/local-runtime/launch.ts', "emit(id, 'starting', { detail: '解析运行时来源' })"),
   debt(
