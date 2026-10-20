@@ -3,13 +3,13 @@
  *
  * 全部经 dsh 转发（dsh 内部把 pnpm 参数原样透传，并自动维护 profile package.json 的
  * `dependencies` 与 `bundles` 数组）。DSH_HOME 与 profile 由主进程按实例推导，绝不采信
- * 渲染层路径；命令输出经 `redactLine` 脱敏。
+ * 渲染层路径；命令输出经 `redactLine` + `redactSecret` 脱敏（URL 查询串与键值凭据）。
  *
  * registry 由主进程按档位映射后追加 `--registry <url>`：dsh 把余下参数逐字转给 profile 内的
  * pnpm，因此 view（解析）与 add（安装）能落在同一个源上。
  */
 import { delimiter, dirname } from 'node:path'
-import { redactLine } from '@shared/redact'
+import { redactLine, redactSecret } from '@shared/redact'
 import { pluginRegistryUrl } from '@shared/settings'
 import type { LocalInstance, PluginRegistryOption } from '@shared/contracts'
 import { InstanceStoreError } from '../registry/instance-store'
@@ -102,7 +102,10 @@ export function createPluginCommandRunner(deps: PluginCommandDeps): PluginComman
             : { command: resolved.entry, args: pluginArgs, env }
       const result = await deps.run(invocation.command, invocation.args, { env: invocation.env })
       if (result.code !== 0) {
-        const tail = redactLine(result.stderr.trim()).split('\n').slice(-8).join('\n')
+        // stderr 是自由文本，可能带 npmToken=xxx / password=xxx 形态的凭据：
+        // 这段说明会经 IPC 到达渲染层的 toast，必须打掉键值凭据（redactSecret）
+        // 与 URL 查询串（redactLine）。
+        const tail = redactSecret(redactLine(result.stderr.trim())).split('\n').slice(-8).join('\n')
         throw new InstanceStoreError(
           'invalid-state',
           `dsh plugin ${fullArgs.join(' ')} 失败（exit ${result.code}）：${tail || '无 stderr'}`
