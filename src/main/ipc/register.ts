@@ -8,6 +8,7 @@ import { IPC } from '@shared/bridge'
 import type { InstanceRecord, IpcResult, WorkspaceViewBounds } from '@shared/contracts'
 import type { Settings } from '@shared/settings'
 import { HomepageOpenError } from '../shell/open-homepage'
+import { InstanceStoreError } from '../registry/instance-store'
 import type { InstanceStore } from '../registry/instance-store'
 import type { LocalRuntimeManager } from '../local-runtime/local-runtime'
 import type { ExternalDshScanner } from '../local-runtime/external-dsh'
@@ -31,6 +32,7 @@ import { registerVaultHandlers } from './vault-handlers'
 import { registerVersionHandlers } from './version-handlers'
 import { registerPluginHandlers } from './plugin-handlers'
 import { wrap, type ExternalAccessUrls } from './ipc-utils'
+import { isAllowedExternalOpen } from '../window-host-policy'
 
 export type { AuthProbeController }
 
@@ -191,6 +193,20 @@ export function registerIpc(store: InstanceStore, deps: IpcDeps): AuthProbeContr
       z.tuple([]).parse(args)
       if (!deps.openAbout) throw new HomepageOpenError('internal', '打开关于面板不可用')
       deps.openAbout()
+      return null
+    })
+  )
+
+  // 发布说明里的外链：渲染层给地址，主进程按协议白名单判定后交给系统默认程序。
+  // 协议闸（http/https/mailto）挡住 file: / search-ms: 一类能拉起本地程序或文件的地址。
+  ipcMain.handle(IPC.openExternalLink, (_event, url: unknown): Promise<IpcResult<null>> =>
+    wrap(async () => {
+      const target = typeof url === 'string' ? url : ''
+      if (!isAllowedExternalOpen(target)) {
+        throw new InstanceStoreError('invalid-input', '只能打开 http、https 或 mailto 链接')
+      }
+      if (!deps.openExternalUrl) throw new InstanceStoreError('internal', '打开外链不可用')
+      await deps.openExternalUrl(target)
       return null
     })
   )

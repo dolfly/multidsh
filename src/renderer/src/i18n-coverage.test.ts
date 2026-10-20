@@ -171,6 +171,14 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     "if (!deps.openAbout) throw new HomepageOpenError('internal', '打开关于面板不可用')"
   ),
   debt(
+    'src/main/ipc/register.ts',
+    "throw new InstanceStoreError('invalid-input', '只能打开 http、https 或 mailto 链接')"
+  ),
+  debt(
+    'src/main/ipc/register.ts',
+    "if (!deps.openExternalUrl) throw new InstanceStoreError('internal', '打开外链不可用')"
+  ),
+  debt(
     'src/main/shell/open-data-dir.ts',
     "if (dir === '') throw new DataDirOpenError('internal', '数据目录不可用')"
   ),

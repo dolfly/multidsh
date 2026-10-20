@@ -52,6 +52,9 @@ const bridge: DshHubBridge = {
   openHomepage: () => ipcRenderer.invoke(IPC.openHomepage) as Promise<IpcResult<null>>,
   // 无参数:关于窗口由主进程构造，渲染层只触发打开动作
   openAbout: () => ipcRenderer.invoke(IPC.openAbout) as Promise<IpcResult<null>>,
+  // 发布说明里的外链:主进程按协议白名单判定后交给系统默认程序
+  openExternalLink: (url: string) =>
+    ipcRenderer.invoke(IPC.openExternalLink, url) as Promise<IpcResult<null>>,
   spaces: {
     list: () => ipcRenderer.invoke(SPACE_IPC.list),
     trash: (id) => ipcRenderer.invoke(SPACE_IPC.trash, id)

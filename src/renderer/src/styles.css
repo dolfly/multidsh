@@ -1486,7 +1486,7 @@ h3,
 }
 /* 插件安装与升级确认：版本事实、兼容性说明和更新内容比普通确认框长，宽度加一档。 */
 .modal.modal-plugin {
-  width: min(560px, 100%);
+  width: min(616px, 100%);
 }
 .modal-head {
   flex: none;
@@ -2383,7 +2383,7 @@ details.adv[open] {
 .plugin-detail {
   margin: 10px 0 4px 20px;
 }
-/* 更新内容正文：纯文本渲染（不引入 Markdown 依赖），限高滚动避免撑破对话框。 */
+/* 更新内容正文：Markdown 渲染（mdast → hast → 净化 → HTML 字符串），限高滚动避免撑破对话框。 */
 .release-notes {
   margin: 0;
   max-height: 150px;
@@ -2394,8 +2394,97 @@ details.adv[open] {
   background: color-mix(in oklch, var(--bg) 45%, var(--surface));
   font-size: 12.5px;
   line-height: 1.65;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+/* Markdown 元素间距：首尾不额外留白，块级之间按层级递减。 */
+.markdown-body > *:first-child {
+  margin-top: 0;
+}
+.markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+.markdown-body p {
+  margin: 6px 0;
+}
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin: 10px 0 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.markdown-body h1 {
+  font-size: 14px;
+}
+.markdown-body h2 {
+  font-size: 13px;
+}
+.markdown-body ul,
+.markdown-body ol {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.markdown-body li {
+  margin: 2px 0;
+}
+.markdown-body blockquote {
+  margin: 6px 0;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid var(--border);
+  color: var(--muted);
+}
+.markdown-body hr {
+  margin: 10px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+.markdown-body code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--fg-soft);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.markdown-body pre {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--bg) 45%, var(--surface));
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+/* 代码块内的行内代码不再叠一层底色（外层已有代码块底）。 */
+.markdown-body pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+.markdown-body a {
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.markdown-body table {
+  margin: 6px 0;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.markdown-body th,
+.markdown-body td {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.markdown-body th {
+  background: var(--fg-soft);
+  font-weight: 600;
 }
 .link-btn {
   background: none;
