@@ -16,22 +16,31 @@ dsh 自身的前端已经选定 micromark/mdast 生态（`mdast-util-from-markdo
 
 ## 决策
 
-**引入 dsh 同款 micromark/mdast 生态**，解析结果为 **mdast 树**；渲染层把节点映射成 React 元素。
+**引入 dsh 同款 micromark/mdast 生态**，渲染管线为：
 
-- 依赖：`mdast-util-from-markdown`、`mdast-util-gfm`、`micromark-extension-gfm`（及类型包 `@types/mdast`）。
+```
+Markdown → mdast → hast → 净化（hast-util-sanitize）→ HTML 字符串 → DOM
+```
+
+- 依赖：`mdast-util-from-markdown`、`mdast-util-gfm`、`micromark-extension-gfm`、`mdast-util-to-hast`、`hast-util-sanitize`、`hast-util-to-html`（及类型包 `@types/mdast`）。
 - 依赖仍放在 `devDependencies`：`dependencies` 恒为空这条红线不变（见 [0002](./0002-zero-runtime-deps.md)）——devDependency 只影响「谁来安装它」，electron-vite 打包时照样解析并并入 `out/` 产物。
-- **不生成 HTML 字符串**：不引入 `remark-rehype` + `rehype-stringify` + `rehype-sanitize` 这条链，也不用 `dangerouslySetInnerHTML`。mdast 节点直接映射成 React 元素，因此正文里的原始 HTML 一律不执行（按文本显示），没有 HTML 注入面。
-- **链接安全**：只有 http(s)/mailto 能成为可点击的 href；`javascript:`、`data:`、`file:`、相对路径降级为纯文本（不产生 href 属性）。与 dsh 渲染层同一套协议白名单。
-- **外链交给主进程**：渲染层不自己做窗口导航，点链接经新增的 `app:openExternalLink` 通道，主进程按协议白名单（http/https/mailto）判定后交系统默认程序——`file:` / `search-ms:` 一类能拉起本地程序或读本地文件的协议在主进程侧被挡住。
+- **净化用 `hast-util-sanitize`**（GitHub 同款），schema 在其默认 schema 基础上收紧：
+  - 协议白名单只留 http/https/mailto（默认含 irc / ircs / xmpp）；
+  - 去掉 `input`（表单控件不该出现在只读正文里）、`img`（远程图片不加载：既避免跟踪请求，也让布局不被外部资源撑开）、`form` / `button` / `select` / `textarea` 等交互控件；
+  - 链接只保留 `href`，代码块只保留 `language-*` 类名，表格单元格不带属性。
+- **净化在生成字符串之前完成**：净化器看到的是 hast 元素树，能按标签/属性/协议精确剔除；先生成字符串再清洗就只剩正则可用了。
+- **原始 HTML 不解析成元素**：`mdast-util-to-hast` 默认把 raw 节点按纯文本处理（与 GitHub 一致），因此正文里的 `<script>`、`<img onerror=…>` 只会以字面量显示，不会进入 DOM。为此**不引入** `rehype-raw` / `hast-util-raw` —— 解析原始 HTML 只会扩大攻击面，没有收益。
+- **外链交给主进程**：渲染层不自己做窗口导航，点链接经 `app:openExternalLink` 通道，主进程按协议白名单（http/https/mailto）判定后交系统默认程序——`file:` / `search-ms:` 一类能拉起本地程序或读本地文件的协议在主进程侧被挡住。
 
 ### 被否决的备选
 
 - **自写解析器**：几百行正则与状态机，长期要跟 CommonMark/GFM 边界同步，且安全面要自己保证；收益不抵成本。
-- **`marked` + DOMPurify**：产出 HTML 字符串，必须配净化器并走 `dangerouslySetInnerHTML`；比 AST 路线多一个注入面与一份净化器依赖。
+- **AST → React 元素（不生成 HTML 字符串）**：不引入净化器即没有 HTML 注入面，安全性更高，但每种 Markdown 语法都要手写一次元素映射，GFM 新语法要跟着补；`hast-util-sanitize` 的 schema 覆盖面远超手写映射能追平的进度。
 - **直接复用 `@deepseek-ai/dsh-client-ui-primitives` 的 `MarkdownText`**：该包自带 KaTeX、Shiki、终端/差异/JSON 卡片等一整套 UI 原语，与本应用的设计体系不一致，且把一大片无关代码带进产物。
 
 ## 后果
 
-- 渲染层多了 4 个直接依赖（连带 micromark 传递依赖约 40 个包），全部进 `out/renderer` 产物；产物体积增加约 100 kB（未压缩）。
+- 渲染层多了 6 个直接依赖（连带传递依赖约 50 个包），全部进 `out/renderer` 产物。
+- `dangerouslySetInnerHTML` 出现在渲染层——这是全应用唯一一处，必须由「插入的字符串必经净化」这一条守住。单测锁住了两件事：插入点只有一处且数据源是 `renderReleaseNotesHtml` 的产物；净化发生在字符串化之前。
 - 链接协议白名单有两处实现（渲染层判定能否成为 href、主进程判定能否交给系统打开），单测各覆盖一处。
 - 升级确认框宽度从 560px 提到 616px（+10%），给表格与代码块留出横向空间。

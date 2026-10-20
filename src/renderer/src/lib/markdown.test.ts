@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { parseReleaseNotes, safeLinkHref } from './markdown'
+import { parseReleaseNotes, renderReleaseNotesHtml, safeLinkHref } from './markdown'
 
 /**
- * 更新内容的 Markdown 解析与链接安全判定。
+ * 更新内容的 Markdown 渲染：解析 → 净化 → HTML 字符串。
  *
  * 守卫两条线：
- * - 解析：发布说明常用的语法（标题、列表、代码块、表格、引用、删除线）都能出结构；
- * - 安全：只有 http(s)/mailto 能成为可点击链接，其余一律降级为纯文本。
+ * - 渲染：发布说明常用的语法（标题、列表、代码块、表格、引用、删除线）都出 HTML；
+ * - 安全：净化器剥掉脚本、事件属性、危险协议与表单控件。
  */
 
 /** 取节点的子节点数组。 */
@@ -87,23 +87,19 @@ describe('parseReleaseNotes', () => {
     expect(types).toContain('thematicBreak')
   })
 
-  it('原始 HTML 被标为 html 节点（不是可渲染元素），由渲染层按文本输出', () => {
+  it('原始 HTML 被标为 html 节点（不是可渲染元素）', () => {
     const types = nodeTypes(parseReleaseNotes('<script>alert(1)</script>'))
     // 解析器如实标出原始 HTML：它不是 mdast 的元素节点，渲染层按纯文本显示，不执行。
     expect(types).toContain('html')
     expect(types).not.toContain('element')
   })
 
-  it('链接节点保留原始地址（协议判定在渲染层做）', () => {
+  it('链接节点保留原始地址（协议判定在净化与渲染层做）', () => {
     const tree = parseReleaseNotes('[点我](javascript:alert(1))')
     const types = nodeTypes(tree)
     expect(types).toContain('link')
     // 判定函数对该地址必须给出不可点击
     expect(safeLinkHref('javascript:alert(1)')).toBeNull()
-  })
-
-  it('空文本解析为空树', () => {
-    expect(nodeTypes(parseReleaseNotes(''))).toEqual(['root'])
   })
 
   it('节点的字段约定：图片的替代文本在 alt，代码与原始 HTML 在 value', () => {
@@ -128,28 +124,91 @@ describe('parseReleaseNotes', () => {
     expect(find('code')?.['value']).toBe('code()')
     expect(find('html')?.['value']).toBe('<div>raw</div>')
   })
+
+  it('空文本解析为空树', () => {
+    expect(nodeTypes(parseReleaseNotes(''))).toEqual(['root'])
+  })
 })
 
-describe('渲染层不产生 HTML 字符串', () => {
-  it('MarkdownView 不使用 dangerouslySetInnerHTML（渲染层唯一能注入 HTML 的口子）', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'src/renderer/src/components/detail/MarkdownView.tsx'),
-      'utf8'
-    )
-    // 注释里可以提到这个名字；这里查的是**实际用法**（属性赋值）。
-    expect(source).not.toMatch(/dangerouslySetInnerHTML\s*=\s*\{/)
-    // 也没有把 mdast 拼成 HTML 字符串再塞进 DOM 的变体。
-    expect(source).not.toMatch(/\binnerHTML\s*=/)
+describe('renderReleaseNotesHtml', () => {
+  it('渲染标题、列表、强调、删除线', () => {
+    const html = renderReleaseNotesHtml('# 标题\n\n- 项一\n\n**粗** 与 ~~删~~')
+    expect(html).toContain('<h1>标题</h1>')
+    expect(html).toContain('<li>项一</li>')
+    expect(html).toContain('<strong>粗</strong>')
+    expect(html).toContain('<del>删</del>')
   })
 
-  it('渲染层不直接用原始地址当 href（协议判定必须经 safeLinkHref）', () => {
+  it('渲染表格、引用与代码块', () => {
+    const html = renderReleaseNotesHtml(
+      '| a | b |\n| --- | --- |\n| 1 | 2 |\n\n> 引用\n\n```bash\nls\n```'
+    )
+    expect(html).toContain('<table>')
+    expect(html).toContain('<th>a</th>')
+    expect(html).toContain('<td>1</td>')
+    expect(html).toContain('<blockquote>')
+    expect(html).toContain('<pre>')
+    // 代码块保留语言类名。
+    expect(html).toContain('language-bash')
+  })
+
+  it('剥掉 script 标签与事件属性', () => {
+    const html = renderReleaseNotesHtml(
+      '<script>alert(1)</script>\n\n<div onclick="alert(1)">文本</div>'
+    )
+    expect(html).not.toContain('<script')
+    expect(html).not.toContain('onclick')
+    expect(html).not.toContain('alert(1)')
+  })
+
+  it('剥掉危险协议的 href', () => {
+    const html = renderReleaseNotesHtml('[点我](javascript:alert(1))')
+    expect(html).not.toContain('javascript:')
+    // 净化器保留 <a> 元素但剥掉危险协议：链接文字保留，只是没有可点的地址。
+    expect(html).toContain('点我')
+    expect(html).toContain('<a>')
+    expect(html).not.toContain('href=')
+  })
+
+  it('剥掉远程图片（不加载外部资源）', () => {
+    const html = renderReleaseNotesHtml('![图](https://evil.example.com/track.png)')
+    expect(html).not.toContain('<img')
+    expect(html).not.toContain('evil.example.com')
+  })
+
+  it('剥掉表单控件与 iframe', () => {
+    const html = renderReleaseNotesHtml(
+      '<iframe src="https://evil.com"></iframe>\n\n<button onclick="x()">点</button>'
+    )
+    expect(html).not.toContain('<iframe')
+    expect(html).not.toContain('<button')
+  })
+
+  it('保留 http(s) 链接的 href', () => {
+    const html = renderReleaseNotesHtml('[文档](https://example.com/docs)')
+    expect(html).toContain('href="https://example.com/docs"')
+  })
+})
+
+describe('渲染层插入的 HTML 必经净化', () => {
+  it('MarkdownView 只插入 renderReleaseNotesHtml 的产物', () => {
     const source = readFileSync(
       join(process.cwd(), 'src/renderer/src/components/detail/MarkdownView.tsx'),
       'utf8'
     )
-    // href 只允许来自 safeLinkHref 的结果。
-    expect(source).toContain('safeLinkHref')
-    // 未经判定的原始地址不得直接写进 href 属性。
-    expect(source).not.toMatch(/href=\{[^}]*\.url/)
+    // dangerouslySetInnerHTML 的数据源必须是净化后的字符串。
+    expect(source).toContain('renderReleaseNotesHtml')
+    expect(source).toMatch(/dangerouslySetInnerHTML=\{\{\s*__html:\s*html\s*\}\}/)
+    // 不得有第二条不经净化的 HTML 通道。
+    expect(source.match(/dangerouslySetInnerHTML/g) ?? []).toHaveLength(1)
+  })
+
+  it('净化发生在生成字符串之前（不是事后用正则清洗）', () => {
+    const source = readFileSync(join(process.cwd(), 'src/renderer/src/lib/markdown.ts'), 'utf8')
+    // 只看 renderReleaseNotesHtml 函数体：import 语句里的名字不算调用。
+    const body = source.slice(source.indexOf('export function renderReleaseNotesHtml'))
+    // 净化后的 hast 才是字符串化的输入：toHtml(sanitize(...))。
+    expect(body).toMatch(/toHtml\(\s*sanitize\(/)
+    expect(body).not.toMatch(/toHtml\(\s*hast\s*\)/)
   })
 })

@@ -2383,7 +2383,7 @@ details.adv[open] {
 .plugin-detail {
   margin: 10px 0 4px 20px;
 }
-/* 更新内容正文：Markdown 渲染（AST → React 元素，不生成 HTML 字符串），限高滚动避免撑破对话框。 */
+/* 更新内容正文：Markdown 渲染（mdast → hast → 净化 → HTML 字符串），限高滚动避免撑破对话框。 */
 .release-notes {
   margin: 0;
   max-height: 150px;
@@ -2441,14 +2441,14 @@ details.adv[open] {
   border: none;
   border-top: 1px solid var(--border);
 }
-.md-code {
+.markdown-body code {
   padding: 1px 4px;
   border-radius: 4px;
   background: var(--fg-soft);
   font-family: var(--font-mono);
   font-size: 11.5px;
 }
-.md-pre {
+.markdown-body pre {
   margin: 6px 0;
   padding: 8px 10px;
   border: 1px solid var(--border);
@@ -2460,26 +2460,29 @@ details.adv[open] {
   overflow-x: auto;
   white-space: pre-wrap;
 }
-.md-link {
+/* 代码块内的行内代码不再叠一层底色（外层已有代码块底）。 */
+.markdown-body pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+.markdown-body a {
   color: var(--accent);
   text-decoration: underline;
   cursor: pointer;
 }
-.md-table-wrap {
+.markdown-body table {
   margin: 6px 0;
-  overflow-x: auto;
-}
-.md-table {
   border-collapse: collapse;
   font-size: 12px;
 }
-.md-table th,
-.md-table td {
+.markdown-body th,
+.markdown-body td {
   padding: 3px 8px;
   border: 1px solid var(--border);
   text-align: left;
 }
-.md-table th {
+.markdown-body th {
   background: var(--fg-soft);
   font-weight: 600;
 }

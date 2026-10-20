@@ -223,7 +223,7 @@ test('更新内容按 Markdown 渲染：标题、列表、代码块、表格都�
   await expect(notes).not.toContainText('## 新增')
 })
 
-test('更新内容里的外链：http(s) 可点击，危险协议降级为纯文本', async () => {
+test('更新内容里的外链：http(s) 可点击，危险协议被净化掉', async () => {
   test.setTimeout(120_000)
   await openUpgradeDialog()
 
@@ -231,14 +231,19 @@ test('更新内容里的外链：http(s) 可点击，危险协议降级为纯文
   await expect(notes.locator('h1')).toBeVisible({ timeout: 20_000 })
 
   // 正常链接保留 href。
-  const safe = notes.locator('a.md-link')
+  const safe = notes.locator('a[href]')
   await expect(safe).toHaveCount(1)
   await expect(safe).toHaveAttribute('href', 'https://example.com/docs')
   await expect(safe).toHaveText('文档链接')
 
-  // javascript: 链接不产生 href 属性，只剩文字。
+  // javascript: 链接被净化器剥掉 href，只剩文字（不可点）。
   await expect(notes).toContainText('危险链接')
   await expect(notes.locator('a[href^="javascript"]')).toHaveCount(0)
+  // 净化器保留 <a> 元素但剥掉危险协议：正文里只有一条带 href 的链接。
+  const hrefs = await notes
+    .locator('a')
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))
+  expect(hrefs.filter((href) => href !== null)).toEqual(['https://example.com/docs'])
 })
 
 test('升级确认框宽度比 560px 基准加宽 10%', async () => {
