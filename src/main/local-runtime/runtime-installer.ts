@@ -7,6 +7,7 @@
 import { mkdir, readdir, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { DSH_VERSION_PATTERN } from '@shared/contracts'
+import { redactLine, redactSecret } from '@shared/redact'
 import type { CommandResult, CommandRunner } from './exec-file'
 import {
   DSH_PACKAGE_NAME,
@@ -310,9 +311,12 @@ export function createRuntimeInstaller(options: RuntimeInstallerOptions): Runtim
       result = await run(npm.command, [...npm.prefixArgs, ...installArgs], { env })
     }
     if (result.code !== 0) {
-      // http 级日志的 stderr 含全部 fetch 行，只保留尾部的结论性输出
+      // http 级日志的 stderr 含全部 fetch 行，只保留尾部的结论性输出。
+      // stderr 是自由文本，可能带 npmToken=xxx 形态的凭据或带查询串的 registry 地址：
+      // 这段说明会经 IPC 到达界面，两类形态都要打掉。
+      const tail = redactSecret(redactLine(tailLines(result.stderr, 20)))
       throw new Error(
-        `安装 ${DSH_PACKAGE_NAME}@${version} 失败（exit ${result.code}）：${tailLines(result.stderr, 20) || '无 stderr'}`
+        `安装 ${DSH_PACKAGE_NAME}@${version} 失败（exit ${result.code}）：${tail || '无 stderr'}`
       )
     }
     onProgress?.({ phase: 'installing', version, detail: '校验安装结果' })
