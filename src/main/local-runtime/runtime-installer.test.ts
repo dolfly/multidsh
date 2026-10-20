@@ -332,6 +332,42 @@ describe('createRuntimeInstaller', () => {
     expect(message).toContain('npm error 404 Not Found')
     expect(message).not.toContain('pkg-0')
   })
+
+  it('失败消息里的凭据形态被打掉（键值凭据与 URL 查询串）', async () => {
+    const runtimesDir = tmpDir()
+    const run = vi.fn(async () => okRun('[]'))
+    const stderr = [
+      'npm error code ENEEDAUTH',
+      'npm error registry https://registry.example.com/pkg?token=abcdef1234567890',
+      'npm error npmToken=zzzz9876543210'
+    ].join('\n')
+    const runNpm = vi.fn(
+      async (
+        _npm: NpmInvocation,
+        _args: string[],
+        opts: { onStderrLine?: (line: string) => void }
+      ) => {
+        for (const line of stderr.split('\n')) opts.onStderrLine?.(line)
+        return { code: 1, stdout: '', stderr }
+      }
+    )
+    const installer = createRuntimeInstaller({
+      runtimesDir,
+      cacheDir: tmpDir(),
+      run,
+      runNpm,
+      resolveNpm: async () => ({ command: '/fake/npm', prefixArgs: [] })
+    })
+
+    const message = await installer
+      .ensureInstalled('0.1.5-rc.1', () => undefined)
+      .catch((error: Error) => error.message)
+    // 这段说明会经 IPC 到达界面，凭据不能原样带出去。
+    expect(message).not.toContain('abcdef1234567890')
+    expect(message).not.toContain('zzzz9876543210')
+    // 失败原因本身保留。
+    expect(message).toContain('ENEEDAUTH')
+  })
 })
 
 describe('npm 子进程 PATH（GUI 启动时 node 不在 PATH 的场景）', () => {

@@ -433,7 +433,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   debt('src/main/local-runtime/launch.ts', '? `分配端口并启动进程（端口 ${preferredPort}）`'),
   debt(
     'src/main/local-runtime/runtime-installer.ts',
-    "`安装 ${DSH_PACKAGE_NAME}@${version} 失败（exit ${result.code}）：${tailLines(result.stderr, 20) || '无 stderr'}`"
+    "`安装 ${DSH_PACKAGE_NAME}@${version} 失败（exit ${result.code}）：${tail || '无 stderr'}`"
   ),
   debt(
     'src/main/local-runtime/runtime-installer.ts',
