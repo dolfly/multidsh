@@ -454,7 +454,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     'throw new Error(`无法解析启动器脚本（${scriptPath}）`)'
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-upgrade.ts',
     "'外部接管的 dsh 进程归用户所有，hub 不能代管升级'"
   ),
   debt('src/main/transport/ssh-tunnel.ts', "detail: '隧道已在运行，忽略重复启动'"),
@@ -479,19 +479,25 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     'const detail = `下载依赖 (${downloadedPaths.size})：${info.path}`'
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-ready.ts',
     "detail: error instanceof Error ? `解析就绪地址失败：${error.message}` : '解析就绪地址失败'"
   ),
-  debt('src/main/local-runtime/local-runtime.ts', "failReady(new Error('就绪 URL 无法解析'))"),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-ready.ts',
+    "failReady(new Error('就绪 URL 无法解析'))"
+  ),
+  debt(
+    'src/main/local-runtime/local-runtime-ready.ts',
     'failReady(new Error(`就绪 URL 主机非回环地址（${readyUrl.hostname}），已拒绝`))'
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
-    'detail: redactLine(`就绪 URL 无法访问（健康探测 ${healthProbeRetries} 次失败）：${url}`)'
+    'src/main/local-runtime/local-runtime-ready.ts',
+    '`就绪 URL 无法访问（健康探测 ${deps.healthProbeRetries} 次失败）：${url}`'
   ),
-  debt('src/main/local-runtime/local-runtime.ts', 'detail: `已在 ${entry.home} 启动（dsh web）`'),
+  debt(
+    'src/main/local-runtime/local-runtime-ready.ts',
+    'detail: `已在 ${entry.home} 启动（dsh web）`'
+  ),
   // Runtime source messages.
   debt('src/main/local-runtime/launch.ts', "emit(id, 'starting', { detail: '解析运行时来源' })"),
   debt(
@@ -508,11 +514,11 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     ': `准备 dsh ${version} 运行时（首次需要安装，可能较慢）`'
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-upgrade.ts',
     "throw new Error('未找到系统默认 dsh（PATH 上没有可用的 dsh），无法升级')"
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-upgrade.ts',
     'throw new Error(`系统 dsh 不是 npm 全局安装（${system.command}），hub 无法代管升级`)'
   ),
   debt(
