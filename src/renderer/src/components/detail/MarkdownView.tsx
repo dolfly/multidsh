@@ -15,6 +15,11 @@ interface WithValue {
   value?: string
 }
 
+/** 图片节点的替代文本在 `alt` 字段（mdast 约定）。 */
+interface WithAlt {
+  alt?: string | null
+}
+
 interface WithDepth {
   depth?: number
 }
@@ -93,8 +98,8 @@ function renderInline(node: unknown, key: string, openLink: (url: string) => voi
       )
     }
     case 'image': {
-      // 远程图片不加载：只保留 alt 文本。
-      return <span key={key}>{(node as WithValue).value ?? ''}</span>
+      // 远程图片不加载：只保留 alt 文本（mdast 的替代文本在 `alt` 字段）。
+      return <span key={key}>{(node as WithAlt).alt ?? ''}</span>
     }
     case 'html':
       // 原始 HTML 不执行，按文本原样显示。

@@ -11,6 +11,12 @@ import { parseReleaseNotes, safeLinkHref } from './markdown'
  * - 安全：只有 http(s)/mailto 能成为可点击链接，其余一律降级为纯文本。
  */
 
+/** 取节点的子节点数组。 */
+function childrenOf(node: unknown): unknown[] {
+  const children = (node as { children?: unknown }).children
+  return Array.isArray(children) ? children : []
+}
+
 /** 收集树里所有节点的 type，便于断言结构。 */
 function nodeTypes(tree: unknown): string[] {
   const found: string[] = []
@@ -18,8 +24,7 @@ function nodeTypes(tree: unknown): string[] {
     if (node === null || typeof node !== 'object') return
     const type = (node as { type?: unknown }).type
     if (typeof type === 'string') found.push(type)
-    const children = (node as { children?: unknown }).children
-    if (Array.isArray(children)) for (const child of children) visit(child)
+    for (const child of childrenOf(node)) visit(child)
   }
   visit(tree)
   return found
@@ -99,6 +104,29 @@ describe('parseReleaseNotes', () => {
 
   it('空文本解析为空树', () => {
     expect(nodeTypes(parseReleaseNotes(''))).toEqual(['root'])
+  })
+
+  it('节点的字段约定：图片的替代文本在 alt，代码与原始 HTML 在 value', () => {
+    const tree = parseReleaseNotes(
+      '![替代文本](https://x.com/a.png)\n\n```js\ncode()\n```\n\n<div>raw</div>'
+    )
+    const find = (type: string): Record<string, unknown> | null => {
+      let hit: Record<string, unknown> | null = null
+      const visit = (node: unknown): void => {
+        if (hit !== null || node === null || typeof node !== 'object') return
+        if ((node as { type?: string }).type === type) {
+          hit = node as Record<string, unknown>
+          return
+        }
+        for (const child of childrenOf(node)) visit(child)
+      }
+      visit(tree)
+      return hit
+    }
+    // alt 写错成 value 会让图片的替代文本整个消失（界面上什么都不剩）。
+    expect(find('image')?.['alt']).toBe('替代文本')
+    expect(find('code')?.['value']).toBe('code()')
+    expect(find('html')?.['value']).toBe('<div>raw</div>')
   })
 })
 
