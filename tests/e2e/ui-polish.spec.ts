@@ -546,8 +546,22 @@ test('刷新后不会保留旧的原生工作区边界', async () => {
   await expect(win.getByTestId('workspace-back-btn')).toBeVisible()
   // 用快捷键切换侧栏制造一次原生布局变更，为下面的「边界清零」断言确保有过非零起点；
   // 切换方向依赖当前 rail 态，因此不在此断言侧栏文案（rail 持久化后方向随前序用例变化）。
+  // 断言列宽确实变了：否则「清零」断言的前提不成立，用例会空跑。
+  const columnsBefore = await win.evaluate(
+    () =>
+      getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element)
+        .gridTemplateColumns
+  )
   await win.keyboard.press('Meta+b')
-  await win.waitForTimeout(300)
+  await expect
+    .poll(() =>
+      win.evaluate(
+        () =>
+          getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element)
+            .gridTemplateColumns
+      )
+    )
+    .not.toBe(columnsBefore)
 
   await win.reload()
   await expect(win.getByTestId('app-shell')).toBeVisible()
@@ -587,18 +601,36 @@ test('SSH 认证对话框限制在右侧工作区且指纹复制行不溢出', a
     document.querySelector('[data-testid="app-shell"]')?.classList.contains('rail')
   )
   if (!collapsed) await win.keyboard.press('Meta+b')
-  const workspaceRailItem = win.getByTestId(`inst-${workspaceId}`)
-  await workspaceRailItem.hover()
+  // 等侧栏真的收起再 hover：按键后的状态更新与重排是异步的，立即 hover 会错过提示窗的创建。
   await expect
     .poll(() =>
-      app.evaluate(
-        ({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows().filter(
-            (candidate) => candidate !== BrowserWindow.getFocusedWindow() && candidate.isVisible()
-          ).length
+      win.evaluate(
+        () =>
+          getComputedStyle(document.querySelector('[data-testid="app-shell"]') as Element)
+            .gridTemplateColumns
       )
     )
-    .toBeGreaterThan(0)
+    .toContain('64px')
+  const workspaceRailItem = win.getByTestId(`inst-${workspaceId}`)
+  await expect(workspaceRailItem).toBeVisible()
+  await workspaceRailItem.hover()
+  // 提示窗是独立原生窗口且实例会被复用：等到它显示当前实例名才算真的出现了，
+  // 只看「有可见窗口」会把上一次的残留窗口算进来。
+  await expect
+    .poll(
+      async () => {
+        const page = app.windows().find((candidate) => candidate.url().startsWith('data:text/html'))
+        if (!page) return null
+        return (
+          (await page
+            .locator('main')
+            .textContent()
+            .catch(() => null)) ?? null
+        )
+      },
+      { timeout: 10000 }
+    )
+    .toBe('SSH 对话框工作区范围')
 
   await app.evaluate(({ BrowserWindow }) => {
     const hub = BrowserWindow.getAllWindows().find(
