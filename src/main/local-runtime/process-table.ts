@@ -5,7 +5,7 @@
  * （同为 `dsh --profile web …`），命令行判定无法区分两者，只能靠进程树 ——
  * Hub 自己 spawn 的实例都在 Hub 主进程的子树里。
  *
- * 两个解析函数是纯函数（便于穷举测试），IO 全部由调用方注入。
+ * 解析函数是纯函数（便于穷举测试），IO 全部由调用方注入。
  */
 
 /** 进程表里的一条记录 */
@@ -18,12 +18,36 @@ export interface ProcessEntry {
 }
 
 /**
- * 解析 `ps -axo pid=,ppid=,command=` 输出。
- * 行格式：`<pid> <ppid> <command...>`；无法解析的行直接跳过。
+ * Windows 进程查询：输出 `<pid>\t<ppid>\t<command>` 行。
+ *
+ * 必须带出父进程 pid：排除 Hub 自己拉起的实例靠进程树，不靠命令行。
+ * 命令行原样保留换行（`-e` 脚本等含换行的 argv 会把条目断成多行，
+ * `dsh web` 落在无 pid 的续行上被解析器丢弃）；输出前把换行/制表符折叠成空格。
+ *
+ * **不按命令行过滤**：祖先链必须完整 —— 只回传命令行里含特定关键字的进程会让
+ * 中间那层缺失，它的子孙就接不回 Hub 主进程，Hub 自己的实例反而会被当成外部
+ * 实例上报。Get-CimInstance 本来就要取全表，过滤只发生在 PowerShell 侧，
+ * 省不下查询成本，却会丢掉进程树。
  */
-export function parseProcessTable(psOutput: string): ProcessEntry[] {
+export const WIN_PROCESS_SCRIPT =
+  'Get-CimInstance Win32_Process | ' +
+  'ForEach-Object { [string]$_.ProcessId + [char]9 + [string]$_.ParentProcessId + [char]9 + ' +
+  "($_.CommandLine -replace '[\\r\\n\\t]+', ' ') }"
+
+/**
+ * 解析进程表输出。
+ *
+ * 行格式：`<pid> <ppid> <command...>`，字段之间是任意空白。
+ * POSIX 的 `ps -axo pid=,ppid=,command=` 用空格分隔并右对齐补白，Windows 的 CIM
+ * 脚本用制表符分隔 —— 两者都被同一行正则覆盖（`\s+` 同时匹配空格与制表符），
+ * 命令行本身若含制表符也不会错位：分隔符只在前两个字段位置上匹配。
+ *
+ * 无法解析的行直接跳过；命令行缺失（Windows 上 `CommandLine` 为 NULL）的行同样
+ * 跳过 —— 那类进程不是 dsh 入口，也不参与判定。
+ */
+export function parseProcessTable(output: string): ProcessEntry[] {
   const entries: ProcessEntry[] = []
-  for (const rawLine of psOutput.split('\n')) {
+  for (const rawLine of output.split('\n')) {
     const trimmed = rawLine.trim()
     if (trimmed === '') continue
     const match = /^(\d+)\s+(\d+)\s+(.+)$/.exec(trimmed)
@@ -32,31 +56,6 @@ export function parseProcessTable(psOutput: string): ProcessEntry[] {
     const ppid = Number(match[2])
     if (!Number.isInteger(pid) || !Number.isInteger(ppid)) continue
     entries.push({ pid, ppid, command: (match[3] ?? '').replace(/\s+/g, ' ').trim() })
-  }
-  return entries
-}
-
-/**
- * 解析 Windows CIM 输出（`Get-CimInstance Win32_Process`）。
- * 行格式：`<pid>\t<ppid>\t<command>`；制表符分隔避免命令行里的空格破坏字段边界。
- */
-export function parseWindowsProcessTable(output: string): ProcessEntry[] {
-  const entries: ProcessEntry[] = []
-  for (const rawLine of output.split('\n')) {
-    const line = rawLine.trim()
-    if (line === '') continue
-    const firstTab = line.indexOf('\t')
-    if (firstTab < 0) continue
-    const secondTab = line.indexOf('\t', firstTab + 1)
-    if (secondTab < 0) continue
-    const pid = Number(line.slice(0, firstTab))
-    const ppid = Number(line.slice(firstTab + 1, secondTab))
-    if (!Number.isInteger(pid) || !Number.isInteger(ppid)) continue
-    const command = line
-      .slice(secondTab + 1)
-      .replace(/\s+/g, ' ')
-      .trim()
-    entries.push({ pid, ppid, command })
   }
   return entries
 }
