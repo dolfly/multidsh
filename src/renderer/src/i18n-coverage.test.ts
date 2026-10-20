@@ -454,7 +454,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     'throw new Error(`无法解析启动器脚本（${scriptPath}）`)'
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-upgrade.ts',
     "'外部接管的 dsh 进程归用户所有，hub 不能代管升级'"
   ),
   debt('src/main/transport/ssh-tunnel.ts', "detail: '隧道已在运行，忽略重复启动'"),
@@ -514,11 +514,11 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     ': `准备 dsh ${version} 运行时（首次需要安装，可能较慢）`'
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-upgrade.ts',
     "throw new Error('未找到系统默认 dsh（PATH 上没有可用的 dsh），无法升级')"
   ),
   debt(
-    'src/main/local-runtime/local-runtime.ts',
+    'src/main/local-runtime/local-runtime-upgrade.ts',
     'throw new Error(`系统 dsh 不是 npm 全局安装（${system.command}），hub 无法代管升级`)'
   ),
   debt(

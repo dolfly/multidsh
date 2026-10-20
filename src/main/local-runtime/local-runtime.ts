@@ -11,10 +11,8 @@ import type {
   LocalInstance
 } from '@shared/contracts'
 import type { PortProbe } from './port-allocator'
-import type { InstallProgress } from './runtime-installer'
-import { InstanceStoreError, type InstanceStore } from '../registry/instance-store'
+import type { InstanceStore } from '../registry/instance-store'
 import { createLogRing } from '../log-ring'
-import { isExternalRuntime, resolveSystemDshUsage } from './dsh-source-policy'
 import { resolveLoginPathOnce } from './login-path'
 import { resolveShellEnvOnce } from './shell-env'
 import { diffEnvironment } from './env-diff'
@@ -29,6 +27,7 @@ import {
 import type { Entry } from './entry'
 import { createLauncher, type LaunchOptions } from './launch'
 import { createReadyMonitor } from './local-runtime-ready'
+import { createUpgradeOrchestrator } from './local-runtime-upgrade'
 import { defaultNodeInvocation, resolveNodeFor } from './node-resolution'
 
 /** dsh 就绪输出：`dsh web: http://127.0.0.1:52300/?token=...` */
@@ -274,106 +273,27 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
     killTree
   })
 
-  return {
+  /** dsh 版本升级编排（判据与二次确认流程见 local-runtime-upgrade）。 */
+  const upgradeInstance = createUpgradeOrchestrator({
+    installer: options.installer,
+    ...(options.pathProbe ? { pathProbe: options.pathProbe } : {}),
+    store: options.store,
+    ...(options.confirmSystemUpgrade ? { confirmSystemUpgrade: options.confirmSystemUpgrade } : {}),
+    emitUpgrade,
+    upgradingIds,
+    now,
+    // 升级要用到停/启/查状态，三者都在下方 manager 上；只在被调用时求值，无环。
+    lifecycle: () => manager
+  })
+
+  const manager: LocalRuntimeManager = {
     onStatus,
     onUpgradeProgress(listener) {
       upgradeListeners.add(listener)
       return () => upgradeListeners.delete(listener)
     },
 
-    async upgradeInstance(instance) {
-      const id = instance.id
-      // 单飞守卫：同一实例的升级进行中重复触发直接忽略，避免并发写同一隔离目录。
-      if (upgradingIds.has(id)) return
-      upgradingIds.add(id)
-      const at = (): string => new Date(now()).toISOString()
-      /**
-       * 升级主序列：运行中先停 → 下载安装 → 回写版本 → 原样重启，末尾 done=100。
-       * 两条升级路径共用；`checking` 由各分支自行发出 —— 系统升级要等二次确认之后
-       * 才有进度，隔离升级则要在解析版本之前就给出反馈。
-       */
-      const runUpgrade = async (
-        version: string,
-        install: (onProgress: (progress: InstallProgress) => void) => Promise<unknown>
-      ): Promise<void> => {
-        const wasRunning = this.statusOf(id)?.status === 'running'
-        if (wasRunning) await this.stop(id)
-        emitUpgrade({ instanceId: id, phase: 'downloading', version, at: at() })
-        await install((progress) => {
-          emitUpgrade({
-            instanceId: id,
-            phase: 'installing',
-            version,
-            detail: progress.detail,
-            at: at()
-          })
-        })
-        await options.store.update(id, { dshVersion: version })
-        if (wasRunning) await this.start({ ...instance, dshVersion: version })
-        emitUpgrade({ instanceId: id, phase: 'done', version, at: at() })
-      }
-      try {
-        // 升级对象经 dsh-source-policy 判定，与版本检查、启动路径共用同一判据：
-        // 结论为「系统默认 dsh」时升级全局 npm 安装，所有共用该 dsh 的实例与终端
-        // 都会跟随，因此必须先二次确认。拒绝时直接返回，不产生任何进度事件、不改任何
-        // 状态；探测与安装布局判定在确认之前完成，注定失败的升级不先打扰用户。
-        // 其余情况（隔离空间，或公共空间实际跑 hub 副本）都升级 hub 自己的运行时。
-        const runtimeSource = this.statusOf(id)?.runtimeSource
-        if (isExternalRuntime(runtimeSource)) {
-          throw new InstanceStoreError(
-            'invalid-state',
-            '外部接管的 dsh 进程归用户所有，hub 不能代管升级'
-          )
-        }
-        const decision = await resolveSystemDshUsage({
-          transport: instance.transport,
-          useDefaultSpace: instance.useDefaultSpace,
-          launcher: instance.launcher,
-          runtimeSource,
-          desiredVersion: instance.dshVersion,
-          listInstalledVersions: async () => {
-            try {
-              return (await options.installer.listInstalled()).map((item) => item.version)
-            } catch {
-              return [] as string[]
-            }
-          },
-          probePath: async () => (await options.pathProbe?.probe().catch(() => null)) ?? null
-        })
-        if (decision.usesSystemDsh) {
-          const newest = await options.installer.resolveLatestVersion()
-          const system = decision.pathRuntime
-          if (system === null) {
-            throw new Error('未找到系统默认 dsh（PATH 上没有可用的 dsh），无法升级')
-          }
-          const prefix = await options.installer.resolveGlobalPrefix(system.command)
-          if (prefix === null) {
-            throw new Error(`系统 dsh 不是 npm 全局安装（${system.command}），hub 无法代管升级`)
-          }
-          const confirmed = await options.confirmSystemUpgrade?.(newest, system.version)
-          if (confirmed !== true) return
-          emitUpgrade({ instanceId: id, phase: 'checking', at: at() })
-          await runUpgrade(newest, (onProgress) =>
-            options.installer.installGlobal(prefix, newest, onProgress)
-          )
-          return
-        }
-        emitUpgrade({ instanceId: id, phase: 'checking', at: at() })
-        const latest = await options.installer.resolveLatestVersion()
-        await runUpgrade(latest, (onProgress) =>
-          options.installer.ensureInstalled(latest, onProgress)
-        )
-      } catch (error) {
-        emitUpgrade({
-          instanceId: id,
-          phase: 'error',
-          error: error instanceof Error ? error.message : String(error),
-          at: at()
-        })
-      } finally {
-        upgradingIds.delete(id)
-      }
-    },
+    upgradeInstance,
 
     statusOf,
 
@@ -542,4 +462,5 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
       ])
     }
   }
+  return manager
 }
