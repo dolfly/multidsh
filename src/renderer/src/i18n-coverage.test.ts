@@ -613,8 +613,8 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
     'src/main/local-runtime/local-runtime.ts',
     "emit(id, 'stopped', { detail: exited ? '已停止' : '已强制停止（SIGKILL）' })"
   ),
-  debt('src/main/transport/ssh-tunnel.ts', "emitWaiting('服务器指纹已变化，已拒绝连接')"),
-  debt('src/main/transport/ssh-tunnel.ts', "emitWaiting('等待确认服务器指纹')"),
+  debt('src/main/ssh/ssh-trust-gate.ts', "emitWaiting('服务器指纹已变化，已拒绝连接')"),
+  debt('src/main/ssh/ssh-trust-gate.ts', "emitWaiting('等待确认服务器指纹')"),
   debt(
     'src/main/transport/ssh-tunnel.ts',
     "entry.pendingReason = { kind: 'connect', message: '远端 dsh 未就绪' }"

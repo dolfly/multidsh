@@ -9,13 +9,10 @@ import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { InstanceStatusEvent, SshInstance } from '@shared/contracts'
 import { redactLine } from '@shared/redact'
-import {
-  DEFAULT_PORT_RANGE_END,
-  DEFAULT_PORT_RANGE_START,
-  findFreePort,
-  isPortFree
-} from '../local-runtime/port-allocator'
 import type { PortProbe } from '../local-runtime/port-allocator'
+import { createReservedPorts } from './ssh-port-reserve'
+import { createLogRing } from '../log-ring'
+import { createHostTrustGate } from '../ssh/ssh-trust-gate'
 import {
   askpassSocketPath,
   ensureAskpassScripts,
@@ -24,17 +21,11 @@ import {
 } from '../ssh/askpass'
 import {
   createHostTrustProbe,
-  evaluateHostTrust,
-  hostTargetLabel,
   knownHostsHostField,
   recordHostTrust,
-  toFingerprints,
-  resolveSshTarget,
-  type HostKeyEntry,
-  type HostKeyPrompt,
-  type HostTrustProbe,
-  type ResolvedSshTarget
+  resolveSshTarget
 } from '../ssh/host-trust'
+import type { HostKeyPrompt, HostTrustProbe, ResolvedSshTarget } from '../ssh/host-trust'
 import { classifySshExit, type SshExitAttribution } from './attribution'
 import { sshTunnelEndpoint } from './endpoint-resolver'
 import { httpHealthProbe, sleep, type HealthProbe } from './probe'
@@ -55,7 +46,6 @@ import {
 
 /** 诊断用的日志环形缓冲行数与残片上限（与 local-runtime 同构） */
 const LOG_BUFFER_LINES = 40
-const LOG_BUFFER_MAX = 64 * 1024
 
 export interface SshTunnelOptions {
   /** 应用数据根：ControlPath / 私有 known_hosts 落在 `<dataRoot>/ssh/` */
@@ -163,95 +153,23 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
   /** 排队期间被 stop 的实例：轮到它 spawn 前直接放弃 */
   const cancelRequested = new Set<string>()
   /** 本管理器已保留的本地端口（并发分配互斥，防两个隧道抢同一端口） */
-  const reservedPorts = new Set<number>()
+  /** 本地端口保留与分配（串行链与释放路径见 ssh-port-reserve）。 */
+  const ports = createReservedPorts({ ...(portProbe ? { portProbe } : {}) })
+  /** 主机指纹 TOFU 确认闸门（流程见 ssh-trust-gate）。 */
+  const hostTrust = createHostTrustGate({
+    dataRoot,
+    ...(confirmHostKey ? { confirmHostKey } : {}),
+    trustProbeFactory,
+    resolveTarget
+  })
   /** 重连时需要的实例最新配置；start 登记、stop/删除清理 */
   const latestInstances = new Map<string, SshInstance>()
 
   const bus = createStatusBus(now, 'ssh-tunnel')
   const { emit, onStatus, statusOf } = bus
 
-  function pushLog(entry: TunnelEntry, chunk: unknown): void {
-    entry.buffer += String(chunk)
-    // 无换行残片上限（超长单行异常输出），只保留尾部防无界增长
-    if (entry.buffer.length > LOG_BUFFER_MAX) entry.buffer = entry.buffer.slice(-LOG_BUFFER_MAX)
-    let newlineIndex: number
-    while ((newlineIndex = entry.buffer.indexOf('\n')) !== -1) {
-      const line = entry.buffer.slice(0, newlineIndex).replace(/\r$/, '')
-      entry.buffer = entry.buffer.slice(newlineIndex + 1)
-      // 日志行进 detail/归因前统一脱敏：剥掉行内 URL 的查询串（防 ?token= 等意外泄漏）。
-      if (line.trim() !== '') entry.log.push(redactLine(line))
-    }
-    if (entry.log.length > LOG_BUFFER_LINES)
-      entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
-  }
-
-  function drainLogBuffer(entry: TunnelEntry): void {
-    const trailing = entry.buffer.trim()
-    if (trailing !== '') entry.log.push(redactLine(trailing))
-    entry.buffer = ''
-    if (entry.log.length > LOG_BUFFER_LINES)
-      entry.log.splice(0, entry.log.length - LOG_BUFFER_LINES)
-  }
-
-  async function resolveTargetOrFallback(instance: SshInstance): Promise<ResolvedSshTarget> {
-    try {
-      return await resolveTarget(instance)
-    } catch {
-      // `ssh -G` 仅用于对齐别名的实际目标；不可用时仍可按实例输入继续连接并归因。
-      return { host: instance.host, port: instance.port }
-    }
-  }
-
-  async function ensureTrust(
-    instance: SshInstance,
-    emitWaiting: (detail: string) => void
-  ): Promise<boolean> {
-    const target = await resolveTargetOrFallback(instance)
-    const knownHostsPath = join(dataRoot, 'ssh', 'known_hosts')
-    const hostField = knownHostsHostField(target.host, target.port)
-    const probe = trustProbeFactory(target.host, target.port, knownHostsPath)
-    const trusted = await probe.readTrusted()
-    let scanned: HostKeyEntry[]
-    try {
-      scanned = await probe.scan()
-    } catch {
-      // keyscan 拿不到公钥(主机不可达/网络抖动):不做 TOFU 判定,放行交给 ssh 自己连接。
-      // 这是安全的 fail-open —— ssh 侧以 StrictHostKeyChecking=yes + 私有 UserKnownHostsFile
-      // 运行（见 ssh-args），未知主机在 ssh 层直接失败关闭，hub 放行不等于自动信任。
-      return true
-    }
-    // 同理，keyscan 返回空（远端未出示任何公钥）时也放行给 ssh 兜底判定。
-    if (scanned.length === 0) return true
-    const evaluation = evaluateHostTrust(trusted, scanned)
-    if (evaluation.verdict === 'trusted') return true
-    if (evaluation.verdict === 'changed') {
-      // 这里仍然把新旧指纹如实投给 UI 供人工核对(告警),但**任何回答都不放行**,旧公钥
-      // 一个字节都不改。想恢复只能在隧道外显式执行遗忘（forgetHostKey），下次连接重新 TOFU。
-      emitWaiting('服务器指纹已变化，已拒绝连接')
-      if (confirmHostKey) {
-        await confirmHostKey({
-          instanceId: instance.id,
-          target: hostTargetLabel(target.host, target.port),
-          verdict: 'changed',
-          fingerprints: toFingerprints(scanned),
-          previousFingerprints: toFingerprints(evaluation.mismatched)
-        })
-      }
-      return false
-    }
-    if (!confirmHostKey) return true // 未接线(单测)则直接放行
-    emitWaiting('等待确认服务器指纹')
-    const decision = await confirmHostKey({
-      instanceId: instance.id,
-      target: hostTargetLabel(target.host, target.port),
-      verdict: 'unknown',
-      fingerprints: toFingerprints(scanned),
-      previousFingerprints: []
-    })
-    if (decision !== 'trust') return false
-    await recordHostTrust(knownHostsPath, hostField, scanned, 'append')
-    return true
-  }
+  // 日志行进 detail/归因前统一脱敏：剥掉行内 URL 的查询串（防 ?token= 等意外泄漏）。
+  const logRing = createLogRing({ maxLines: LOG_BUFFER_LINES, transformLine: redactLine })
 
   async function startAskpassFor(entry: TunnelEntry): Promise<AskpassServer | null> {
     if (!askpass) return null
@@ -273,13 +191,6 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     return server
   }
 
-  /** 端口可用性 = 未被本管理器保留 + 可绑定（portProbe 可注入） */
-  async function isPortAvailable(port: number): Promise<boolean> {
-    if (reservedPorts.has(port)) return false
-    if (portProbe) return portProbe(port)
-    return isPortFree(port)
-  }
-
   /**
    * 释放条目占用的资源：从注册表移除、归还本地端口、关掉 askpass 服务。
    * `dropControlPath` 为真时一并删除本条目的 ControlPath（带 force，文件不存在不算错）。
@@ -289,55 +200,12 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     { dropControlPath }: { dropControlPath: boolean }
   ): void {
     entries.delete(entry.id)
-    reservedPorts.delete(entry.localPort)
+    ports.release(entry.localPort)
     if (dropControlPath) {
       void rm(entry.controlPath, { force: true }).catch(() => undefined)
     }
     if (entry.askpassServer) void entry.askpassServer.close().catch(() => undefined)
     entry.askpassServer = null
-  }
-
-  /** 本地端口分配串行链：保留集的 check-then-add 必须原子，并发分配不得抢到同一端口 */
-  let allocChain: Promise<unknown> = Promise.resolve()
-
-  /** 分配并保留本地端口：优先沿用实例已持久化的 localPort（被占则递增），区间外向 65535 递进 */
-  function allocLocalPort(instance: SshInstance): Promise<number> {
-    const next = allocChain.then(() => allocLocalPortInner(instance))
-    allocChain = next.catch(() => undefined)
-    return next
-  }
-
-  /**
-   * 换一个本地端口（forward 失败重连用）：先释放旧端口再在区间内找新端口。
-   * 必须与 allocLocalPort 走同一条 allocChain —— 否则 findFreePort 与 reservedPorts.add
-   * 之间的窗口里，另一实例的并发分配会把同一端口观察为空闲而双双保留（重复 -L 绑定）。
-   */
-  function reallocLocalPort(previous: number): Promise<number> {
-    const next = allocChain.then(async () => {
-      reservedPorts.delete(previous)
-      const port = await findFreePort({
-        start: DEFAULT_PORT_RANGE_START,
-        end: DEFAULT_PORT_RANGE_END,
-        probe: isPortAvailable
-      })
-      reservedPorts.add(port)
-      return port
-    })
-    allocChain = next.catch(() => undefined)
-    return next
-  }
-
-  async function allocLocalPortInner(instance: SshInstance): Promise<number> {
-    const preferred = instance.localPort
-    if (preferred !== null && (await isPortAvailable(preferred))) {
-      reservedPorts.add(preferred)
-      return preferred
-    }
-    const start = preferred ?? DEFAULT_PORT_RANGE_START
-    const end = start > DEFAULT_PORT_RANGE_END ? 65_535 : DEFAULT_PORT_RANGE_END
-    const port = await findFreePort({ start, end, probe: isPortAvailable })
-    reservedPorts.add(port)
-    return port
   }
 
   function spawnSsh(entry: TunnelEntry, instance: SshInstance): SpawnedProcess {
@@ -464,10 +332,10 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     if (entry.forwardFailed) {
       entry.forwardFailed = false
       try {
-        // 经 allocChain 串行：check-then-add 原子，不与并发分配抢同一端口。
-        const port = await reallocLocalPort(entry.localPort)
+        // realloc 走分配器的串行链：check-then-add 原子，不与并发分配抢同一端口。
+        const port = await ports.realloc(entry.localPort)
         if (entry.stopping) {
-          reservedPorts.delete(port)
+          ports.release(port)
           return
         }
         entry.localPort = port
@@ -485,8 +353,8 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
 
   function attachHandlers(child: SpawnedProcess, entry: TunnelEntry): void {
     const id = entry.id
-    child.stdout?.on('data', (chunk: unknown) => pushLog(entry, chunk))
-    child.stderr?.on('data', (chunk: unknown) => pushLog(entry, chunk))
+    child.stdout?.on('data', (chunk: unknown) => logRing.push(entry, chunk))
+    child.stderr?.on('data', (chunk: unknown) => logRing.push(entry, chunk))
 
     child.on('error', (error: Error) => {
       if (entries.get(id) !== entry || entry.child !== child) return
@@ -501,7 +369,7 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
       entry.child = null
       cancelReconnect(entry)
       if (entry.stopping) return // stop() 独占发布 stopped
-      drainLogBuffer(entry)
+      logRing.drain(entry)
       const attribution = entry.pendingReason ?? classifySshExit(code, entry.log.join('\n'))
       entry.pendingReason = null
       entry.ready = false
@@ -533,10 +401,10 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
     let allocatedPort: number | null = null
     try {
       emit(id, 'starting', { detail: '分配本地端口' })
-      const localPort = await allocLocalPort(instance)
+      const localPort = await ports.alloc(instance.localPort)
       allocatedPort = localPort
       if (cancelIfRequested()) {
-        reservedPorts.delete(localPort)
+        ports.release(localPort)
         emit(id, 'stopped', { detail: '已取消启动' })
         return
       }
@@ -544,7 +412,7 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
       await mkdir(join(dataRoot, 'ssh'), { recursive: true, mode: 0o700 })
       await ensureSocketsDir(dataRoot)
       if (cancelIfRequested()) {
-        reservedPorts.delete(localPort)
+        ports.release(localPort)
         emit(id, 'stopped', { detail: '已取消启动' })
         return
       }
@@ -572,14 +440,16 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
         controlPath: join(socketsDirFor(dataRoot), `ctl-${controlSlug(instance)}`)
       }
       emit(id, 'starting', { detail: '校验服务器指纹' })
-      const trusted = await ensureTrust(instance, (detail) => emit(id, 'starting', { detail }))
+      const trusted = await hostTrust.ensureTrust(instance, (detail) =>
+        emit(id, 'starting', { detail })
+      )
       if (!trusted) {
-        reservedPorts.delete(localPort)
+        ports.release(localPort)
         emit(id, 'error', { detail: '服务器指纹未确认（或已变化），已拒绝连接' })
         return
       }
       if (cancelIfRequested()) {
-        reservedPorts.delete(localPort)
+        ports.release(localPort)
         emit(id, 'stopped', { detail: '已取消启动' })
         return
       }
@@ -609,7 +479,7 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
       entry.child = child
       await waitForReady(entry, child)
     } catch (error) {
-      if (allocatedPort !== null) reservedPorts.delete(allocatedPort)
+      if (allocatedPort !== null) ports.release(allocatedPort)
       emit(id, 'error', {
         detail: error instanceof Error ? error.message : String(error)
       })
@@ -699,7 +569,7 @@ export function createSshTunnels(options: SshTunnelOptions): SshTunnelManager {
      * 主进程侧唯一的调用方是显式的「忘记该主机指纹」动作,连接流程绝不调用它。
      */
     async forgetHostKey(instance) {
-      const target = await resolveTargetOrFallback(instance)
+      const target = await hostTrust.resolveTargetOrFallback(instance)
       await recordHostTrust(
         join(dataRoot, 'ssh', 'known_hosts'),
         knownHostsHostField(target.host, target.port),
