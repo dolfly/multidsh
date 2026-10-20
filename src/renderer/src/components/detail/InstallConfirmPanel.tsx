@@ -5,6 +5,7 @@ import type { Translator } from '@shared/i18n'
 import { Icon } from '../../lib/icons'
 import { fmtLogTime } from '../../lib/format'
 import { useAppStore } from '../../store'
+import MarkdownView from './MarkdownView'
 
 const BRIDGE = window.dshHub
 
@@ -109,6 +110,14 @@ export default function InstallConfirmPanel(props: InstallConfirmPanelProps): Re
     })
   }
 
+  /** 正文里的外链：交给主进程按协议白名单判定后用系统浏览器打开。 */
+  const openNoteLink = (url: string): void => {
+    if (!BRIDGE) return
+    void BRIDGE.openExternalLink(url).then((result) => {
+      if (!result.ok) toast('err', t('detail.plugin.openLinkFailed'), result.message)
+    })
+  }
+
   return (
     <>
       <div className="card-head mt16">
@@ -202,10 +211,10 @@ export default function InstallConfirmPanel(props: InstallConfirmPanelProps): Re
         <p className="meta">{t('detail.plugin.releaseNotesLoading')}</p>
       ) : releaseNotes !== null && releaseNotes.text !== null ? (
         <>
-          {/* 正文按纯文本渲染（pre-wrap），不解析 Markdown，避免注入与新增依赖。 */}
-          <p className="release-notes" data-testid="install-confirm-notes">
-            {releaseNotes.text}
-          </p>
+          {/* 正文按 Markdown 渲染（AST → React 元素，不生成 HTML 字符串）。 */}
+          <div className="release-notes" data-testid="install-confirm-notes">
+            <MarkdownView source={releaseNotes.text} openLink={openNoteLink} />
+          </div>
           {releaseNotes.truncated && (
             <p className="meta mt8">{t('detail.plugin.releaseNotesTruncated')}</p>
           )}

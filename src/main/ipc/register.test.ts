@@ -35,6 +35,7 @@ describe('registerIpc', () => {
       'app:ping',
       'app:open-homepage',
       'app:open-about',
+      'app:open-external-link',
       'instances:list',
       'instances:get',
       'instances:create',

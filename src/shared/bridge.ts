@@ -57,7 +57,12 @@ export const IPC = {
   /** 用系统默认浏览器打开项目主页；无参数，URL 由主进程固定 */
   openHomepage: 'app:open-homepage',
   /** 打开应用内「关于」叠加窗口；无参数，窗口由主进程构造 */
-  openAbout: 'app:open-about'
+  openAbout: 'app:open-about',
+  /**
+   * 在系统默认浏览器打开渲染层给出的 http(s) 链接（发布说明里的外链）。
+   * 协议白名单由主进程判定（http/https/mailto），渲染层无法借此打开本地程序或文件。
+   */
+  openExternalLink: 'app:open-external-link'
 } as const
 
 export interface AppInfo {
@@ -99,6 +104,11 @@ export interface DshHubBridge {
   openHomepage: () => Promise<IpcResult<null>>
   /** 打开应用内「关于」叠加窗口（无参数，主进程构造窗口） */
   openAbout: () => Promise<IpcResult<null>>
+  /**
+   * 在系统默认浏览器打开渲染层给出的 http(s) 链接（发布说明里的外链）。
+   * 主进程按协议白名单判定，非法协议返回错误信封。
+   */
+  openExternalLink: (url: string) => Promise<IpcResult<null>>
   /** 已有本机隔离空间；路径只由主进程决定。 */
   spaces: {
     list: () => Promise<IpcResult<LocalSpaceSnapshot[]>>

@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from 'electron'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DSH_VERSION_PROGRESS_EVENT, INSTANCE_STATUS_EVENT } from '@shared/contracts'
 import type {
@@ -17,6 +17,8 @@ import { createRuntimeInstaller } from './local-runtime/runtime-installer'
 import type { BundledNpm, RuntimeInstaller } from './local-runtime/runtime-installer'
 import { createPluginManager } from './local-runtime/plugin-manager'
 import type { PluginManager } from './local-runtime/plugin-manager'
+import type { PackageInfoFetchers, ReleaseNotesInput } from './local-runtime/plugin-package-info'
+import type { PluginDownloads, PluginReleaseNotes } from '@shared/contracts'
 import { createPathProbe } from './local-runtime/runtime-source'
 import type { PathProbe } from './local-runtime/runtime-source'
 import { materializePnpmLauncher } from './shell/bundled-pnpm'
@@ -133,6 +135,24 @@ export function createRuntimeController(deps: RuntimeControllerDeps): RuntimeCon
   const pathProbe = createPathProbe()
   // 随包分发的 pnpm 启动器目录：令 dsh 的插件管理用自带 pnpm，不依赖系统 pnpm。
   const pnpmBinDir = resolveBundledPnpmBinDir(deps.dataRoot)
+  // E2E 注入点：更新内容取数默认真连 GitHub，无头测试不该依赖外网。
+  // `DSH_HUB_E2E_RELEASE_NOTES` 指向一个文件，路径读入的 Markdown 作为固定正文。
+  const e2eReleaseNotesPath = process.env['DSH_HUB_E2E_RELEASE_NOTES']
+  const e2eReleaseNotes = e2eReleaseNotesPath
+    ? readFileSync(e2eReleaseNotesPath, 'utf8')
+    : undefined
+  const packageInfoFetchers: PackageInfoFetchers | undefined =
+    e2eReleaseNotes === undefined
+      ? undefined
+      : {
+          fetchDownloads: async (): Promise<PluginDownloads | null> => null,
+          fetchReleaseNotes: async (input: ReleaseNotesInput): Promise<PluginReleaseNotes> => ({
+            text: e2eReleaseNotes,
+            source: 'github-release' as const,
+            pageUrl: input.fallbackPageUrl,
+            truncated: false
+          })
+        }
   const pluginManager = createPluginManager({
     installer,
     dataRoot: deps.dataRoot,
@@ -142,7 +162,8 @@ export function createRuntimeController(deps: RuntimeControllerDeps): RuntimeCon
     // 缺 pnpm/node 目录会让 dsh plugin 转发 pnpm 失败；运行中改设置即时生效。
     inheritShellEnv: () => deps.readSettings().inheritShellEnv,
     // 插件命令的默认安装源跟随生效镜像（设置优先、环境变量次之）；运行中改设置即时生效。
-    defaultRegistry: () => pluginRegistryFromUrl(effectiveRegistry())
+    defaultRegistry: () => pluginRegistryFromUrl(effectiveRegistry()),
+    packageInfoFetchers
   })
   const runtime = createLocalRuntime({
     installer,
