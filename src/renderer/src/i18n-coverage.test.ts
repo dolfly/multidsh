@@ -625,7 +625,7 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   debt('src/main/transport/ssh-tunnel.ts', "emit(id, 'stopped', { detail: '隧道已停止' })"),
   debt(
     'src/main/local-runtime/local-runtime.ts',
-    "emit(id, 'stopped', { detail: exited ? '已停止' : '已强制停止（SIGKILL）' })"
+    "detail: exited && drained ? '已停止' : '已强制停止（SIGKILL）'"
   ),
   debt('src/main/ssh/ssh-trust-gate.ts', "emitWaiting('服务器指纹已变化，已拒绝连接')"),
   debt('src/main/ssh/ssh-trust-gate.ts', "emitWaiting('等待确认服务器指纹')"),

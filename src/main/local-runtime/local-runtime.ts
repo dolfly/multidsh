@@ -24,6 +24,7 @@ import {
   waitForProcessExit,
   type SpawnLike
 } from '../transport/spawn'
+import { waitForProcessGroupDrain } from '../transport/process-tree'
 import type { Entry } from './entry'
 import { createLauncher, type LaunchOptions } from './launch'
 import { createReadyMonitor } from './local-runtime-ready'
@@ -50,6 +51,13 @@ export interface LocalRuntimeOptions extends LaunchOptions {
   homeDir?: () => string
   readyTimeoutMs?: number
   stopGraceMs?: number
+  /**
+   * 等待整棵进程树排空的上限（POSIX）。
+   *
+   * dsh 收到 SIGTERM 后走异步优雅退出，最长 5 秒（dsh 的
+   * PROCESS_SHUTDOWN_TIMEOUT_MS）；超过这个时间还没排空就升级为强杀整组。
+   */
+  drainTimeoutMs?: number
   /** stopAll 等待启动队列排空的上限；超时放弃等待，退出不被卡死的安装拖住。 */
   stopAllDrainMs?: number
   healthTimeoutMs?: number
@@ -162,6 +170,9 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
   const inheritShellEnv = options.inheritShellEnv ?? ((): boolean => true)
   const readyTimeoutMs = options.readyTimeoutMs ?? 60_000
   const stopGraceMs = options.stopGraceMs ?? 3_000
+  // dsh 的优雅退出上限是 5s（dsh 内部 PROCESS_SHUTDOWN_TIMEOUT_MS）；
+  // 多留 1s 余量，超时后升级强杀整组。
+  const drainTimeoutMs = options.drainTimeoutMs ?? 6_000
   const stopAllDrainMs = options.stopAllDrainMs ?? 10_000
   const healthTimeoutMs = options.healthTimeoutMs ?? 5_000
   // 就绪探测重试次数默认 5 次，与 HTTP 端点一致；见 probe.ts 的 retryProbe。
@@ -234,6 +245,26 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
     // 外部接管条目没有子进程:没什么可等的,视作「已退出」
     if (!entry.child) return true
     return waitForProcessExit(entry.child, timeoutMs)
+  }
+
+  /**
+   * 等整棵进程树排空：包装器与它 spawn 的 dsh 都不在了才算停干净。
+   *
+   * 只等「直接子进程退出」是不够的：包装器（dush/duush）收到 SIGTERM 立刻死，
+   * 它 spawn 的 dsh 被 reparent 到 init 并继续走一段异步优雅退出
+   * （dsh 的 PROCESS_SHUTDOWN_TIMEOUT_MS = 5s），期间仍占着工作区端口。
+   * 这段窗口里宣布停止完成，重启就会撞端口，旧 dsh 还会被外部探测
+   * 当成「用户自己起的 dsh」（见 docs/adr/0012）。
+   *
+   * Windows 上没有进程组概念（taskkill /T 同步杀整棵树，退出即排空），
+   * 因此只在 POSIX 走排空等待。
+   */
+  async function waitForTreeDrain(entry: Entry, timeoutMs = drainTimeoutMs): Promise<boolean> {
+    const child = entry.child
+    if (!child || process.platform === 'win32') return true
+    const pgid = child.pid
+    if (pgid === undefined) return true
+    return waitForProcessGroupDrain(pgid, { timeoutMs })
   }
 
   function watchStdout(id: string, entry: Entry): void {
@@ -424,13 +455,26 @@ export function createLocalRuntime(options: LocalRuntimeOptions): LocalRuntimeMa
         killTree(entry, 'SIGKILL')
         await waitForExit(entry, 1_000)
       }
+      // 包装器先死、dsh 子进程还在优雅退出时，「子进程退出」不等于「实例已停」：
+      // dsh 仍占着工作区端口。此时宣布停止完成，紧随其后的 start 会撞端口，
+      // 且旧 dsh 会被外部探测当成用户自己的 dsh 上报（见 docs/adr/0012）。
+      // 因此停止语义是「整棵进程树排空」：等进程组里没有存活成员为止。
+      const drained = await waitForTreeDrain(entry)
+      if (!drained) {
+        // 排空超时：升级为强杀整组。强杀后进程组必然排空（内核回收），
+        // 仍留一次短等待确认 —— 确认不了也不阻塞停止流程。
+        killTree(entry, 'SIGKILL')
+        await waitForTreeDrain(entry, 1_000)
+      }
       // 身份守卫:stop 期间可能有新 start 替换了条目,只删除自己持有的旧条目
       if (entries.get(id) === entry) entries.delete(id)
       // 必须显式放行启动队列:正常停止由 exit handler 的 settle 兜住,但子进程若处于
       // SIGKILL 也无效的 D 态/僵尸,exit 事件永不触发 → 停在 spawnSettledPromise 的
       // 队列任务永不返回,之后所有实例的 start 全部永久排队(settled 标志保证此处重复无害)
       entry.settleSpawn?.()
-      emit(id, 'stopped', { detail: exited ? '已停止' : '已强制停止（SIGKILL）' })
+      emit(id, 'stopped', {
+        detail: exited && drained ? '已停止' : '已强制停止（SIGKILL）'
+      })
     },
 
     async adopt(instance, external) {
