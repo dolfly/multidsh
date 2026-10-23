@@ -244,6 +244,15 @@ test('列表渲染 + 手风琴详情 + 检查升级（兼容给升级按钮）',
   // 尚未检查过：发布时间为占位文案。
   await expect(detail).toContainText('点检查升级获取')
 
+  // 名称行：包名可点击复制，剪贴板拿到包名本身（testid 在复制按钮上）。
+  const nameBtn = win.getByTestId('plugin-name-demo-plugin')
+  await nameBtn.click()
+  await expect(nameBtn).toHaveAttribute('data-copied', 'true')
+  expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe('demo-plugin')
+
+  // 操作行不再放 GitHub 图标按钮（GitHub 链接行保留在详情里）。
+  await expect(win.getByTestId('plugin-github-demo-plugin')).toHaveCount(0)
+
   // 检查升级：兼容 → 出现「升级到 1.1.0」按钮，发布时间同时取到已装版本那一条。
   await win.getByTestId('plugin-check-demo-plugin').click()
   await expect(win.getByTestId('plugin-upgrade-demo-plugin')).toBeVisible({ timeout: 15_000 })

@@ -21,6 +21,7 @@ export const MESSAGES = {
   'common.save': { zh: '保存', en: 'Save' },
   'common.close': { zh: '关闭', en: 'Close' },
   'common.copy': { zh: '复制', en: 'Copy' },
+  'common.copied': { zh: '已复制', en: 'Copied' },
   'common.loading': { zh: '加载中…', en: 'Loading…' },
   'common.backToOverview': { zh: '回到总览', en: 'Back to overview' },
   'common.unknown': { zh: '未知', en: 'Unknown' },
@@ -700,6 +701,7 @@ export const MESSAGES = {
   'detail.plugin.source.github': { zh: 'GitHub', en: 'GitHub' },
   'detail.plugin.source.file': { zh: '本地', en: 'local' },
   'detail.plugin.source.unknown': { zh: '未知来源', en: 'unknown' },
+  'detail.plugin.field.name': { zh: '名称', en: 'Name' },
   'detail.plugin.field.description': { zh: '简介', en: 'Description' },
   'detail.plugin.field.author': { zh: '作者', en: 'Author' },
   'detail.plugin.field.license': { zh: '许可', en: 'License' },
@@ -1119,9 +1121,6 @@ export const MESSAGES = {
   'about.build': { zh: '构建版本', en: 'Build' },
   'about.buildTime': { zh: '打包时间', en: 'Build time' },
   'about.components': { zh: '运行组件', en: 'Runtime components' },
-  /** 数据列点击复制：悬浮提示与复制后的就地反馈。 */
-  'about.copy': { zh: '点击复制', en: 'Click to copy' },
-  'about.copied': { zh: '已复制', en: 'Copied' },
   'about.copyright': { zh: '版权所有 © 2026 xbzbing', en: 'Copyright © 2026 xbzbing' }
 } as const satisfies Record<string, Message>
 

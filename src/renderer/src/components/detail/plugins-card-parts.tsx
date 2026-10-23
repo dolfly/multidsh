@@ -3,6 +3,7 @@ import type { PluginInfo } from '@shared/contracts'
 import type { Translator } from '@shared/i18n'
 import { Icon } from '../../lib/icons'
 import { fmtLogTime } from '../../lib/format'
+import { CopyableValue } from '../CopyableValue'
 import { HoverTip } from '../InfoTip'
 import { Modal } from '../Modal'
 import Switch from '../Switch'
@@ -139,17 +140,6 @@ export function PluginRow(props: {
               </span>
             </HoverTip>
           )}
-          {plugin.githubUrl && (
-            <button
-              className="btn btn-ghost btn-sm btn-icon plugin-link"
-              onClick={() => onOpenLink(plugin.githubUrl)}
-              aria-label={t('detail.plugin.field.github')}
-              title={t('detail.plugin.field.github')}
-              data-testid={`plugin-github-${plugin.name}`}
-            >
-              <Icon name="github" />
-            </button>
-          )}
           {/* 启用/禁用开关：开=已加载。纯 client 插件不由清单控制，开关置灰并说明原因。 */}
           <Switch
             checked={!disabled}
@@ -225,6 +215,11 @@ function PluginDetail(props: {
   const publishedAt = check.result?.publishedAt ?? plugin.publishedAt
   return (
     <dl className="kv plugin-detail" data-testid={`plugin-detail-${plugin.name}`}>
+      {/* 包名行：标题里只是展示，详情给可复制的正式名称（安装/检索都用它）。 */}
+      <dt>{t('detail.plugin.field.name')}</dt>
+      <dd>
+        <CopyableValue t={t} value={plugin.name} testId={`plugin-name-${plugin.name}`} />
+      </dd>
       {plugin.description && (
         <>
           <dt>{t('detail.plugin.field.description')}</dt>

@@ -2138,8 +2138,8 @@ details.adv[open] {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   color: var(--fg);
 }
-/* 数据列点击复制：hover/聚焦露出复制图标，点击后短暂显示「已复制」；图标常驻占位，hover 不跳动。 */
-.about-copy {
+/* 可复制值（CopyableValue）：hover/聚焦露出复制图标，点击后短暂显示「已复制」；图标常驻占位，hover 不跳动。 */
+.copyable {
   display: inline-flex;
   align-items: baseline;
   justify-content: flex-end;
@@ -2148,20 +2148,20 @@ details.adv[open] {
   max-width: 100%;
   cursor: copy;
 }
-.about-copy-value {
+.copyable-value {
   overflow-wrap: anywhere;
 }
-.about-copy:hover .about-copy-value {
+.copyable:hover .copyable-value {
   text-decoration: underline;
   text-decoration-color: var(--border);
   text-underline-offset: 3px;
 }
-.about-copy:focus-visible {
+.copyable:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
-.about-copy-tail {
+.copyable-tail {
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -2173,12 +2173,12 @@ details.adv[open] {
   transition: opacity 0.12s ease;
   white-space: nowrap;
 }
-.about-copy:hover .about-copy-tail,
-.about-copy:focus-visible .about-copy-tail,
-.about-copy[data-copied='true'] .about-copy-tail {
+.copyable:hover .copyable-tail,
+.copyable:focus-visible .copyable-tail,
+.copyable[data-copied='true'] .copyable-tail {
   opacity: 1;
 }
-.about-copy[data-copied='true'] .about-copy-tail {
+.copyable[data-copied='true'] .copyable-tail {
   color: var(--ok-ink);
 }
 .about-copyright {

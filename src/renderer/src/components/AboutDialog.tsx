@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import type { AppInfo } from '@shared/bridge'
-import { Icon } from '../lib/icons'
 import { useAppStore } from '../store'
+import { CopyableValue } from './CopyableValue'
 import { Modal } from './Modal'
 
 const BRIDGE = window.dshHub
@@ -26,9 +25,6 @@ function formatBuildTime(iso: string | undefined): string {
 export default function AboutDialog() {
   const t = useAppStore((state) => state.t)
   const [info, setInfo] = useState<AppInfo | null>(null)
-  /** 已复制的数据列标识；null = 无。反馈只做就地展示，不占版面、不弹 toast。 */
-  const [copiedField, setCopiedField] = useState<string | null>(null)
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -39,50 +35,6 @@ export default function AboutDialog() {
       cancelled = true
     }
   }, [])
-
-  useEffect(
-    () => () => {
-      if (copyTimer.current !== null) clearTimeout(copyTimer.current)
-    },
-    []
-  )
-
-  /** 点击复制数据列的展示值；剪贴板不可用时不切换反馈，避免显示假的「已复制」。 */
-  const copyCell = (field: string, value: string): void => {
-    void navigator.clipboard
-      .writeText(value)
-      .then(() => {
-        setCopiedField(field)
-        if (copyTimer.current !== null) clearTimeout(copyTimer.current)
-        copyTimer.current = setTimeout(() => setCopiedField(null), 1600)
-      })
-      .catch(() => undefined)
-  }
-
-  /** 数据列单元：值 + hover/聚焦露出的复制图标，复制成功后短暂变为「已复制」。 */
-  const copyCellButton = (field: string, value: string): ReactNode => {
-    const copied = copiedField === field
-    return (
-      <button
-        type="button"
-        className="about-copy"
-        title={t('about.copy')}
-        data-copied={copied ? 'true' : undefined}
-        onClick={() => copyCell(field, value)}
-      >
-        <span className="about-copy-value">{value}</span>
-        <span className="about-copy-tail" role="status">
-          {copied ? (
-            <>
-              <Icon name="check" size={11} /> {t('about.copied')}
-            </>
-          ) : (
-            <Icon name="copy" size={11} />
-          )}
-        </span>
-      </button>
-    )
-  }
 
   const components: Array<[string, string]> = info
     ? [
@@ -118,12 +70,14 @@ export default function AboutDialog() {
             <div className="about-row">
               <dt>{t('about.build')}</dt>
               <dd data-testid="about-build-commit">
-                {copyCellButton('build-commit', info.buildCommit)}
+                <CopyableValue t={t} value={info.buildCommit} />
               </dd>
             </div>
             <div className="about-row">
               <dt>{t('about.buildTime')}</dt>
-              <dd data-testid="about-build-time">{copyCellButton('build-time', buildTime)}</dd>
+              <dd data-testid="about-build-time">
+                <CopyableValue t={t} value={buildTime} />
+              </dd>
             </div>
           </dl>
         )}
@@ -134,7 +88,7 @@ export default function AboutDialog() {
               <div key={name} className="about-row">
                 <dt>{name}</dt>
                 <dd data-testid={`about-${name.toLowerCase()}`}>
-                  {copyCellButton(`component-${name}`, version)}
+                  <CopyableValue t={t} value={version} />
                 </dd>
               </div>
             ))}
