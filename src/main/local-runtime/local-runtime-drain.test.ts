@@ -51,7 +51,8 @@ describe('进程组存活探测', () => {
     expect(isProcessGroupAlive(-1)).toBe(false)
   })
 
-  it('当前进程所在的进程组判定为存活', () => {
+  // ps 是 POSIX 专属命令；Windows 无进程组语义，停止走 taskkill（见 spawn.test.ts）。
+  it.skipIf(process.platform === 'win32')('当前进程所在的进程组判定为存活', () => {
     // 当前进程必定在某个进程组里；组号未必等于 pid（由父进程决定）。
     const pgid = execFileSync('ps', ['-o', 'pgid=', '-p', String(process.pid)], {
       encoding: 'utf8'
@@ -129,7 +130,10 @@ child.on('close', (code) => process.exit(code ?? 0))
   return { dir, wrapperPath, dshPath }
 }
 
-describe('停止语义：整棵进程树排空', () => {
+// Windows 无进程组语义：停止走 taskkill /T 同步杀树（spawn.test.ts 覆盖），
+// waitForTreeDrain 在 win32 上直接返回 true；本夹具的 ps / 负 pid 断言均不可移植。
+// skip 而非删掉：POSIX 下这是「包装器先死、dsh 还活着」缺陷的唯一回归防线。
+describe.skipIf(process.platform === 'win32')('停止语义：整棵进程树排空', () => {
   it('stop() 返回时包装器与 dsh 都已退出，旧 dsh 不再被外部探测上报', async () => {
     const fixture = await writeTreeFixture()
     const dataRoot = await mkdtemp(join(tmpdir(), 'hub-drain-data-'))
