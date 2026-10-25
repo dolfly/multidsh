@@ -2138,6 +2138,32 @@ details.adv[open] {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   color: var(--fg);
 }
+/* 第三方依赖：标题与展开/收起按钮同排，按钮显示条目数。 */
+.about-deps-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.about-deps-head h3 {
+  margin-bottom: 0;
+}
+.about-deps-toggle {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.about-deps-toggle:hover {
+  color: var(--fg);
+  border-color: color-mix(in oklch, var(--accent) 40%, var(--border));
+}
+.about-deps dl {
+  margin-top: 8px;
+}
 /* 可复制值（CopyableValue）：hover/聚焦露出复制图标，点击后短暂显示「已复制」；图标常驻占位，hover 不跳动。 */
 .copyable {
   display: inline-flex;

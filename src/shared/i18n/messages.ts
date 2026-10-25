@@ -1114,13 +1114,16 @@ export const MESSAGES = {
   'about.title': { zh: '关于 DSH Hub', en: 'About DSH Hub' },
   'about.open': { zh: '关于', en: 'About' },
   'about.sectionHint': {
-    zh: '版本、项目主页与运行组件',
-    en: 'Version, homepage and runtime components'
+    zh: '版本、项目主页、运行组件与第三方依赖',
+    en: 'Version, homepage, runtime components and dependencies'
   },
   'about.homepage': { zh: '项目主页', en: 'Homepage' },
   'about.build': { zh: '构建版本', en: 'Build' },
   'about.buildTime': { zh: '打包时间', en: 'Build time' },
   'about.components': { zh: '运行组件', en: 'Runtime components' },
+  'about.dependencies': { zh: '第三方依赖', en: 'Third-party dependencies' },
+  'about.depsShow': { zh: '展开', en: 'Show' },
+  'about.depsHide': { zh: '收起', en: 'Hide' },
   'about.copyright': { zh: '版权所有 © 2026 xbzbing', en: 'Copyright © 2026 xbzbing' }
 } as const satisfies Record<string, Message>
 

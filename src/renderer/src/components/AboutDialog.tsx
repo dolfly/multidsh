@@ -20,11 +20,13 @@ function formatBuildTime(iso: string | undefined): string {
  * 浮在宿主窗口（含内嵌工作区）之上，打开与关闭都不改变宿主的页面路由；
  * 三种关闭途径（右上角、遮罩、Escape）都关闭本窗口。
  * 版本信息取自主进程 `app:info` 快照——渲染层拿不到的东西（Electron/Chromium/Node/V8）
- * 只有主进程能诚实回答。
+ * 只有主进程能诚实回答；第三方依赖清单同样由主进程按构建期注入的清单给出。
  */
 export default function AboutDialog() {
   const t = useAppStore((state) => state.t)
   const [info, setInfo] = useState<AppInfo | null>(null)
+  // 第三方依赖清单默认折叠：条目数随依赖增长，默认展开会把面板撑成滚动长页。
+  const [showDeps, setShowDeps] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -46,6 +48,7 @@ export default function AboutDialog() {
     : []
 
   const buildTime = formatBuildTime(info?.buildTime)
+  const deps = info?.thirdPartyDeps ?? []
 
   return (
     <Modal
@@ -94,6 +97,34 @@ export default function AboutDialog() {
             ))}
           </dl>
         </section>
+        {deps.length > 0 && (
+          <section className="about-components about-deps">
+            <div className="about-deps-head">
+              <h3>{t('about.dependencies')}</h3>
+              <button
+                type="button"
+                className="about-deps-toggle"
+                data-testid="about-deps-toggle"
+                aria-expanded={showDeps}
+                onClick={() => setShowDeps((open) => !open)}
+              >
+                {showDeps ? t('about.depsHide') : t('about.depsShow')} ({deps.length})
+              </button>
+            </div>
+            {showDeps && (
+              <dl data-testid="about-deps">
+                {deps.map(({ name, version }) => (
+                  <div key={name} className="about-row" data-testid={`about-dep-${name}`}>
+                    <dt>{name}</dt>
+                    <dd>
+                      <CopyableValue t={t} value={version} />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </section>
+        )}
         <p className="about-copyright">{t('about.copyright')}</p>
       </div>
     </Modal>

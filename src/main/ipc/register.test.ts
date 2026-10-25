@@ -126,14 +126,26 @@ describe('registerIpc', () => {
   it('app:info 返回版本快照', async () => {
     const result = (await invoke('app:info')) as {
       ok: boolean
-      value: { appVersion: string; buildCommit: string; buildTime: string }
+      value: {
+        appVersion: string
+        buildCommit: string
+        buildTime: string
+        thirdPartyDeps: Array<{ name: string; version: string }>
+      }
     }
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.appVersion).toBe('9.9.9')
-      // 构建期常量在单测环境无 define 注入，回落 'unknown'；此处守住字段存在与类型。
+      // 构建期常量在单测环境无 define 注入，回落 'unknown' / 空清单；此处守住字段存在与类型。
       expect(typeof result.value.buildCommit).toBe('string')
       expect(typeof result.value.buildTime).toBe('string')
+      expect(Array.isArray(result.value.thirdPartyDeps)).toBe(true)
+      for (const dep of result.value.thirdPartyDeps) {
+        expect(typeof dep.name).toBe('string')
+        expect(dep.name).not.toBe('')
+        expect(typeof dep.version).toBe('string')
+        expect(dep.version).not.toBe('')
+      }
     }
   })
 

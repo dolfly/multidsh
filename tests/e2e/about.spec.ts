@@ -158,3 +158,38 @@ test('数据列点击复制：就地反馈已复制，剪贴板拿到与展示�
   await closeAboutWithEscape(about)
   await expectAboutClosed(app)
 })
+
+test('第三方依赖清单：默认折叠，展开后列出包名与实际安装版本', async () => {
+  const manifest = JSON.parse(
+    readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf8')
+  ) as {
+    dependencies?: Record<string, string>
+    devDependencies?: Record<string, string>
+  }
+  const declaredCount =
+    Object.keys(manifest.dependencies ?? {}).length +
+    Object.keys(manifest.devDependencies ?? {}).length
+  // 版本必须是 node_modules 里的实际安装值，而不是 package.json 的版本范围。
+  const installedZod = (
+    JSON.parse(
+      readFileSync(resolve(__dirname, '..', '..', 'node_modules', 'zod', 'package.json'), 'utf8')
+    ) as { version: string }
+  ).version
+
+  const about = await openAboutViaMenu(app)
+  const toggle = about.getByTestId('about-deps-toggle')
+  await expect(toggle).toBeVisible()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(toggle).toContainText(`(${declaredCount})`)
+  await expect(about.getByTestId('about-deps')).toHaveCount(0)
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  const list = about.getByTestId('about-deps')
+  await expect(list).toBeVisible()
+  await expect(about.getByTestId('about-dep-zod')).toContainText(installedZod)
+  await expect(about.getByTestId('about-dep-react')).not.toBeEmpty()
+
+  await closeAboutWithEscape(about)
+  await expectAboutClosed(app)
+})
