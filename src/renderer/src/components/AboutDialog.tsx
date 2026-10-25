@@ -20,7 +20,7 @@ function formatBuildTime(iso: string | undefined): string {
  * 浮在宿主窗口（含内嵌工作区）之上，打开与关闭都不改变宿主的页面路由；
  * 三种关闭途径（右上角、遮罩、Escape）都关闭本窗口。
  * 版本信息取自主进程 `app:info` 快照——渲染层拿不到的东西（Electron/Chromium/Node/V8）
- * 只有主进程能诚实回答；第三方依赖清单同样由主进程按构建期注入的清单给出。
+ * 只有主进程能诚实回答；第三方依赖清单同样由主进程从构建产物汇总后给出。
  */
 export default function AboutDialog() {
   const t = useAppStore((state) => state.t)
@@ -48,7 +48,8 @@ export default function AboutDialog() {
     : []
 
   const buildTime = formatBuildTime(info?.buildTime)
-  const deps = info?.thirdPartyDeps ?? []
+  // 只含打包进产物的第三方依赖；out/ 未完整构建时为空数组，此时整个区块不渲染。
+  const deps = info?.bundledDeps ?? []
 
   return (
     <Modal

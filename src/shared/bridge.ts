@@ -65,11 +65,11 @@ export const IPC = {
   openExternalLink: 'app:open-external-link'
 } as const
 
-/** 第三方依赖标识：包名与其版本，版本为构建期解析的实际安装值。 */
+/** 第三方依赖标识：包名与其版本，版本为构建时从安装布局解析的值。 */
 export interface DependencyInfo {
-  /** package.json 中的依赖名（含作用域前缀） */
+  /** 包名（含作用域前缀） */
   name: string
-  /** 实际安装版本；解析不到时为声明的版本范围 */
+  /** 实际安装版本；解析不到时为 'unknown' */
   version: string
 }
 
@@ -94,8 +94,11 @@ export interface AppInfo {
   defaultDshHome: string
   /** 系统区域设置（OS preferred languages 首项），供渲染层解析「跟随系统」语言偏好 */
   locale: string
-  /** 构建期注入的第三方依赖清单（package.json 的 dependencies + devDependencies），按包名排序 */
-  thirdPartyDeps: DependencyInfo[]
+  /**
+   * 打包进产物的第三方依赖清单，按包名排序；只含运行期随包分发的包，
+   * 纯开发/测试/构建期依赖不出现。out/ 未完整构建时为空数组。
+   */
+  bundledDeps: DependencyInfo[]
 }
 
 export interface PingResult {

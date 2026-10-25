@@ -130,17 +130,18 @@ describe('registerIpc', () => {
         appVersion: string
         buildCommit: string
         buildTime: string
-        thirdPartyDeps: Array<{ name: string; version: string }>
+        bundledDeps: Array<{ name: string; version: string }>
       }
     }
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.appVersion).toBe('9.9.9')
-      // 构建期常量在单测环境无 define 注入，回落 'unknown' / 空清单；此处守住字段存在与类型。
+      // 构建期常量在单测环境无 define 注入，回落 'unknown'；此处守住字段存在与类型。
       expect(typeof result.value.buildCommit).toBe('string')
       expect(typeof result.value.buildTime).toBe('string')
-      expect(Array.isArray(result.value.thirdPartyDeps)).toBe(true)
-      for (const dep of result.value.thirdPartyDeps) {
+      // 单测环境（src/ 下）没有 out/*/bundled-deps.json，汇总结果是空表。
+      expect(Array.isArray(result.value.bundledDeps)).toBe(true)
+      for (const dep of result.value.bundledDeps) {
         expect(typeof dep.name).toBe('string')
         expect(dep.name).not.toBe('')
         expect(typeof dep.version).toBe('string')

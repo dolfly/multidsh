@@ -15,7 +15,7 @@ import { join, resolve } from 'node:path'
 
 /**
  * 「关于」面板：应用菜单项打开**独立叠加窗口**（`?window=about`，与宿主窗口
- * 完全重合的透明子窗口），展示项目主页入口与运行组件版本。
+ * 完全重合的透明子窗口），展示项目主页入口、运行组件版本与打包进产物的第三方依赖。
  * 面板浮在宿主窗口（含内嵌工作区）之上，宿主页面路由全程不变；
  * 右上角、遮罩、Escape 三种途径关闭的都是该窗口本身。
  * 前置：`pnpm build`。
@@ -159,36 +159,42 @@ test('数据列点击复制：就地反馈已复制，剪贴板拿到与展示�
   await expectAboutClosed(app)
 })
 
-test('第三方依赖清单：默认折叠，展开后列出包名与实际安装版本', async () => {
-  const manifest = JSON.parse(
-    readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf8')
-  ) as {
-    dependencies?: Record<string, string>
-    devDependencies?: Record<string, string>
-  }
-  const declaredCount =
-    Object.keys(manifest.dependencies ?? {}).length +
-    Object.keys(manifest.devDependencies ?? {}).length
-  // 版本必须是 node_modules 里的实际安装值，而不是 package.json 的版本范围。
-  const installedZod = (
+test('第三方依赖清单：只列打包进产物的依赖，默认折叠', async () => {
+  // 期望值与面板数据源同源：三个构建目标各自写出的 bundled-deps.json 并集。
+  const readFragment = (target: string): Array<{ name: string; version: string }> =>
     JSON.parse(
-      readFileSync(resolve(__dirname, '..', '..', 'node_modules', 'zod', 'package.json'), 'utf8')
-    ) as { version: string }
-  ).version
+      readFileSync(resolve(__dirname, '..', '..', 'out', target, 'bundled-deps.json'), 'utf8')
+    ) as Array<{ name: string; version: string }>
+  const merged = new Map<string, string>()
+  for (const target of ['main', 'preload', 'renderer']) {
+    for (const dep of readFragment(target)) {
+      if (!merged.has(dep.name)) merged.set(dep.name, dep.version)
+    }
+  }
+  expect(merged.size).toBeGreaterThan(0)
+  // 每个包都要解析出真实安装版本（pnpm 目录含 peer 后缀时也不许退化成 unknown）。
+  expect([...merged].filter(([, version]) => version === 'unknown')).toEqual([])
+  const zodVersion = merged.get('zod')
+  const reactVersion = merged.get('react')
+  expect(zodVersion).toBeTruthy()
+  expect(reactVersion).toBeTruthy()
 
   const about = await openAboutViaMenu(app)
   const toggle = about.getByTestId('about-deps-toggle')
   await expect(toggle).toBeVisible()
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
-  await expect(toggle).toContainText(`(${declaredCount})`)
+  await expect(toggle).toContainText(`(${merged.size})`)
   await expect(about.getByTestId('about-deps')).toHaveCount(0)
 
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
-  const list = about.getByTestId('about-deps')
-  await expect(list).toBeVisible()
-  await expect(about.getByTestId('about-dep-zod')).toContainText(installedZod)
-  await expect(about.getByTestId('about-dep-react')).not.toBeEmpty()
+  await expect(about.getByTestId('about-deps')).toBeVisible()
+  // 版本是实际安装值（与产物清单一致），不是 package.json 的声明范围。
+  await expect(about.getByTestId('about-dep-zod')).toContainText(zodVersion as string)
+  await expect(about.getByTestId('about-dep-react')).toContainText(reactVersion as string)
+  // 纯开发期依赖不进清单：vitest / eslint 没有打进产物。
+  await expect(about.getByTestId('about-dep-vitest')).toHaveCount(0)
+  await expect(about.getByTestId('about-dep-eslint')).toHaveCount(0)
 
   await closeAboutWithEscape(about)
   await expectAboutClosed(app)
