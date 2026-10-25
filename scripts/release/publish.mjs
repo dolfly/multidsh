@@ -302,8 +302,8 @@ async function main(argv) {
       '--notes-file',
       notesArg
     ]
-    if (notes.distribution === 'windows-unsigned')
-      args.push(...uploadFiles.map((f) => join(ROOT, f)))
+    // uploadFiles 是 verifyLocalAssets 返回的绝对路径，直接交给 gh；再拼一次仓库根会得到不存在的路径
+    if (notes.distribution === 'windows-unsigned') args.push(...uploadFiles)
     run('创建 Draft', 'gh', args)
   } else {
     run('更新 Draft 说明', 'gh', [
@@ -317,13 +317,7 @@ async function main(argv) {
       notesArg
     ])
     if (uploadFiles.length > 0) {
-      run('覆盖上传资产', 'gh', [
-        'release',
-        'upload',
-        tag,
-        ...uploadFiles.map((f) => join(ROOT, f)),
-        '--clobber'
-      ])
+      run('覆盖上传资产', 'gh', ['release', 'upload', tag, ...uploadFiles, '--clobber'])
     }
   }
   const release = fetchRelease(repo, tag)

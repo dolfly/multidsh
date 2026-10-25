@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
+import { basename, isAbsolute, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   decideDraft,
@@ -44,6 +44,11 @@ describe('release:publish 脚本注册', () => {
   it('publish.mjs 不以 hashbang 开头（CRLF 检出 + vite SSR 变换会把 #! 挤到文件中部）', () => {
     const source = readFileSync(join(ROOT, 'scripts', 'release', 'publish.mjs'), 'utf8')
     expect(source.startsWith('#!')).toBe(false)
+  })
+
+  it('gh 资产参数原样使用绝对路径，不重复拼仓库根', () => {
+    const source = readFileSync(join(ROOT, 'scripts', 'release', 'publish.mjs'), 'utf8')
+    expect(source).not.toContain('join(ROOT, f)')
   })
 })
 
@@ -139,7 +144,7 @@ describe('verifyLocalAssets：本地资产校验', () => {
     ).rejects.toThrow(/不一致/)
   })
 
-  it('齐全且哈希一致时返回待上传文件', async () => {
+  it('齐全且哈希一致时返回待上传文件的绝对路径（调用方直接交给 gh，不得再拼仓库根）', async () => {
     const body = Buffer.from('exe-bytes')
     const root = makeUploadDir({
       [installer]: body,
@@ -147,6 +152,10 @@ describe('verifyLocalAssets：本地资产校验', () => {
     })
     const files = await verifyLocalAssets({ root, version, distribution: 'windows-unsigned' })
     expect(files.map((file) => basename(file))).toEqual([installer, 'SHA256SUMS.txt'])
+    for (const file of files) {
+      expect(isAbsolute(file)).toBe(true)
+      expect(existsSync(file)).toBe(true)
+    }
   })
 })
 
