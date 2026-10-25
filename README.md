@@ -49,7 +49,7 @@ Windows 安装包当前**未经代码签名**，首次运行会出现 SmartScree
 
 | 层       | 选型                                                                    |
 | -------- | ----------------------------------------------------------------------- |
-| 桌面框架 | Electron 44 + electron-vite 6 + Vite 7                                  |
+| 桌面框架 | Electron 45 + electron-vite 6 + Vite 7                                  |
 | UI       | React 18 + zustand + 手写 CSS（OKLch 明暗双主题）                       |
 | 语言     | TypeScript 5.9（strict + `noUncheckedIndexedAccess`）                   |
 | 校验     | zod 4.6.7（唯一新增运行时依赖）                                         |
