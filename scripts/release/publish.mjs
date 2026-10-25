@@ -190,15 +190,33 @@ function remoteTagSha(tag) {
 }
 
 /** 查询 Release（读操作）：不存在返回 null；gh 其它错误原样抛出。 */
+/**
+ * 从 releases 列表里按 tag 精确匹配 Release。
+ * tags 端点查不到 Draft（404），只能用列表端点（含 Draft，按创建时间倒序）。
+ * 同 tag 同时存在已发布与 Draft 时返回已发布的——让 decideDraft 按「不重发同版本」拒绝。
+ * @param {Array<{tag_name?: string, draft?: boolean, id?: number, assets?: Array<{name?: string}>}>} releases
+ * @param {string} tag
+ */
+export function findReleaseByTag(releases, tag) {
+  const matches = releases.filter((release) => release?.tag_name === tag)
+  if (matches.length === 0) return null
+  return matches.find((release) => release.draft !== true) ?? matches[0]
+}
+
 function fetchRelease(repo, tag) {
+  let body
   try {
-    const body = gh(['api', `repos/${repo}/releases/tags/${tag}`])
-    const data = JSON.parse(body)
-    return { id: data.id, draft: data.draft, assets: (data.assets ?? []).map((a) => a.name) }
+    body = gh(['api', `repos/${repo}/releases?per_page=100`])
   } catch (error) {
     const stderr = error?.stderr !== undefined ? String(error.stderr) : ''
-    if (stderr.includes('Not Found') || stderr.includes('404')) return null
     throw new PublishError(`查询 Release ${tag} 失败：${stderr.trim() || error.message}`)
+  }
+  const found = findReleaseByTag(JSON.parse(body), tag)
+  if (found === null) return null
+  return {
+    id: found.id,
+    draft: found.draft === true,
+    assets: (found.assets ?? []).map((asset) => asset.name)
   }
 }
 

@@ -8,6 +8,7 @@ import {
   decideLocalTag,
   decideRemotePush,
   expectedAssets,
+  findReleaseByTag,
   parseRemoteTagSha,
   parseSums,
   PublishError,
@@ -184,6 +185,30 @@ describe('parseRemoteTagSha：ls-remote 输出 → tag 指向的 commit', () => 
   it('ls-remote 查询带上 ^{} pattern（精确 pattern 不返回 annotated tag 的 peel 行）', () => {
     const source = readFileSync(join(ROOT, 'scripts', 'release', 'publish.mjs'), 'utf8')
     expect(source).toMatch(/ls-remote[\s\S]{0,160}\^\{\}/)
+  })
+})
+
+describe('findReleaseByTag：列表端点按 tag 找 Release', () => {
+  const draft = { id: 1, tag_name: 'v9.9.9', draft: true, assets: [] }
+  const published = { id: 2, tag_name: 'v9.9.9', draft: false, assets: [] }
+  const other = { id: 3, tag_name: 'v9.9.8', draft: false, assets: [] }
+
+  it('无匹配 → null（tag 尚无 Release）', () => {
+    expect(findReleaseByTag([other], 'v9.9.9')).toBeNull()
+    expect(findReleaseByTag([], 'v9.9.9')).toBeNull()
+  })
+
+  it('Draft 能被找到（tags 端点对 Draft 返回 404，列表端点才含 Draft）', () => {
+    expect(findReleaseByTag([other, draft], 'v9.9.9')).toBe(draft)
+  })
+
+  it('同 tag 已发布与 Draft 并存 → 返回已发布（由 decideDraft 拒绝重发）', () => {
+    expect(findReleaseByTag([draft, published, other], 'v9.9.9')).toBe(published)
+  })
+
+  it('多个 Draft → 取列表首个（列表按创建时间倒序，即最近的 Draft）', () => {
+    const newer = { id: 4, tag_name: 'v9.9.9', draft: true, assets: [] }
+    expect(findReleaseByTag([newer, draft], 'v9.9.9')).toBe(newer)
   })
 })
 
