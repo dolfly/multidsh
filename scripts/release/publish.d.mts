@@ -8,6 +8,9 @@ export function expectedAssets(distribution: string, version: string): string[]
 /** 解析 `sha256␠␠文件名` 清单为 Map；形态错误、重复或为空时抛 PublishError。 */
 export function parseSums(text: string): Map<string, string>
 
+/** 解析 `git ls-remote --tags` 输出为 tag 指向的 commit sha；空输出（tag 不存在）返回 null。 */
+export function parseRemoteTagSha(out: string): string | null
+
 /**
  * 本地资产校验：windows-unsigned 要求安装包与 SHA256SUMS.txt 齐全且哈希一致，
  * source-only 不需要文件。返回待上传的绝对路径列表。

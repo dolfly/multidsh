@@ -8,6 +8,7 @@ import {
   decideLocalTag,
   decideRemotePush,
   expectedAssets,
+  parseRemoteTagSha,
   parseSums,
   PublishError,
   verifyLocalAssets,
@@ -156,6 +157,33 @@ describe('verifyLocalAssets：本地资产校验', () => {
       expect(isAbsolute(file)).toBe(true)
       expect(existsSync(file)).toBe(true)
     }
+  })
+})
+
+describe('parseRemoteTagSha：ls-remote 输出 → tag 指向的 commit', () => {
+  const tagObjectLine = `1fd42e4e987f2b17b3ace6e1484da89fe25b9fec\trefs/tags/v9.9.9`
+  const peelLine = `f8283f104c4a650fff8d5f1d1b135f7daf88593b\trefs/tags/v9.9.9^{}`
+
+  it('空输出 → null（远端无此 tag）', () => {
+    expect(parseRemoteTagSha('')).toBeNull()
+    expect(parseRemoteTagSha('\n')).toBeNull()
+  })
+
+  it('annotated tag：取 peel 行的 commit，不取 tag 对象 sha', () => {
+    expect(parseRemoteTagSha(`${tagObjectLine}\n${peelLine}\n`)).toBe(
+      'f8283f104c4a650fff8d5f1d1b135f7daf88593b'
+    )
+  })
+
+  it('lightweight tag：唯一一行就是 commit', () => {
+    expect(parseRemoteTagSha(`${peelLine.split('\t')[0]}\trefs/tags/v9.9.9\n`)).toBe(
+      'f8283f104c4a650fff8d5f1d1b135f7daf88593b'
+    )
+  })
+
+  it('ls-remote 查询带上 ^{} pattern（精确 pattern 不返回 annotated tag 的 peel 行）', () => {
+    const source = readFileSync(join(ROOT, 'scripts', 'release', 'publish.mjs'), 'utf8')
+    expect(source).toMatch(/ls-remote[\s\S]{0,160}\^\{\}/)
   })
 })
 

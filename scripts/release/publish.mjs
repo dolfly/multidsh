@@ -162,20 +162,31 @@ function gh(args) {
     .trim()
 }
 
+/**
+ * 解析 `git ls-remote --tags` 输出为 tag 指向的 commit sha：空输出返回 null（tag 不存在），
+ * annotated tag 取 `^{}` peel 行，lightweight tag 取唯一一行。
+ * @param {string} out
+ * @returns {string | null}
+ */
+export function parseRemoteTagSha(out) {
+  if (out.trim() === '') return null
+  const lines = out.split('\n')
+  for (const line of lines) {
+    const [sha, name] = line.split('\t')
+    if (name !== undefined && name.endsWith('^{}')) return sha
+  }
+  return (lines[0] ?? '').split('\t')[0]
+}
+
 function remoteTagSha(tag) {
   let out
   try {
-    out = git(['ls-remote', '--tags', 'origin', `refs/tags/${tag}`])
+    // 精确 pattern 只回 tag 自身那一行（annotated tag 是 tag 对象 sha），peel 到的 commit 要用 ^{} pattern 单独取
+    out = git(['ls-remote', '--tags', 'origin', `refs/tags/${tag}`, `refs/tags/${tag}^{}`])
   } catch {
     throw new PublishError('git ls-remote origin 失败 —— 确认 origin 可达（网络/代理）后重跑')
   }
-  if (out === '') return null
-  for (const line of out.split('\n')) {
-    const [sha, name] = line.split('\t')
-    if (name === undefined) continue
-    if (name.endsWith('^{}')) return sha // annotated tag 的 peel 结果 = commit sha
-  }
-  return out.split('\n')[0].split('\t')[0] // lightweight tag
+  return parseRemoteTagSha(out)
 }
 
 /** 查询 Release（读操作）：不存在返回 null；gh 其它错误原样抛出。 */
