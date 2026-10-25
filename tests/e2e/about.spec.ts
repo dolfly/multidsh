@@ -196,6 +196,23 @@ test('第三方依赖清单：只列打包进产物的依赖，默认折叠', as
   await expect(about.getByTestId('about-dep-vitest')).toHaveCount(0)
   await expect(about.getByTestId('about-dep-eslint')).toHaveCount(0)
 
+  // 清单在区块内独立滚动：区块高度受限、内容超出即可滚；对话框整体不因展开而撑满到滚动。
+  const scroll = await about.evaluate(() => {
+    const dl = document.querySelector<HTMLElement>('[data-testid="about-deps"]')
+    const body = document.querySelector<HTMLElement>('.modal-body')
+    if (!dl || !body) return null
+    return {
+      dlClient: dl.clientHeight,
+      dlScroll: dl.scrollHeight,
+      bodyClient: body.clientHeight,
+      bodyScroll: body.scrollHeight
+    }
+  })
+  expect(scroll).not.toBeNull()
+  expect(scroll?.dlClient ?? 0).toBeLessThanOrEqual(150)
+  expect(scroll?.dlScroll ?? 0).toBeGreaterThan(scroll?.dlClient ?? 0)
+  expect(scroll?.bodyScroll ?? 0).toBeLessThanOrEqual((scroll?.bodyClient ?? 0) + 1)
+
   await closeAboutWithEscape(about)
   await expectAboutClosed(app)
 })

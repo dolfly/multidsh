@@ -2165,8 +2165,14 @@ details.adv[open] {
   color: var(--fg);
   border-color: color-mix(in oklch, var(--accent) 40%, var(--border));
 }
+/* 清单在区块内自己滚动（约 7 行高）：展开时面板高度只增加这一段、不顶到限高，
+   对话框自身不出现滚动，滚动只发生在这里；滚动条用平台默认（macOS 为悬浮式）。 */
 .about-deps dl {
   margin-top: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
 }
 /* 可复制值（CopyableValue）：hover/聚焦露出复制图标，点击后短暂显示「已复制」；图标常驻占位，hover 不跳动。 */
 .copyable {
