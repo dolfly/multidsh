@@ -1488,6 +1488,10 @@ h3,
 .modal.modal-plugin {
   width: min(616px, 100%);
 }
+/* 关于面板比通用浮层（452px）宽 10%：依赖清单的「包名 + 版本」两列更舒展。 */
+.modal.modal-about {
+  width: min(497px, 100%);
+}
 .modal-head {
   flex: none;
   display: flex;

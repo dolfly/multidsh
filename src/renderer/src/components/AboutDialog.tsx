@@ -56,6 +56,7 @@ export default function AboutDialog() {
       title={t('about.title')}
       onClose={() => window.close()}
       closeLabel={t('common.close')}
+      className="modal-about"
       testId="about-dialog"
     >
       <div className="about">
