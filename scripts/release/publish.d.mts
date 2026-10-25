@@ -22,6 +22,9 @@ export function findReleaseByTag(
   tag: string
 ): { tag_name?: string; draft?: boolean; id?: number; assets?: Array<{ name?: string }> } | null
 
+/** 解析命令行参数；忽略 pnpm 透传的裸 `--`，未知参数抛 PublishError。 */
+export function parsePublishArgs(argv: string[]): { dryRun: boolean; doPublish: boolean }
+
 /**
  * 本地资产校验：windows-unsigned 要求安装包与 SHA256SUMS.txt 齐全且哈希一致，
  * source-only 不需要文件。返回待上传的绝对路径列表。

@@ -9,6 +9,7 @@ import {
   decideRemotePush,
   expectedAssets,
   findReleaseByTag,
+  parsePublishArgs,
   parseRemoteTagSha,
   parseSums,
   PublishError,
@@ -209,6 +210,26 @@ describe('findReleaseByTag：列表端点按 tag 找 Release', () => {
   it('多个 Draft → 取列表首个（列表按创建时间倒序，即最近的 Draft）', () => {
     const newer = { id: 4, tag_name: 'v9.9.9', draft: true, assets: [] }
     expect(findReleaseByTag([newer, draft], 'v9.9.9')).toBe(newer)
+  })
+})
+
+describe('parsePublishArgs：命令行参数', () => {
+  it('无参数 → 执行模式（非预演、不发布）', () => {
+    expect(parsePublishArgs([])).toEqual({ dryRun: false, doPublish: false })
+  })
+
+  it('--dry-run 与 --publish 各自生效', () => {
+    expect(parsePublishArgs(['--dry-run'])).toEqual({ dryRun: true, doPublish: false })
+    expect(parsePublishArgs(['--publish'])).toEqual({ dryRun: false, doPublish: true })
+  })
+
+  it('pnpm 透传的裸 -- 被忽略（runbook 的 release:publish -- --publish 才可用）', () => {
+    expect(parsePublishArgs(['--', '--publish'])).toEqual({ dryRun: false, doPublish: true })
+  })
+
+  it('未知参数拒绝', () => {
+    expect(() => parsePublishArgs(['--force'])).toThrow(PublishError)
+    expect(() => parsePublishArgs(['--dry-run', 'x'])).toThrow(/未知参数/)
   })
 })
 

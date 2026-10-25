@@ -238,11 +238,21 @@ function makeRunner({ dryRun, log }) {
   }
 }
 
-async function main(argv) {
-  const dryRun = argv.includes('--dry-run')
-  const doPublish = argv.includes('--publish')
-  const unknown = argv.filter((flag) => flag !== '--dry-run' && flag !== '--publish')
+/**
+ * 解析命令行参数：`--dry-run` 预演、`--publish` 正式发布。
+ * pnpm 会把 `pnpm release:publish -- --publish` 里的裸 `--` 一并透传，忽略它；其余参数拒绝。
+ * @param {string[]} argv
+ * @returns {{dryRun: boolean, doPublish: boolean}}
+ */
+export function parsePublishArgs(argv) {
+  const flags = argv.filter((flag) => flag !== '--')
+  const unknown = flags.filter((flag) => flag !== '--dry-run' && flag !== '--publish')
   if (unknown.length > 0) throw new PublishError(`未知参数：${unknown.join(' ')}`)
+  return { dryRun: flags.includes('--dry-run'), doPublish: flags.includes('--publish') }
+}
+
+async function main(argv) {
+  const { dryRun, doPublish } = parsePublishArgs(argv)
 
   const log = (message) => console.log(`[publish] ${message}`)
   const run = makeRunner({ dryRun, log })
