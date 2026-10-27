@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import type { AppUpdateCheck } from '@shared/bridge'
 import type { EnvironmentDiff, VaultStatusSnapshot, LocalSpaceSnapshot } from '@shared/contracts'
 import { LANGUAGES, THEMES } from '@shared/settings'
 import type { LanguagePreference, Theme } from '@shared/settings'
@@ -28,6 +29,9 @@ export default function SettingsView(): ReactNode {
   /** 重新检测环境后、正在运行且可重启的本机实例 id；非 null 时弹出重启确认框。 */
   const [restartPrompt, setRestartPrompt] = useState<string[] | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  /** 应用更新检查结果；null = 尚未检查（本次失败经 toast 报告，不留半截状态）。 */
+  const [updateCheck, setUpdateCheck] = useState<AppUpdateCheck | null>(null)
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
 
   useEffect(() => {
     void BRIDGE?.vault.status().then((result) => {
@@ -98,6 +102,35 @@ export default function SettingsView(): ReactNode {
   /** 打开应用内「关于」叠加窗口；Windows/Linux 无菜单栏，设置页承担此入口。 */
   const openAbout = (): void => {
     void BRIDGE?.openAbout()
+  }
+
+  /**
+   * 检查应用更新：结果就地展示在按钮旁（已是最新 / 有新版本），
+   * 失败只经 toast 报告主进程文案，不保留上一次的检查结果。
+   */
+  const checkUpdate = (): void => {
+    if (checkingUpdate) return
+    setCheckingUpdate(true)
+    setUpdateCheck(null)
+    void BRIDGE?.checkUpdate()
+      .then((result) => {
+        if (!result) return
+        if (!result.ok) {
+          toast('err', t('settings.updateCheckFailed'), result.message)
+          return
+        }
+        setUpdateCheck(result.value)
+      })
+      .finally(() => setCheckingUpdate(false))
+  }
+
+  /** 在系统默认浏览器打开最新 Release 页面；地址由主进程按协议白名单校验。 */
+  const openReleasePage = (): void => {
+    const url = updateCheck?.releaseUrl
+    if (url === null || url === undefined) return
+    void BRIDGE?.openExternalLink(url).then((result) => {
+      if (result && !result.ok) toast('err', t('settings.updateOpenReleaseFailed'), result.message)
+    })
   }
 
   /** 明细最多列 3 条，更多用省略号收尾（PATH 可能一次新增很多条）。 */
@@ -456,7 +489,42 @@ export default function SettingsView(): ReactNode {
             >
               <Icon name="info" /> {t('about.open')}
             </button>
+            {/* 检查更新是一次性动作：主进程读 GitHub 最新 Release 与当前版本比较。 */}
+            <button
+              className="btn btn-secondary btn-sm"
+              data-testid="settings-check-update"
+              disabled={checkingUpdate}
+              onClick={checkUpdate}
+            >
+              <Icon name="refresh" />{' '}
+              {checkingUpdate ? t('settings.checkingUpdate') : t('settings.checkUpdate')}
+            </button>
           </div>
+          {updateCheck && (
+            <div
+              className="row mt12"
+              style={{ gap: 8, alignItems: 'center', minWidth: 0 }}
+              data-testid="settings-update-result"
+            >
+              <span className="meta" data-testid="settings-update-verdict">
+                {updateCheck.hasUpdate
+                  ? t('settings.updateAvailable', {
+                      latest: updateCheck.latest,
+                      current: updateCheck.current
+                    })
+                  : t('settings.updateUpToDate', { version: updateCheck.current })}
+              </span>
+              {updateCheck.hasUpdate && updateCheck.releaseUrl && (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  data-testid="settings-open-release"
+                  onClick={openReleasePage}
+                >
+                  {t('settings.updateOpenRelease')}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
       {trashTarget && (

@@ -1,8 +1,8 @@
 # 隐私政策（Privacy Policy）
 
-> **English summary:** DSH Hub Desktop collects **no personal data**. It contains **no telemetry, analytics, crash reporting, advertising, or auto-update mechanism**. It makes network connections **only to endpoints you explicitly configure** — local dsh processes on loopback, SSH hosts you add, remote HTTP/HTTPS dsh instances you register, the npm registry for plugin operations you trigger, and the dsh runtime installer you approve. All application data (registry, credentials, logs, session cookies) stays on your device. The entire source code is public and auditable.
+> **English summary:** DSH Hub Desktop collects **no personal data**. It contains **no telemetry, analytics, crash reporting, advertising, or auto-update mechanism** — the update check runs only when you click "Check for updates" in Settings. It makes network connections **only to endpoints you explicitly configure or that such a user action targets** — local dsh processes on loopback, SSH hosts you add, remote HTTP/HTTPS dsh instances you register, the npm registry and the GitHub API for plugin operations you trigger, the GitHub API when you check for updates, and the dsh runtime installer you approve. All application data (registry, credentials, logs, session cookies) stays on your device. The entire source code is public and auditable.
 
-本文档说明 DSH Hub Desktop（以下简称"本应用"）的数据处理行为。核心结论：**本应用不收集任何用户个人数据，不包含任何遥测、分析、崩溃上报、广告或自动更新机制**；所有网络连接都只发往**用户明确配置的目标**，所有数据都只保存在用户自己的设备上。
+本文档说明 DSH Hub Desktop（以下简称"本应用"）的数据处理行为。核心结论：**本应用不收集任何用户个人数据，不包含任何遥测、分析、崩溃上报、广告或自动更新机制**；所有网络连接都只发往**用户明确配置的目标**或**用户主动操作所指向的公开服务**（插件 registry、GitHub），所有数据都只保存在用户自己的设备上。
 
 ## 1. 我们不做什么（数据收集）
 
@@ -10,7 +10,7 @@
 - 无遥测（telemetry）、无使用统计、无行为分析（analytics）。
 - 无崩溃上报（无 `crashReporter`）、无错误日志回传。
 - 无广告、无推送营销。
-- 无自动更新检查（构建时生成 `latest.yml` 仅供签名发布验证，应用自身不发起升级轮询）。
+- 无自动更新轮询（应用自身不发起升级轮询；构建时生成 `latest.yml` 仅供签名发布验证。设置页的「检查更新」只在用户点击时读取一次 GitHub Release 列表）。
 - 无账户系统，不要求注册或登录本应用。
 
 以上结论可由源码直接核查：整个仓库搜索不到任何遥测/分析 SDK 或第三方统计端点。
@@ -19,15 +19,16 @@
 
 本应用会在以下情形发起网络连接，**每一类都对应用户的显式配置或主动操作**：
 
-| 场景                   | 连接目标                                                                                              | 触发方式                         |
-| ---------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------- |
-| 本机实例运行与健康探测 | `127.0.0.1`（回环，dsh 子进程与 SSH 隧道本地端口）                                                    | 用户创建并启动 local 实例        |
-| 健康探测               | 实例就绪 URL（仅回环地址）                                                                            | 启动/接管实例时自动              |
-| 远程实例               | 用户注册的 HTTP/HTTPS 端点 URL（认证、Cookie 注入均发往该端点）                                       | 用户添加 http 实例               |
-| SSH 隧道               | 用户配置的 SSH 主机（经系统 OpenSSH）                                                                 | 用户添加 ssh 实例                |
-| 插件管理               | npm registry（默认 `registry.npmjs.org`，可用环境变量 `DSH_HUB_NPM_REGISTRY` 指定镜像；https 信任根） | 用户在插件卡主动安装/升级/检查   |
-| 打开外链               | 系统默认浏览器（协议白名单 http/https/mailto，如 npm/GitHub 页面）                                    | 用户点击链接                     |
-| dsh 运行时下载         | dsh 官方发布源                                                                                        | 本地实例首次引导，需用户明确确认 |
+| 场景                   | 连接目标                                                                                                                                       | 触发方式                         |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| 本机实例运行与健康探测 | `127.0.0.1`（回环，dsh 子进程与 SSH 隧道本地端口）                                                                                             | 用户创建并启动 local 实例        |
+| 健康探测               | 实例就绪 URL（仅回环地址）                                                                                                                     | 启动/接管实例时自动              |
+| 远程实例               | 用户注册的 HTTP/HTTPS 端点 URL（认证、Cookie 注入均发往该端点）                                                                                | 用户添加 http 实例               |
+| SSH 隧道               | 用户配置的 SSH 主机（经系统 OpenSSH）                                                                                                          | 用户添加 ssh 实例                |
+| 插件管理               | npm registry（默认 `registry.npmjs.org`，可用环境变量 `DSH_HUB_NPM_REGISTRY` 指定镜像；https 信任根）；GitHub API（读取插件 Release 更新内容） | 用户在插件卡主动安装/升级/检查   |
+| 检查更新               | GitHub API（`api.github.com`，只读本应用仓库的 Release 列表）                                                                                  | 用户点击设置页「检查更新」       |
+| 打开外链               | 系统默认浏览器（协议白名单 http/https/mailto，如 npm/GitHub 页面）                                                                             | 用户点击链接                     |
+| dsh 运行时下载         | dsh 官方发布源                                                                                                                                 | 本地实例首次引导，需用户明确确认 |
 
 除上述用户指定目标外，本应用**不向任何其他联网系统发送数据**。外链一律经协议白名单与域名校验（仅放行 http/https/mailto，拒绝可拉起本地程序的协议）。
 

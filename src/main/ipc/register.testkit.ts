@@ -143,6 +143,7 @@ export interface RegisterHarness {
   instanceViewUrlFake: MockFn
   openInstanceView: MockFn
   openExternalUrl: MockFn
+  checkAppUpdate: MockFn
   onSettingsChanged: MockFn
   auditSpy: (entry: { instanceId?: string | null; event: string; result?: string }) => void
   clearPartitionSession: MockFn
@@ -336,6 +337,15 @@ export async function setupRegister(
   }
   const instanceViewUrlFake = vi.fn(() => null)
   const externalDshScannerFake = { scan: vi.fn(async () => []) }
+  // 应用更新检查替身：通道触发时不发起外网请求，返回一份固定的「已是最新」结果。
+  const checkAppUpdate = vi.fn(async () => ({
+    current: '9.9.9',
+    latest: '9.9.9',
+    hasUpdate: false,
+    releaseUrl: 'https://github.com/xbzbing/dsh-hub-desktop/releases/tag/v9.9.9',
+    publishedAt: '2026-10-01T00:00:00.000Z',
+    checkedAt: '2026-10-28T00:00:00.000Z'
+  }))
   const promptBrokerFake: PromptBrokerFake = {
     requestHostKey: vi.fn(async () => 'trust'),
     requestAskpass: vi.fn(async () => null),
@@ -369,6 +379,7 @@ export async function setupRegister(
     promptBroker: promptBrokerFake as never,
     openInstanceView: openInstanceView as never,
     openExternalUrl: openExternalUrl as never,
+    checkAppUpdate: checkAppUpdate as never,
     installer: installerFake as never,
     pluginManager: pluginManagerFake as never
   }
@@ -401,6 +412,7 @@ export async function setupRegister(
     instanceViewUrlFake,
     openInstanceView,
     openExternalUrl,
+    checkAppUpdate,
     onSettingsChanged,
     auditSpy,
     clearPartitionSession,

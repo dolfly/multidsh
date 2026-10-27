@@ -824,6 +824,20 @@ const NON_RENDERER_COPY_DEBT_USER_VISIBLE: readonly DebtEntry[] = [
   debt(
     'src/shared/endpoint.ts',
     "throw new EndpointParseError('unsupported-scheme', input, '仅支持 http / https 协议')"
+  ),
+
+  // —— 应用更新检查（app:check-update）的信封 message：渲染层 toast 直接展示 result.message ——
+  debt(
+    'src/main/app-update.ts',
+    "if (repo === null) throw new InstanceStoreError('internal', '无法从项目主页解析更新源仓库')"
+  ),
+  debt(
+    'src/main/app-update.ts',
+    "if (raw === null) throw new InstanceStoreError('io-error', '无法连接 GitHub，请稍后重试')"
+  ),
+  debt(
+    'src/main/app-update.ts',
+    "if (latest === null) throw new InstanceStoreError('io-error', 'GitHub 上没有可用的发布版本')"
   )
 ]
 

@@ -36,6 +36,7 @@ describe('registerIpc', () => {
       'app:open-homepage',
       'app:open-about',
       'app:open-external-link',
+      'app:check-update',
       'instances:list',
       'instances:get',
       'instances:create',
@@ -163,6 +164,21 @@ describe('registerIpc', () => {
     const result = (await invoke('app:ping', 123)) as { ok: boolean; code?: string }
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.code).toBe('invalid-input')
+  })
+
+  it('app:check-update：回传检查结果，当前版本由主进程取自身', async () => {
+    const result = (await invoke('app:check-update')) as {
+      ok: boolean
+      value?: { current: string; latest: string; hasUpdate: boolean; releaseUrl: string | null }
+    }
+    expect(result.ok).toBe(true)
+    expect(result.value).toMatchObject({
+      current: '9.9.9',
+      latest: '9.9.9',
+      hasUpdate: false,
+      releaseUrl: 'https://github.com/xbzbing/dsh-hub-desktop/releases/tag/v9.9.9'
+    })
+    expect(harness.checkAppUpdate).toHaveBeenCalledWith('9.9.9')
   })
 
   it('ssh:askpassReply 空串/全空白在 IPC 边界拒绝(invalid-input)', async () => {

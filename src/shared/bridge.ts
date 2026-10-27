@@ -58,6 +58,8 @@ export const IPC = {
   openHomepage: 'app:open-homepage',
   /** 打开应用内「关于」叠加窗口；无参数，窗口由主进程构造 */
   openAbout: 'app:open-about',
+  /** 检查应用自身更新：主进程读 GitHub 最新 Release 与当前版本比较；无参数 */
+  checkUpdate: 'app:check-update',
   /**
    * 在系统默认浏览器打开渲染层给出的 http(s) 链接（发布说明里的外链）。
    * 协议白名单由主进程判定（http/https/mailto），渲染层无法借此打开本地程序或文件。
@@ -108,6 +110,22 @@ export interface PingResult {
   at: number
 }
 
+/** 应用自身更新检查结果（GitHub 最新 Release 与当前版本的比较）。 */
+export interface AppUpdateCheck {
+  /** 本次检查时的应用版本（`app.getVersion()`）。 */
+  current: string
+  /** GitHub 上最新发布的版本（tag 去掉 `v` 前缀）。 */
+  latest: string
+  /** 是否有可用更新。 */
+  hasUpdate: boolean
+  /** 最新 Release 页面地址；取不到时为 null。 */
+  releaseUrl: string | null
+  /** 最新 Release 发布时间（ISO 8601）；未知为 null。 */
+  publishedAt: string | null
+  /** 本次检查时间（ISO 8601）。 */
+  checkedAt: string
+}
+
 export interface DshHubBridge {
   /** 主进程返回的应用信息快照 */
   getInfo: () => Promise<IpcResult<AppInfo>>
@@ -117,6 +135,11 @@ export interface DshHubBridge {
   openHomepage: () => Promise<IpcResult<null>>
   /** 打开应用内「关于」叠加窗口（无参数，主进程构造窗口） */
   openAbout: () => Promise<IpcResult<null>>
+  /**
+   * 检查应用自身更新（无参数）：主进程从 GitHub 读最新 Release 与当前版本比较。
+   * 仓库地址由主进程从 `HOMEPAGE_URL` 解析，渲染层传不了 URL。
+   */
+  checkUpdate: () => Promise<IpcResult<AppUpdateCheck>>
   /**
    * 在系统默认浏览器打开渲染层给出的 http(s) 链接（发布说明里的外链）。
    * 主进程按协议白名单判定，非法协议返回错误信封。

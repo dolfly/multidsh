@@ -3,8 +3,15 @@ import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
-import { IPC, type AppInfo, type DependencyInfo, type PingResult } from '@shared/bridge'
+import {
+  IPC,
+  type AppInfo,
+  type AppUpdateCheck,
+  type DependencyInfo,
+  type PingResult
+} from '@shared/bridge'
 import type { IpcResult } from '@shared/contracts'
+import { checkAppUpdate } from '../app-update'
 import { systemLocale } from '../system-locale'
 
 /** ping 入参：字符串或省略/null；与其余通道一致在边界走 zod 校验。 */
@@ -50,9 +57,19 @@ function readBundledDeps(): DependencyInfo[] {
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
 }
 
+/** 应用级通道的装配依赖。 */
+export interface AppHandlerDeps {
+  /**
+   * 应用更新检查（入参为当前应用版本）；缺省用 GitHub Release 实现，
+   * 单测注入假实现，避免通道触发时发起外网请求。
+   */
+  checkUpdate?: (currentVersion: string) => Promise<AppUpdateCheck>
+}
+
 export function registerAppHandlers(
   processVersions: NodeJS.ProcessVersions & { electron?: string },
-  wrap: <T>(task: () => Promise<T> | T) => Promise<IpcResult<T>>
+  wrap: <T>(task: () => Promise<T> | T) => Promise<IpcResult<T>>,
+  deps: AppHandlerDeps = {}
 ): void {
   ipcMain.handle(IPC.info, (): Promise<IpcResult<AppInfo>> =>
     wrap(() => ({
@@ -81,5 +98,11 @@ export function registerAppHandlers(
         at: Date.now()
       }
     })
+  )
+
+  // 检查应用更新：无参数；版本取自身，仓库地址由主进程按 HOMEPAGE_URL 解析，
+  // 渲染层只能触发检查动作本身。
+  ipcMain.handle(IPC.checkUpdate, (): Promise<IpcResult<AppUpdateCheck>> =>
+    wrap(() => (deps.checkUpdate ?? checkAppUpdate)(app.getVersion()))
   )
 }

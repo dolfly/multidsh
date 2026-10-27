@@ -4,7 +4,7 @@
  */
 import { ipcMain } from 'electron'
 import { z } from 'zod'
-import { IPC } from '@shared/bridge'
+import { IPC, type AppUpdateCheck } from '@shared/bridge'
 import type { InstanceRecord, IpcResult, WorkspaceViewBounds } from '@shared/contracts'
 import type { Settings } from '@shared/settings'
 import { HomepageOpenError } from '../shell/open-homepage'
@@ -169,13 +169,18 @@ export interface IpcDeps
    * 缺省时该通道返回 internal 错误信封（单测不装配）。
    */
   openAbout?: () => void
+  /**
+   * 检查应用自身更新（入参为当前应用版本）；缺省用主进程的 GitHub Release 实现，
+   * 单测注入假实现，避免通道触发时发起外网请求。
+   */
+  checkAppUpdate?: (currentVersion: string) => Promise<AppUpdateCheck>
 }
 
 export function registerIpc(store: InstanceStore, deps: IpcDeps): AuthProbeController {
   /** 外部 dsh 的 token URL 仅驻留在主进程会话内，绝不进入状态流或注册表。 */
   const externalAccessUrls: ExternalAccessUrls = new Map()
   const processVersions = process.versions as NodeJS.ProcessVersions & { electron?: string }
-  registerAppHandlers(processVersions, wrap)
+  registerAppHandlers(processVersions, wrap, { checkUpdate: deps.checkAppUpdate })
 
   // 关于 → 项目主页:空元组 schema 拒绝任何入参,URL 由主进程固定
   ipcMain.handle(IPC.openHomepage, (_event, ...args: unknown[]): Promise<IpcResult<null>> =>

@@ -1,6 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Settings } from '@shared/settings'
-import { IPC, type AppInfo, type DshHubBridge, type PingResult } from '@shared/bridge'
+import {
+  IPC,
+  type AppInfo,
+  type AppUpdateCheck,
+  type DshHubBridge,
+  type PingResult
+} from '@shared/bridge'
 import {
   AUTH_IPC,
   INSTANCE_IPC,
@@ -52,6 +58,8 @@ const bridge: DshHubBridge = {
   openHomepage: () => ipcRenderer.invoke(IPC.openHomepage) as Promise<IpcResult<null>>,
   // 无参数:关于窗口由主进程构造，渲染层只触发打开动作
   openAbout: () => ipcRenderer.invoke(IPC.openAbout) as Promise<IpcResult<null>>,
+  // 无参数:版本由主进程取自身，仓库地址由主进程按 HOMEPAGE_URL 解析
+  checkUpdate: () => ipcRenderer.invoke(IPC.checkUpdate) as Promise<IpcResult<AppUpdateCheck>>,
   // 发布说明里的外链:主进程按协议白名单判定后交给系统默认程序
   openExternalLink: (url: string) =>
     ipcRenderer.invoke(IPC.openExternalLink, url) as Promise<IpcResult<null>>,

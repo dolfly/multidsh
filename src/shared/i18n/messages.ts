@@ -272,6 +272,23 @@ export const MESSAGES = {
   'settings.saved': { zh: '设置已保存', en: 'Settings saved' },
   'settings.saveFailed': { zh: '设置保存失败', en: 'Failed to save settings' },
   'settings.cleared': { zh: '已清除所有记住的凭据', en: 'All remembered credentials cleared' },
+  // —— 检查更新（应用自身版本，读 GitHub Release）——
+  'settings.checkUpdate': { zh: '检查更新', en: 'Check for updates' },
+  'settings.checkingUpdate': { zh: '检查中…', en: 'Checking…' },
+  'settings.updateCheckFailed': { zh: '检查更新失败', en: 'Failed to check for updates' },
+  'settings.updateUpToDate': {
+    zh: '已是最新版本（当前 v{version}）',
+    en: 'You are up to date (v{version})'
+  },
+  'settings.updateAvailable': {
+    zh: '发现新版本 v{latest}（当前 v{current}）',
+    en: 'New version v{latest} available (you have v{current})'
+  },
+  'settings.updateOpenRelease': { zh: '查看发布页', en: 'View release' },
+  'settings.updateOpenReleaseFailed': {
+    zh: '打开发布页失败',
+    en: 'Failed to open the release page'
+  },
   'spaces.title': { zh: '空间管理', en: 'Space management' },
   'spaces.summary': {
     zh: '已有空间 {count} 个 · 占用 {size}',
