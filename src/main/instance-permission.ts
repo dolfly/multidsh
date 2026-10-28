@@ -14,12 +14,16 @@ import type { Session } from 'electron'
  *   网页无法读取本机剪贴板内容。
  * - media：仅当请求的媒体类型全部为 audio 时放行（dsh web 语音输入的
  *   getUserMedia）；摄像头与音视频混合请求拒绝。
+ * - fullscreen：页面用 Element.requestFullscreen() 进入全屏（如插件的文件阅读器）。
+ *   拒绝时 Electron 不会给页面一个干净的 reject，请求悬置、页面只能靠自己的
+ *   超时提示失败，因此放行。
  */
 export function isAllowedInstancePermission(
   permission: string,
   mediaTypes: readonly string[] = []
 ): boolean {
   if (permission === 'clipboard-write' || permission === 'clipboard-sanitized-write') return true
+  if (permission === 'fullscreen') return true
   if (permission === 'media')
     return mediaTypes.length > 0 && mediaTypes.every((type) => type === 'audio')
   return false

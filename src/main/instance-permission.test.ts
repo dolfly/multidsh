@@ -7,6 +7,12 @@ describe('isAllowedInstancePermission', () => {
     expect(isAllowedInstancePermission('clipboard-sanitized-write')).toBe(true)
   })
 
+  it('放行全屏权限', () => {
+    expect(isAllowedInstancePermission('fullscreen')).toBe(true)
+    // 全屏请求不携带额外 details,检查与请求共用同一结论
+    expect(isAllowedInstancePermission('fullscreen', [])).toBe(true)
+  })
+
   it('media 仅当请求类型全部为 audio 时放行', () => {
     expect(isAllowedInstancePermission('media', ['audio'])).toBe(true)
     expect(isAllowedInstancePermission('media', ['video'])).toBe(false)
@@ -59,6 +65,8 @@ describe('installInstancePermissionPolicy', () => {
     expect(callback).toHaveBeenLastCalledWith(false)
     request(null, 'clipboard-write', callback)
     expect(callback).toHaveBeenLastCalledWith(true)
+    request(null, 'fullscreen', callback)
+    expect(callback).toHaveBeenLastCalledWith(true)
     request(null, 'notifications', callback)
     expect(callback).toHaveBeenLastCalledWith(false)
   })
@@ -77,6 +85,7 @@ describe('installInstancePermissionPolicy', () => {
     expect(check(null, 'media', 'http://127.0.0.1:3080/', { mediaType: 'video' })).toBe(false)
     expect(check(null, 'media', 'http://127.0.0.1:3080/', { mediaType: 'unknown' })).toBe(false)
     expect(check(null, 'clipboard-sanitized-write', 'http://127.0.0.1:3080/')).toBe(true)
+    expect(check(null, 'fullscreen', 'http://127.0.0.1:3080/')).toBe(true)
     expect(check(null, 'clipboard-read', 'http://127.0.0.1:3080/')).toBe(false)
     expect(check(null, 'notifications', 'http://127.0.0.1:3080/')).toBe(false)
   })
